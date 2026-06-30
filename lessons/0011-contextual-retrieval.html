@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 11 — Contextual Retrieval</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .step {
+      background: #fff;
+      border-left: 3px solid #1a1a1a;
+      padding: 0.8rem 1rem 0.8rem 1.2rem;
+      margin: 1rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .step-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 0.3rem; }
+
+    .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .twocol > div { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 0.9rem 1rem; }
+    .twocol h4 { margin-top: 0; }
+    @media (max-width: 700px) { .twocol { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 11 of ?</p>
+    <h1>Contextual Retrieval</h1>
+    <p class="tagline">Cure the "they expire" problem with a tiny LLM-generated context blurb prepended to each chunk before embedding. 35–67% fewer retrieval misses, no special model required.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <a href="0008-chunking.html"><span class="pill pill-done">L8 ✓</span></a>
+      <a href="0009-build-rag.html"><span class="pill pill-done">L9 ✓</span></a>
+      <a href="0010-vector-db.html"><span class="pill pill-done">L10 ✓</span></a>
+      <span class="pill pill-now">L11 — Contextual Retrieval</span>
+      <span class="pill pill-next">L12 — Hybrid Search</span>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Why this lesson</h2>
+  <p>
+    In Lesson 8 you met the <strong>pronoun problem</strong>: a chunk that says <em>"They expire after 90 days"</em> embeds with no idea what "they" refers to. Search for <em>"how often do Connected Apps expire"</em> and the relevant chunk gets missed.
+  </p>
+  <p>
+    Late chunking (Lesson 8) was one fix — but it required a special embedding model that exposes per-token vectors. Gemini's embedding API doesn't.
+  </p>
+  <p>
+    <strong>Contextual Retrieval</strong> (Anthropic, 2024) is a different fix for the same disease. It works with <em>any</em> embedding model — including Gemini — because it solves the problem in the text layer, not the model layer:
+  </p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">The core idea (one sentence)</div>
+    Before embedding each chunk, ask an LLM to write a short "what is this chunk about, given the whole document?" blurb, then <strong>prepend</strong> it to the chunk text. The chunk's vector now encodes both the chunk and its document context.
+  </div>
+
+  <p>Anthropic's published eval showed retrieval-failure rates dropping <strong>35–67%</strong> across multiple datasets. That's the kind of number that justifies the extra indexing cost — read on for the trade-off.</p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Visualise it</h2>
+
+<pre><code>NORMAL CHUNKING (Lesson 9)
+
+  Document
+     │
+     ▼
+  ┌──────────┐
+  │  Chunk   │
+  └────┬─────┘
+       │
+       ├── "They expire after 90 days."        ──→ [embed] ──→ vec_2
+       │   ↑ no idea what "they" is
+       └── "Rotate them on a schedule."        ──→ [embed] ──→ vec_3</code></pre>
+
+<pre><code>CONTEXTUAL RETRIEVAL (this lesson)
+
+  Document  ─────────────┐
+     │                   │  (full doc as reference)
+     ▼                   ▼
+  ┌──────────┐       ┌─────────┐
+  │  Chunk   │ ────→ │   LLM   │ ──→ short context blurb
+  └──────────┘       └─────────┘
+       │                   │
+       └─── prepend ◄──────┘
+              │
+              ▼
+   "This passage from the Anypoint authentication
+    guide describes Connected App lifecycle.
+    They expire after 90 days."   ──→ [embed] ──→ vec_2'
+   ↑──── added by LLM ────↑       ↑── original chunk ──↑</code></pre>
+
+  <p>The chunk's text now <em>literally contains</em> the antecedent — "Connected App lifecycle" — so the embedding model has no chance of getting confused. Gemini didn't change. The chunk did.</p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>The context-generation prompt</h2>
+  <p>This is the prompt Anthropic published, lightly adapted for our markdown chunks:</p>
+
+<pre><code><span class="str">"""
+&lt;document&gt;
+{whole_document}
+&lt;/document&gt;
+
+Here is a chunk we want to situate within the document:
+&lt;chunk&gt;
+{chunk_text}
+&lt;/chunk&gt;
+
+Provide a short, succinct context (1-2 sentences) that situates
+this chunk within the overall document for the purposes of
+improving search retrieval. Answer ONLY with the context — no
+preamble, no explanation."</span>
+"""</code></pre>
+
+  <p>Three things to notice in the prompt:</p>
+  <ul>
+    <li><strong>The whole document is included.</strong> The LLM needs full context to write a meaningful blurb. Yes, that means re-sending the doc with every chunk's request.</li>
+    <li><strong>"1–2 sentences."</strong> Anything longer dilutes the chunk's own signal in the embedding.</li>
+    <li><strong>"Answer ONLY with the context."</strong> Without this, models love to add "Here's the context:..." prefixes that pollute every chunk.</li>
+  </ul>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Use a cheap, fast model for context generation</div>
+    Use <code>gemini-3.5-flash</code> (or smaller) — not your top-tier reasoning model. The task is summarisation with full doc grounding, which the small models nail. Saves money and time at indexing.
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Hands-on — extend <code>rag_chroma.py</code></h2>
+  <p>We're keeping everything from Lesson 10 (Chroma storage, sync logic, content-hash IDs) and inserting one new step into the indexing pipeline: <strong>generate the context blurb, prepend, then embed</strong>.</p>
+
+  <!-- Step 1 -->
+  <div class="step">
+    <p class="step-title">Step 1 — Add a <code>generate_context()</code> function</p>
+<pre><code>CONTEXT_PROMPT <span class="op">=</span> <span class="str">"""</span>
+<span class="str">&lt;document&gt;</span>
+<span class="str">{whole_document}</span>
+<span class="str">&lt;/document&gt;</span>
+
+<span class="str">Here is a chunk we want to situate within the document:</span>
+<span class="str">&lt;chunk&gt;</span>
+<span class="str">{chunk_text}</span>
+<span class="str">&lt;/chunk&gt;</span>
+
+<span class="str">Provide a short, succinct context (1-2 sentences) that situates</span>
+<span class="str">this chunk within the overall document for the purposes of</span>
+<span class="str">improving search retrieval. Answer ONLY with the context — no</span>
+<span class="str">preamble, no explanation.</span>
+<span class="str">"""</span>
+
+<span class="kw">def</span> <span class="fn">generate_context</span>(whole_document, chunk_text):
+    prompt <span class="op">=</span> CONTEXT_PROMPT.format(
+        whole_document<span class="op">=</span>whole_document,
+        chunk_text<span class="op">=</span>chunk_text,
+    )
+    response <span class="op">=</span> client.models.generate_content(
+        model<span class="op">=</span>CHAT_MODEL,
+        contents<span class="op">=</span>prompt,
+    )
+    <span class="kw">return</span> response.text.strip()</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: <code>str.format()</code> with named placeholders</div>
+      <code>"...{name}...".format(name=value)</code> substitutes <code>{name}</code> in the string with <code>value</code>. It's the same thing as f-strings, but with the substitution happening <em>later</em> (when you call <code>.format()</code>), not at the moment the string is written. We use it here because <code>CONTEXT_PROMPT</code> is defined once at the top of the file as a template, and filled in many times — once per chunk.
+      <p style="margin-top:0.4rem">Equivalent f-string: <code>f"...{whole_document}...{chunk_text}..."</code> — but that only works if the variables are in scope when the string literal is written.</p>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <p class="step-title">Step 2 — Modify <code>build_index</code> / <code>sync_index</code> to prepend context</p>
+<pre><code><span class="kw">def</span> <span class="fn">contextualise</span>(whole_document, chunks):
+    <span class="cm"># Returns a parallel list: each chunk preceded by its blurb</span>
+    out <span class="op">=</span> []
+    <span class="kw">for</span> i, chunk <span class="kw">in</span> <span class="fn">enumerate</span>(chunks):
+        ctx <span class="op">=</span> generate_context(whole_document, chunk)
+        <span class="fn">print</span>(<span class="str">f"  [{i+1}/{</span><span class="fn">len</span><span class="str">(chunks)}] context: {ctx[:60]}..."</span>)
+        out.append(<span class="str">f"{ctx}\n\n{chunk}"</span>)   <span class="cm"># prepend, blank line, then chunk</span>
+    <span class="kw">return</span> out</code></pre>
+
+    <p>Now update the sync-loop's <em>add</em> branch to embed the contextualised text — but keep the <em>original</em> chunk text in <code>documents</code> so retrieval still returns the human-readable chunk:</p>
+
+<pre><code><span class="kw">if</span> to_add:
+    ids       <span class="op">=</span> [cid <span class="kw">for</span> cid, _ <span class="kw">in</span> to_add]
+    docs      <span class="op">=</span> [c   <span class="kw">for</span> _, c <span class="kw">in</span> to_add]
+
+    <span class="cm"># NEW — generate context blurbs, prepend before embedding</span>
+    whole_doc <span class="op">=</span> DOC_PATH.read_text()
+    enriched  <span class="op">=</span> contextualise(whole_doc, docs)
+    vecs      <span class="op">=</span> [embed(t, <span class="str">"RETRIEVAL_DOCUMENT"</span>) <span class="kw">for</span> t <span class="kw">in</span> enriched]
+
+    <span class="cm"># Store ORIGINAL chunk text as the document, but with the CONTEXT-AWARE vector</span>
+    collection.add(ids<span class="op">=</span>ids, documents<span class="op">=</span>docs, embeddings<span class="op">=</span>vecs)</code></pre>
+
+    <div class="callout callout-warn">
+      <div class="callout-label">Why store the original chunk, not the enriched one?</div>
+      The blurb helps the embedding find the chunk. But once retrieved, you want to show Gemini (and your user, for citations) the <em>actual</em> source text — not an LLM-generated summary stapled to the front. Embed the enriched version; store the original.
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <p class="step-title">Step 3 — Query side: nothing changes</p>
+    <p>The query pipeline is identical to Lesson 10:</p>
+<pre><code>q_vec <span class="op">=</span> embed(question, <span class="str">"RETRIEVAL_QUERY"</span>)
+results <span class="op">=</span> collection.query(query_embeddings<span class="op">=</span>[q_vec], n_results<span class="op">=</span>TOP_K)</code></pre>
+    <p>This is the elegance of the technique: <strong>only indexing changes</strong>. Querying, retrieval scoring, prompt construction, the LLM call — all unchanged.</p>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Side-by-side: what each chunk looks like before and after</h2>
+  <div class="twocol">
+    <div>
+      <h4>Lesson 10 chunk (raw)</h4>
+<pre><code><span class="str">"They expire after 90 days.</span>
+<span class="str">Rotate them on a schedule."</span></code></pre>
+    </div>
+    <div>
+      <h4>Lesson 11 chunk (contextualised, embedded)</h4>
+<pre><code><span class="str">"This passage from the Anypoint</span>
+<span class="str">authentication guide describes</span>
+<span class="str">the Connected App credential</span>
+<span class="str">lifecycle.</span>
+
+<span class="str">They expire after 90 days.</span>
+<span class="str">Rotate them on a schedule."</span></code></pre>
+    </div>
+  </div>
+  <p>The "Connected App" tokens at the top now contribute to the chunk's embedding, so a query mentioning "Connected App expiry" lands close in vector space.</p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>The cost / benefit honestly</h2>
+  <table>
+    <thead>
+      <tr><th>Phase</th><th>Cost change</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Indexing time</strong></td>
+        <td>+1 LLM call per chunk</td>
+        <td>500 chunks → 500 Flash calls. A few cents on Gemini Flash. Slower than embedding alone.</td>
+      </tr>
+      <tr>
+        <td><strong>Indexing $$</strong></td>
+        <td>Up</td>
+        <td>Each call sends the whole document as context. With prompt caching (most providers support it), the doc is cached once and reused — much cheaper.</td>
+      </tr>
+      <tr>
+        <td><strong>Storage</strong></td>
+        <td>~Same</td>
+        <td>You store the original chunks; only vectors change.</td>
+      </tr>
+      <tr>
+        <td><strong>Query time</strong></td>
+        <td>Unchanged</td>
+        <td>Same Chroma query, same Gemini answer call.</td>
+      </tr>
+      <tr>
+        <td><strong>Retrieval quality</strong></td>
+        <td>+35–67% fewer misses</td>
+        <td>Per Anthropic's eval. Bigger gains on docs heavy with pronouns, cross-references, and section-relative phrasing.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">When NOT to use it</div>
+    <ul style="margin-top:0.4rem">
+      <li><strong>Tiny corpora</strong> (a handful of chunks). The indexing cost outweighs the recall gain on data this small.</li>
+      <li><strong>Self-contained chunks.</strong> If your chunks are FAQ-style — each one a complete Q&amp;A with no dependence on neighbours — there's nothing for the blurb to add.</li>
+      <li><strong>Doc bigger than the LLM context window.</strong> The prompt sends the whole doc per chunk. For a 500-page PDF, you'd split into "macro sections" first and contextualise within each.</li>
+    </ul>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Late chunking vs Contextual Retrieval — same problem, different fix</h2>
+  <table>
+    <thead>
+      <tr><th></th><th>Late chunking (L8)</th><th>Contextual Retrieval (this lesson)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Where context is added</td>
+        <td>Inside the embedding model (attention)</td>
+        <td>Before the embedding model (in the text)</td>
+      </tr>
+      <tr>
+        <td>Special embedding model required?</td>
+        <td>Yes — needs per-token output (Jina v3, nomic, bge-m3)</td>
+        <td>No — works with Gemini, OpenAI, anything</td>
+      </tr>
+      <tr>
+        <td>Indexing cost</td>
+        <td>Single embed call per doc</td>
+        <td>+1 LLM call per chunk</td>
+      </tr>
+      <tr>
+        <td>Maximum doc size</td>
+        <td>Embedding model's context window</td>
+        <td>Chat model's context window (typically larger)</td>
+      </tr>
+      <tr>
+        <td>What ends up in the DB</td>
+        <td>Raw chunks + contextual vectors</td>
+        <td>Raw chunks + vectors of context-prepended chunks</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>You can also <strong>combine</strong> them — late chunking with a model that supports it, applied to context-prepended chunks. Anthropic's paper notes additive gains. Diminishing returns kick in fast though; pick one technique first, measure, then add the other only if you need it.</p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Make this cheaper — prompt caching</h2>
+  <p>
+    Look at what <code>contextualise()</code> does for a 100-chunk doc:
+  </p>
+
+<pre><code>For each of 100 chunks:
+  → send the WHOLE document + this chunk to Gemini
+  → get back a 1-2 sentence blurb
+
+Total: 100 LLM calls
+       Each call ships the full document
+       → 99% of input tokens are repeated</code></pre>
+
+  <p>
+    For a 50,000-token document, you've sent <strong>5,000,000 tokens of input</strong> — but most are the same document, just resent. <strong>Prompt caching</strong> fixes this by letting Gemini remember the front of your prompt across calls.
+  </p>
+
+  <h3>How prompt caching works</h3>
+
+<pre><code>FIRST CALL
+  ┌─────────────────────────────────┐  ┌──────────┐
+  │  WHOLE DOCUMENT (50k tokens)    │  │ chunk 1  │
+  └─────────────────────────────────┘  └──────────┘
+   ↑ full price                         ↑ full price
+   ↑ Gemini stores a CACHE of this prefix
+
+SUBSEQUENT CALLS (within the cache TTL)
+  ┌─────────────────────────────────┐  ┌──────────┐
+  │  WHOLE DOCUMENT (cache hit)     │  │ chunk 2  │
+  └─────────────────────────────────┘  └──────────┘
+   ↑ ~75-90% discount                  ↑ full price
+                                         (chunk text only — small)</code></pre>
+
+  <p>
+    Cached input tokens cost roughly <strong>¼ the price</strong> of fresh ones. For a 100-chunk indexing run, that typically cuts the contextualisation bill by <strong>70–85%</strong> and roughly halves the wall-clock time.
+  </p>
+
+  <h3>Two flavours — pick the right one</h3>
+  <table>
+    <thead>
+      <tr><th></th><th>Implicit caching</th><th>Explicit caching</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>How it works</td>
+        <td>Auto-cache when you reuse identical prefixes</td>
+        <td>You create a cache object, then reference it</td>
+      </tr>
+      <tr>
+        <td>Code change</td>
+        <td>Zero</td>
+        <td>Two extra lines</td>
+      </tr>
+      <tr>
+        <td>Control</td>
+        <td>Gemini decides</td>
+        <td>You set the TTL, you reuse it deliberately</td>
+      </tr>
+      <tr>
+        <td>Best for</td>
+        <td>Ad-hoc workloads</td>
+        <td>Batch indexing — you know the doc upfront</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    For Contextual Retrieval — looping through every chunk in one go — <strong>explicit caching is the right tool</strong>. You know you'll reuse the document immediately and many times. No guessing.
+  </p>
+
+  <h3>The code change — 3 small edits</h3>
+
+  <!-- Step A -->
+  <div class="step">
+    <p class="step-title">A — Create the cache once, before the chunk loop</p>
+<pre><code><span class="kw">def</span> <span class="fn">make_doc_cache</span>(whole_document, ttl_seconds<span class="op">=</span><span class="num">600</span>):
+    <span class="str">"""Cache the document so it's not re-billed for every chunk."""</span>
+    cache <span class="op">=</span> client.caches.create(
+        model<span class="op">=</span>CHAT_MODEL,
+        config<span class="op">=</span>types.CreateCachedContentConfig(
+            contents<span class="op">=</span>[whole_document],
+            system_instruction<span class="op">=</span>(
+                <span class="str">"You write short context blurbs that situate a chunk "</span>
+                <span class="str">"within a larger document. Answer ONLY with the blurb."</span>
+            ),
+            ttl<span class="op">=</span><span class="str">f"{ttl_seconds}s"</span>,
+        ),
+    )
+    <span class="kw">return</span> cache</code></pre>
+    <p>
+      The cache holds the parts that are <em>identical</em> across all 100 chunk requests: the document and the system instruction.
+    </p>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: typed config builder</div>
+      <code>types.CreateCachedContentConfig(...)</code> is a typed builder object. The Gemini SDK uses these instead of plain dicts so editors can autocomplete and catch typos. You've seen the pattern with <code>GenerateContentConfig</code> and <code>EmbedContentConfig</code> — same idea.
+    </div>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: implicit string concatenation</div>
+      Look at the system instruction: two adjacent strings inside the parentheses with no <code>+</code>:
+<pre style="margin-top:0.4rem"><code>system_instruction<span class="op">=</span>(
+    <span class="str">"You write short context blurbs that situate a chunk "</span>
+    <span class="str">"within a larger document. Answer ONLY with the blurb."</span>
+),</code></pre>
+      Python automatically concatenates adjacent string literals. It's how you write a long string across multiple lines without using <code>+</code> or a triple-quoted block. The two strings become one: <code>"You write short context blurbs that situate a chunk within a larger document. Answer ONLY with the blurb."</code>
+    </div>
+  </div>
+
+  <!-- Step B -->
+  <div class="step">
+    <p class="step-title">B — Modify <code>generate_context()</code> to reference the cache</p>
+<pre><code><span class="kw">def</span> <span class="fn">generate_context</span>(cache, chunk_text):
+    response <span class="op">=</span> client.models.generate_content(
+        model<span class="op">=</span>CHAT_MODEL,
+        contents<span class="op">=</span>(
+            <span class="str">f"Here is a chunk we want to situate:\n"</span>
+            <span class="str">f"&lt;chunk&gt;\n{chunk_text}\n&lt;/chunk&gt;\n\n"</span>
+            <span class="str">f"Provide a 1-2 sentence context that situates this chunk "</span>
+            <span class="str">f"within the document for retrieval. Answer ONLY with the context."</span>
+        ),
+        config<span class="op">=</span>types.GenerateContentConfig(
+            cached_content<span class="op">=</span>cache.name,   <span class="cm"># ← the magic line</span>
+        ),
+    )
+    <span class="kw">return</span> response.text.strip()</code></pre>
+    <p>What changed compared to the original:</p>
+    <ul>
+      <li>We <strong>don't send the document</strong> in the prompt anymore — only the chunk-specific bit</li>
+      <li><code>cached_content=cache.name</code> tells Gemini "prepend the cached prefix to this prompt"</li>
+      <li>The system instruction also lives in the cache, so it's not in the prompt either</li>
+    </ul>
+  </div>
+
+  <!-- Step C -->
+  <div class="step">
+    <p class="step-title">C — Wire it into the contextualise loop</p>
+<pre><code><span class="kw">def</span> <span class="fn">contextualise</span>(whole_document, chunks):
+    cache <span class="op">=</span> make_doc_cache(whole_document)
+    <span class="fn">print</span>(<span class="str">f"Cache created: {cache.name} (TTL 10 min)"</span>)
+
+    out <span class="op">=</span> []
+    <span class="kw">for</span> i, chunk <span class="kw">in</span> <span class="fn">enumerate</span>(chunks):
+        ctx <span class="op">=</span> generate_context(cache, chunk)
+        <span class="fn">print</span>(<span class="str">f"  [{i+1}/{</span><span class="fn">len</span><span class="str">(chunks)}] context: {ctx[:60]}..."</span>)
+        out.append(<span class="str">f"{ctx}\n\n{chunk}"</span>)
+
+    <span class="cm"># Polite cleanup — caches expire on TTL, but deleting stops billing sooner</span>
+    client.caches.delete(name<span class="op">=</span>cache.name)
+    <span class="kw">return</span> out</code></pre>
+    <p>That's it. Same logic; the document ships to Gemini <strong>once</strong>, not 100 times.</p>
+  </div>
+
+  <h3>What it looks like end-to-end</h3>
+
+<pre><code>make_doc_cache(doc)
+   ↓
+   Gemini stores: [doc + system_instruction]   →  returns cache.name
+   ↓
+loop:
+   generate_context(cache, chunk_1)   →  uses cache + sends only "&lt;chunk&gt;1&lt;/chunk&gt;"
+   generate_context(cache, chunk_2)   →  uses cache + sends only "&lt;chunk&gt;2&lt;/chunk&gt;"
+   ...
+   generate_context(cache, chunk_N)   →  uses cache + sends only "&lt;chunk&gt;N&lt;/chunk&gt;"</code></pre>
+
+  <p>Each per-chunk call now ships maybe 200–500 tokens of new input instead of 50,000+.</p>
+
+  <h3>Concrete numbers</h3>
+  <p>For a 50,000-token document, 100 chunks averaging 500 tokens each:</p>
+  <table>
+    <thead>
+      <tr><th></th><th>Without cache</th><th>With cache</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Total input tokens</td>
+        <td>~5,050,000</td>
+        <td>~50,000 first-write + ~150,000 cached refs + new</td>
+      </tr>
+      <tr>
+        <td>Cost (Gemini 3.5 Flash, rough)</td>
+        <td>~$0.40</td>
+        <td>~$0.04–$0.08</td>
+      </tr>
+      <tr>
+        <td>Wall-clock time</td>
+        <td>~3–5 min</td>
+        <td>~1.5–2 min</td>
+      </tr>
+      <tr>
+        <td>Retrieval quality</td>
+        <td>Same</td>
+        <td>Same</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>About a <strong>5–10× cost reduction</strong>. Real numbers vary with current Gemini pricing — check the docs — but the order of magnitude is correct.</p>
+
+  <h3>Important gotchas</h3>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Minimum cache size</div>
+    Gemini requires the cached content to be at least ~32k tokens to qualify (this number changes; check current docs). A 5k-token README won't be eligible. <strong>If your doc is small, prompt caching is pointless anyway</strong> — re-sending 5k tokens 100 times is cheap.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">TTL — don't overpay for storage</div>
+    Gemini bills you a small per-minute fee for the cache being alive, even if you don't use it. Match the TTL to your workload:
+    <ul style="margin-top:0.4rem">
+      <li>One-off batch indexing → 10–30 min is plenty</li>
+      <li>Hourly re-index service → don't bother caching; re-create per run</li>
+      <li>Long-running streaming workload → manage cache lifecycle explicitly</li>
+    </ul>
+    A 2-minute indexing run with a 24-hour TTL = paying for 22 hours of unused storage.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Cache key = exact-match prefix</div>
+    Caches are keyed on the exact bytes of the prefix. Change one character in the document → new cache. This is fine for our pattern (cache → process all chunks → delete), but matters if you try to share caches across separate runs.
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Caching also works for query-time RAG</div>
+    The same trick applies to your <code>ask()</code> function. If you have a long, fixed system instruction (rules, examples, persona), cache it once at startup. Each user question becomes a small, cheap call against the cached prefix. Same pattern, different stage of the pipeline.
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> What does Contextual Retrieval prepend to each chunk before embedding?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">The chunk's content hash</li>
+        <li data-i="1">A list of keywords extracted by TF-IDF</li>
+        <li data-i="2">A 1–2 sentence LLM-generated blurb describing the chunk's role in the whole document</li>
+        <li data-i="3">The user's query</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Why store the <em>original</em> chunk text in the DB even though we embed the enriched version?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Chroma rejects duplicate text</li>
+        <li data-i="1">The blurb helps retrieval find the chunk, but downstream you want to feed the LLM (and cite) the actual source — not an LLM-generated summary</li>
+        <li data-i="2">Storage is cheaper that way</li>
+        <li data-i="3">It avoids licensing issues</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Compared to Late Chunking, what's the main advantage of Contextual Retrieval?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">It works with any embedding model — no need for one that exposes per-token vectors</li>
+        <li data-i="1">It's free</li>
+        <li data-i="2">It uses fewer tokens</li>
+        <li data-i="3">It eliminates the need for chunking</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> The phrase <em>"Answer ONLY with the context — no preamble, no explanation"</em> in the prompt exists because…</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">It's required by the Gemini API</li>
+        <li data-i="1">It prevents the model from refusing the request</li>
+        <li data-i="2">It saves tokens by half</li>
+        <li data-i="3">Without it, models tend to add "Here's the context:..." preambles that pollute every chunk's embedding</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> Which corpus would benefit LEAST from Contextual Retrieval?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Long technical specs heavy with "the above", "this method", "they"</li>
+        <li data-i="1">Multi-section runbooks where chunks reference earlier setup</li>
+        <li data-i="2">A flat FAQ file where every Q&amp;A is independent and self-contained</li>
+        <li data-i="3">Legal documents where definitions appear once and are referenced throughout</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>What's next</h2>
+  <ul>
+    <li><strong>Lesson 12</strong> — <strong>Hybrid search</strong>: combine vector search with BM25 keyword search via Reciprocal Rank Fusion. Fixes the exact-ID weakness vectors have (UUIDs, error codes, version numbers).</li>
+    <li><strong>Lesson 13</strong> — <strong>Advanced retrieval patterns</strong>: sub-question decomposition, recursive retrieval, auto-merging, sentence-window, knowledge-graph RAG, router query engines.</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft analogue</div>
+    The context blurb is a <em>correlation header</em> for chunks. The payload (chunk text) doesn't change, but you attach extra metadata that helps downstream systems route it correctly. Same separation of concerns: the indexing pipeline enriches; the retrieval pipeline consumes.
+  </div>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Show me how to use Gemini's prompt caching to make contextualisation cheaper"</li>
+      <li>"How do I evaluate whether contextual retrieval actually helps my corpus?"</li>
+      <li>"Can I run Late Chunking and Contextual Retrieval together?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0010-vector-db.html">← Lesson 10 — Vector DB</a>
+      <a href="0012-hybrid-search.html">Lesson 12 — Hybrid Search →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! A short LLM-generated blurb that situates the chunk in the document, prepended before embedding.", err: "Not quite. The added text is a 1–2 sentence summary of the chunk's role in the whole document, generated by an LLM. Not a hash, keyword list, or query." },
+    1: { ok: "Correct! The blurb is for the embedder; humans and the answering LLM should see the original source text — both for accuracy and citation honesty.", err: "Not quite. We embed the enriched version (so retrieval finds the chunk) but store the original text (so answers and citations come from the real source)." },
+    2: { ok: "Correct! Contextual Retrieval lives in the text layer, so any embedding model works. Late Chunking needs a model that exposes per-token vectors.", err: "Not quite. The big practical win is portability: you don't need a special embedding model. The trade-off is that you pay an LLM call per chunk at indexing." },
+    3: { ok: "Correct! Without that instruction, models love to add 'Here's the context:...' preambles that get baked into every chunk's embedding — degrading retrieval rather than helping.", err: "Not quite. The strict instruction is an output-format constraint. Without it, the model tends to add 'Here's the context:...' preambles that pollute every chunk." },
+    4: { ok: "Correct! Self-contained Q&A pairs already carry their own context — there's nothing for the blurb to add. Save the indexing cost.", err: "Not quite. The technique helps most when chunks depend on neighbours (pronouns, references). A flat FAQ file with independent entries doesn't benefit much." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

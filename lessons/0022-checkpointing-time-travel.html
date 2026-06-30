@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L22 — Checkpointing &amp; Time Travel</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .series-banner {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      color: #4338ca;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .series-banner strong { color: #312e81; }
+
+    .lesson-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .lesson-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.3rem; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0.9rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .ty  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.6rem 0 1.1rem; font-size: 0.88rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.65rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+      border-left: 4px solid;
+      font-size: 0.9rem;
+    }
+    .callout strong { font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .callout-tip      { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn     { background: #fffbeb; border-color: #f59e0b; }
+    .callout-syntax   { background: #fdf4ff; border-color: #a855f7; }
+    .callout-pedagogy { background: #f1f5ff; border-color: #6366f1; }
+
+    .exercise-box {
+      border: 2px solid #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+      background: #fefefe;
+    }
+    .exercise-box h3 { margin-top: 0; }
+    .exercise-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    details {
+      margin: 0.5rem 0;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+    }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    details[open] summary { margin-bottom: 0.4rem; }
+
+    .quiz { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.7rem 0; }
+    .quiz-q { font-weight: 600; margin-bottom: 0.4rem; }
+
+    .ascii-diagram {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 6px;
+      margin: 0.7rem 0;
+    }
+
+    .footer-links { margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid #ddd; font-size: 0.82rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="series-banner">
+    <strong>LangGraph mini-series · part 3 of 4</strong> · You're learning by writing code, not reading it.
+    &nbsp;<a href="0021-llm-node-tools-graph.html">← L21: LLM Node + Tools</a>
+  </div>
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Lesson 22 · Python for AI/ML</p>
+    <h1>Checkpointing &amp; time travel — the graph remembers</h1>
+    <p class="tagline">A checkpointer turns your graph from a one-shot function into a resumable, debuggable, branchable conversation engine.</p>
+  </header>
+
+  <div class="callout callout-pedagogy">
+    <strong>Pedagogy reminder.</strong> Same rules as L20 and L21 — TODO skeleton, you write, paste back, then canonical.
+  </div>
+
+  <h2>The problem this solves</h2>
+  <p>Your L21 agent works, but it has amnesia. Run this:</p>
+<pre><code>app.invoke({<span class="str">"messages"</span>: [(<span class="str">"user"</span>, <span class="str">"Is org acme-prod healthy?"</span>)]})
+app.invoke({<span class="str">"messages"</span>: [(<span class="str">"user"</span>, <span class="str">"What about prod-eu?"</span>)]})</code></pre>
+  <p>The second call has <strong>no idea</strong> the first one happened. You'd have to manually accumulate messages and pass them in every time. Worse:</p>
+  <ul>
+    <li>If the agent crashes mid-conversation, the state is gone</li>
+    <li>You can't say "rerun from before that bad tool call" — there's nothing to rerun from</li>
+    <li>You can't fork into "what if I'd given a different system prompt?" without starting over</li>
+  </ul>
+  <p>A <strong>checkpointer</strong> fixes all three. It saves the full graph state after every super-step. Same graph, new superpower.</p>
+
+  <h2>The mental model</h2>
+  <p>Think of it as Git for graph state.</p>
+
+  <table>
+    <thead><tr><th>Git concept</th><th>LangGraph equivalent</th></tr></thead>
+    <tbody>
+      <tr><td>Repository</td><td>Checkpointer (where states are stored)</td></tr>
+      <tr><td>Branch name</td><td><code>thread_id</code> — names a conversation</td></tr>
+      <tr><td>Commit SHA</td><td><code>checkpoint_id</code> — names a specific point in time</td></tr>
+      <tr><td><code>git log</code></td><td><code>app.get_state_history(config)</code></td></tr>
+      <tr><td><code>git checkout &lt;sha&gt;</code></td><td>Invoke with that <code>checkpoint_id</code> in config</td></tr>
+    </tbody>
+  </table>
+
+  <p>Every node execution becomes a commit. The thread is the linear (or branching) history.</p>
+
+  <h2>Two checkpointers you'll meet</h2>
+  <table>
+    <thead><tr><th>Checkpointer</th><th>Where state lives</th><th>When to use</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>InMemorySaver</code></td>
+        <td>Python dict in process memory</td>
+        <td>Dev, tests, notebooks. State dies when the process dies.</td>
+      </tr>
+      <tr>
+        <td><code>SqliteSaver</code></td>
+        <td>SQLite file on disk</td>
+        <td>Real persistence with zero ops. Survives restarts. Perfect for single-user agents.</td>
+      </tr>
+      <tr>
+        <td><code>PostgresSaver</code> <em>(not in this lesson)</em></td>
+        <td>Postgres database</td>
+        <td>Production, multi-user. Same API as the others.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <strong>Heads-up — the import paths split into separate packages.</strong>
+    <ul style="margin-top:0.3rem">
+      <li><code>from langgraph.checkpoint.memory import InMemorySaver</code> — ships with <code>langgraph</code></li>
+      <li><code>from langgraph.checkpoint.sqlite import SqliteSaver</code> — <em>separate package</em>: <code>pip install langgraph-checkpoint-sqlite</code></li>
+    </ul>
+    <p>(Older docs you'll find online use <code>MemorySaver</code> — that name still works as an alias, but <code>InMemorySaver</code> is the current preferred name.)</p>
+  </div>
+
+  <h2>Plugging it in</h2>
+  <p>Two changes to L21's code. <strong>The graph itself doesn't change at all</strong> — only how you compile and invoke it.</p>
+
+  <h3>Change 1 — pass the checkpointer at compile time</h3>
+<pre><code><span class="kw">from</span> langgraph.checkpoint.memory <span class="kw">import</span> InMemorySaver
+
+memory <span class="op">=</span> InMemorySaver()
+app <span class="op">=</span> graph.<span class="fn">compile</span>(checkpointer<span class="op">=</span>memory)</code></pre>
+
+  <h3>Change 2 — pass a <code>thread_id</code> on every invoke</h3>
+<pre><code>config <span class="op">=</span> {<span class="str">"configurable"</span>: {<span class="str">"thread_id"</span>: <span class="str">"conversation-1"</span>}}
+
+app.<span class="fn">invoke</span>({<span class="str">"messages"</span>: [(<span class="str">"user"</span>, <span class="str">"hello"</span>)]}, config<span class="op">=</span>config)
+app.<span class="fn">invoke</span>({<span class="str">"messages"</span>: [(<span class="str">"user"</span>, <span class="str">"do you remember me?"</span>)]}, config<span class="op">=</span>config)
+<span class="cm"># ↑ Same thread_id → second call sees the first call's messages.</span></code></pre>
+
+  <div class="callout callout-syntax">
+    <strong>New syntax — the nested-dict <code>config</code></strong>
+    <p>That <code>{"configurable": {"thread_id": ...}}</code> shape looks weird, but it's a deliberate convention. LangGraph (actually LangChain underneath) accepts a <code>RunnableConfig</code> dict with several reserved keys:</p>
+    <ul>
+      <li><code>"configurable"</code> — your runtime settings (thread_id, checkpoint_id, user-id, model overrides, etc.)</li>
+      <li><code>"tags"</code> — labels for observability tools (you'll see these in L23)</li>
+      <li><code>"callbacks"</code> — hooks for tracing</li>
+    </ul>
+    <p>Everything app-specific goes <em>inside</em> <code>configurable</code> so it doesn't collide with framework keys.</p>
+  </div>
+
+  <h2>What gets saved — inspect it</h2>
+  <p>After invoking, you can ask the app what's in memory:</p>
+<pre><code>state <span class="op">=</span> app.<span class="fn">get_state</span>(config)
+<span class="fn">print</span>(state.values)        <span class="cm"># the full state dict ({"messages": [...]})</span>
+<span class="fn">print</span>(state.next)          <span class="cm"># tuple of nodes that WOULD run next (empty if done)</span>
+<span class="fn">print</span>(state.config)        <span class="cm"># includes the current checkpoint_id</span></code></pre>
+
+  <p>And every step in the conversation is a separate checkpoint:</p>
+<pre><code><span class="kw">for</span> snapshot <span class="kw">in</span> app.<span class="fn">get_state_history</span>(config):
+    <span class="fn">print</span>(snapshot.config[<span class="str">"configurable"</span>][<span class="str">"checkpoint_id"</span>], <span class="str">"|"</span>, <span class="fn">len</span>(snapshot.values[<span class="str">"messages"</span>]), <span class="str">"messages"</span>)</code></pre>
+
+  <p>Newest first. Each one has a unique <code>checkpoint_id</code> you can use to time-travel.</p>
+
+  <h2>The two killer moves</h2>
+
+  <h3>Move 1 — Resume after restart</h3>
+  <p>With <code>SqliteSaver</code>, state lives on disk. You can <em>quit Python entirely</em>, start a new process, point it at the same SQLite file with the same <code>thread_id</code>, and continue the conversation. This is the move that takes you from "demo" to "real agent."</p>
+
+  <h3>Move 2 — Time travel + branching</h3>
+  <p>Pick any past <code>checkpoint_id</code> and pass it in config. The graph rewinds to that state. If you then call <code>app.invoke()</code> with a new input, you've <em>forked</em> — a new branch grows from that point.</p>
+<pre><code>old_config <span class="op">=</span> {<span class="str">"configurable"</span>: {
+    <span class="str">"thread_id"</span>: <span class="str">"conversation-1"</span>,
+    <span class="str">"checkpoint_id"</span>: <span class="str">"<some-past-id>"</span>,
+}}
+<span class="cm"># Run from there with different input — creates a new branch</span>
+app.<span class="fn">invoke</span>({<span class="str">"messages"</span>: [(<span class="str">"user"</span>, <span class="str">"alternate question"</span>)]}, config<span class="op">=</span>old_config)</code></pre>
+
+  <p><strong>Why this matters for debugging:</strong> your agent did something weird at message 7. Instead of replaying the whole conversation, rewind to message 6, change the system prompt or the tool's response, and watch what the agent does differently. Like a debugger that rewinds.</p>
+
+  <h2>Resuming a paused graph — invoking with <code>None</code></h2>
+  <p>One subtle but important move: if a graph paused mid-way (we'll do this on purpose in L23 with <em>interrupts</em>), you resume it by invoking with <code>None</code> as the input:</p>
+<pre><code>app.<span class="fn">invoke</span>(<span class="kw">None</span>, config<span class="op">=</span>config)  <span class="cm"># continue from the last checkpoint, no new input</span></code></pre>
+  <p>This is different from <code>app.invoke({"messages": [...]}, config=config)</code>, which <em>adds new input</em> to the conversation. Knowing the difference will save you an hour someday.</p>
+
+  <h2 id="step-0">Step 0 — install</h2>
+<pre><code><span class="cm"># From your existing venv:</span>
+cd ~/ai/claude/projects/python/exercises/langgraph
+source .venv/bin/activate
+
+<span class="cm"># InMemorySaver ships with langgraph (already installed)</span>
+<span class="cm"># SqliteSaver needs a separate package:</span>
+pip install langgraph-checkpoint-sqlite</code></pre>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 1 · guided · no LLM yet</span>
+    <h3>Bolt InMemorySaver onto a toy graph</h3>
+
+    <p>We start without the LLM so feedback is fast and cheap. Create <code>l22_ex1_memory.py</code>. We'll use a simple counter graph — one node that increments — and observe how state persists across multiple invocations on the same thread.</p>
+
+    <h4>Skeleton — fill in the TODOs</h4>
+<pre><code><span class="kw">from</span> typing <span class="kw">import</span> TypedDict
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, START, END
+<span class="kw">from</span> langgraph.checkpoint.memory <span class="kw">import</span> InMemorySaver
+
+<span class="cm"># --- STATE ---</span>
+<span class="kw">class</span> <span class="ty">CounterState</span>(TypedDict):
+    value: <span class="ty">int</span>
+
+<span class="cm"># --- NODE ---</span>
+<span class="kw">def</span> <span class="fn">increment</span>(state: CounterState) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="kw">return</span> {<span class="str">"value"</span>: state[<span class="str">"value"</span>] <span class="op">+</span> <span class="num">1</span>}
+
+<span class="cm"># --- GRAPH ---</span>
+graph <span class="op">=</span> StateGraph(CounterState)
+graph.add_node(<span class="str">"increment"</span>, increment)
+graph.add_edge(START, <span class="str">"increment"</span>)
+graph.add_edge(<span class="str">"increment"</span>, END)
+
+<span class="cm"># TODO 1: create an InMemorySaver instance</span>
+memory <span class="op">=</span> ...
+
+<span class="cm"># TODO 2: compile the graph WITH the checkpointer</span>
+app <span class="op">=</span> ...
+
+<span class="cm"># TODO 3: build a config dict with thread_id = "thread-A"</span>
+config_a <span class="op">=</span> ...
+
+<span class="cm"># --- RUN: three invocations on the same thread ---</span>
+<span class="fn">print</span>(<span class="str">"--- thread A, run 1 ---"</span>)
+<span class="cm"># TODO 4: invoke with {"value": 0} and config_a, print the result</span>
+
+<span class="fn">print</span>(<span class="str">"--- thread A, run 2 ---"</span>)
+<span class="cm"># TODO 5: invoke AGAIN with {"value": 0} and config_a — what value does it print?</span>
+<span class="cm"># Predict before you run!</span>
+
+<span class="fn">print</span>(<span class="str">"--- thread A, run 3 ---"</span>)
+<span class="cm"># TODO 6: same again</span>
+
+<span class="cm"># --- Now a DIFFERENT thread ---</span>
+<span class="fn">print</span>(<span class="str">"--- thread B, run 1 ---"</span>)
+<span class="cm"># TODO 7: invoke with {"value": 0} and a NEW config with thread_id = "thread-B"</span>
+<span class="cm"># Should this be fresh state, or carry over from thread A?</span>
+
+<span class="cm"># --- Inspect the history of thread A ---</span>
+<span class="fn">print</span>(<span class="str">"\n--- history of thread A ---"</span>)
+<span class="kw">for</span> snapshot <span class="kw">in</span> app.<span class="fn">get_state_history</span>(config_a):
+    <span class="fn">print</span>(snapshot.values, <span class="str">"|"</span>, snapshot.config[<span class="str">"configurable"</span>].<span class="fn">get</span>(<span class="str">"checkpoint_id"</span>, <span class="str">""</span>)[:<span class="num">8</span>])</code></pre>
+
+    <details>
+      <summary>Predict before you run — what value does run 2 of thread A print?</summary>
+      <p>If you predicted <code>{"value": 1}</code> (each invoke is fresh because you passed <code>{"value": 0}</code>): wrong.</p>
+      <p>If you predicted <code>{"value": 2}</code> (state persists across invokes on the same thread, the new input <em>merges</em> into existing state): right.</p>
+      <p>Here's the subtle bit: when you pass <code>{"value": 0}</code> to a thread that already has <code>{"value": 1}</code>, the new input is treated as a <em>state update</em> from <code>START</code>. With no reducer on <code>value</code>, it's last-write-wins, so <code>value</code> gets reset to <code>0</code> momentarily — then <code>increment</code> runs and produces <code>{"value": 1}</code>. So run 2 prints <code>{"value": 1}</code>.</p>
+      <p>Confused? That's the lesson: <strong>without a reducer, "fresh input + existing state" is murky</strong>. With <code>MessagesState</code> (and its <code>add_messages</code> reducer), new messages <em>append</em> to existing ones — which is exactly what you want for chat. That's why Exercise 2 uses messages, not counters.</p>
+    </details>
+
+    <details>
+      <summary>Hint — the config dict</summary>
+<pre><code>config_a <span class="op">=</span> {<span class="str">"configurable"</span>: {<span class="str">"thread_id"</span>: <span class="str">"thread-A"</span>}}
+config_b <span class="op">=</span> {<span class="str">"configurable"</span>: {<span class="str">"thread_id"</span>: <span class="str">"thread-B"</span>}}</code></pre>
+    </details>
+
+    <h4>Verification</h4>
+    <ul>
+      <li>Thread A run 1 → <code>{"value": 1}</code></li>
+      <li>Thread A runs 2 and 3 → also <code>{"value": 1}</code> each (see prediction above)</li>
+      <li>Thread B run 1 → <code>{"value": 1}</code> (fresh state — different thread)</li>
+      <li>History of thread A → 3+ snapshots, each with its own <code>checkpoint_id</code></li>
+    </ul>
+
+    <div class="callout callout-tip" style="margin-top:0.5rem">
+      <strong>Checkpoint.</strong> Paste your code + output when it runs. I'll review before showing canonical.
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 2 · guided · the real win</span>
+    <h3>Multi-turn memory for the L21 agent — with SqliteSaver</h3>
+
+    <p>Take your <code>l21_ex1_mulesoft_agent.py</code> from L21, copy it to <code>l22_ex2_persistent_agent.py</code>, and add persistent checkpointing. Skeleton below.</p>
+
+    <h4>Goals</h4>
+    <ol>
+      <li>Use <code>SqliteSaver</code> instead of <code>InMemorySaver</code>. Save state to <code>./agent_state.db</code>.</li>
+      <li>Have a 2-turn conversation on the <em>same</em> <code>thread_id</code>:
+        <ul>
+          <li>Turn 1: <em>"Is org acme-prod healthy?"</em></li>
+          <li>Turn 2: <em>"What about prod-eu?"</em> — the agent should infer "what about" refers to org status from turn 1's context</li>
+        </ul>
+      </li>
+      <li>Print the message count after each turn. Expect ~4 after turn 1, ~7–8 after turn 2 (memory worked = total grew).</li>
+    </ol>
+
+    <h4>Skeleton — fill in the TODOs</h4>
+<pre><code><span class="kw">import</span> os
+<span class="kw">from</span> dotenv <span class="kw">import</span> load_dotenv
+<span class="kw">from</span> langchain_google_genai <span class="kw">import</span> ChatGoogleGenerativeAI
+<span class="kw">from</span> langchain_core.tools <span class="kw">import</span> tool
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, START, END, MessagesState
+<span class="kw">from</span> langgraph.prebuilt <span class="kw">import</span> ToolNode, tools_condition
+<span class="kw">from</span> langgraph.checkpoint.sqlite <span class="kw">import</span> SqliteSaver
+
+load_dotenv()
+
+<span class="cm"># --- TOOLS (same as L21) ---</span>
+<span class="op">@tool</span>
+<span class="kw">def</span> <span class="fn">search_docs</span>(query: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">str</span>:
+    <span class="str">"""Search MuleSoft documentation for a topic.
+
+    Args:
+        query: search terms, e.g. "Connected App rotation".
+    """</span>
+    <span class="kw">return</span> <span class="str">f"[mock] Top result for '{query}': see docs.mulesoft.com/access-management/..."</span>
+
+<span class="op">@tool</span>
+<span class="kw">def</span> <span class="fn">get_anypoint_org_status</span>(org_id: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">str</span>:
+    <span class="str">"""Return health status for a MuleSoft Anypoint organization.
+
+    Args:
+        org_id: the organization identifier, e.g. "acme-prod".
+    """</span>
+    <span class="kw">return</span> <span class="str">f"[mock] Org {org_id}: 12 APIs healthy, 0 alerts."</span>
+
+tools <span class="op">=</span> [search_docs, get_anypoint_org_status]
+
+<span class="cm"># --- LLM ---</span>
+llm <span class="op">=</span> ChatGoogleGenerativeAI(model<span class="op">=</span><span class="str">"gemini-2.5-flash"</span>)
+llm_with_tools <span class="op">=</span> llm.<span class="fn">bind_tools</span>(tools)
+
+<span class="cm"># --- AGENT NODE ---</span>
+<span class="kw">def</span> <span class="fn">agent_node</span>(state: MessagesState) <span class="op">-></span> <span class="ty">dict</span>:
+    response <span class="op">=</span> llm_with_tools.<span class="fn">invoke</span>(state[<span class="str">"messages"</span>])
+    <span class="kw">return</span> {<span class="str">"messages"</span>: [response]}
+
+<span class="cm"># --- GRAPH (identical to L21) ---</span>
+graph <span class="op">=</span> StateGraph(MessagesState)
+graph.<span class="fn">add_node</span>(<span class="str">"agent"</span>, agent_node)
+graph.<span class="fn">add_node</span>(<span class="str">"tools"</span>, <span class="fn">ToolNode</span>(tools))
+graph.<span class="fn">add_edge</span>(START, <span class="str">"agent"</span>)
+graph.<span class="fn">add_conditional_edges</span>(<span class="str">"agent"</span>, tools_condition)
+graph.<span class="fn">add_edge</span>(<span class="str">"tools"</span>, <span class="str">"agent"</span>)
+
+<span class="cm"># --- KEY DIFFERENCE FROM L21: SqliteSaver as a context manager ---</span>
+<span class="cm"># TODO 1: open a SqliteSaver context. Save state to file "agent_state.db".</span>
+<span class="cm"># Hint: SqliteSaver.from_conn_string("agent_state.db")</span>
+<span class="cm"># Everything below must be INSIDE the `with` block.</span>
+<span class="kw">with</span> ... <span class="kw">as</span> memory:
+    <span class="cm"># TODO 2: compile the graph WITH the checkpointer</span>
+    app <span class="op">=</span> ...
+
+    <span class="cm"># TODO 3: build a config with thread_id = "mulesoft-chat-1"</span>
+    config <span class="op">=</span> ...
+
+    <span class="cm"># --- Turn 1 ---</span>
+    <span class="fn">print</span>(<span class="str">"=== Turn 1 ==="</span>)
+    <span class="cm"># TODO 4: invoke with question "Is org acme-prod healthy?" on this thread</span>
+    result1 <span class="op">=</span> ...
+    <span class="fn">print</span>(<span class="str">f"Message count after turn 1: {len(result1['messages'])}"</span>)
+    <span class="fn">print</span>(<span class="str">f"Final reply: {result1['messages'][-1].content}"</span>)
+
+    <span class="cm"># --- Turn 2 — SAME thread_id ---</span>
+    <span class="fn">print</span>(<span class="str">"\n=== Turn 2 ==="</span>)
+    <span class="cm"># TODO 5: invoke with "What about prod-eu?" on the SAME thread</span>
+    <span class="cm"># If memory works, the agent should infer "what about" means org status</span>
+    result2 <span class="op">=</span> ...
+    <span class="fn">print</span>(<span class="str">f"Message count after turn 2: {len(result2['messages'])}"</span>)
+    <span class="fn">print</span>(<span class="str">f"Final reply: {result2['messages'][-1].content}"</span>)</code></pre>
+
+    <details>
+      <summary>Hint 1 — opening the SqliteSaver context</summary>
+<pre><code><span class="kw">with</span> SqliteSaver.<span class="fn">from_conn_string</span>(<span class="str">"agent_state.db"</span>) <span class="kw">as</span> memory:
+    <span class="cm"># everything goes here</span></code></pre>
+      <p>The <code>with</code> syntax is Python's <strong>context manager</strong> — it auto-opens the DB connection at the start of the block and closes it cleanly at the end (even on a crash). Indentation matters: everything indented under <code>with</code> runs inside the context.</p>
+    </details>
+
+    <details>
+      <summary>Hint 2 — invoking with the same thread_id</summary>
+      <p>Reuse the same <code>config</code> dict on both calls. That's what makes them the same thread.</p>
+<pre><code>result1 <span class="op">=</span> app.<span class="fn">invoke</span>(
+    {<span class="str">"messages"</span>: [(<span class="str">"user"</span>, <span class="str">"Is org acme-prod healthy?"</span>)]},
+    config<span class="op">=</span>config,
+)</code></pre>
+    </details>
+
+    <details>
+      <summary>Hint 3 — verifying memory worked</summary>
+      <p>Watch the <strong>message count</strong>. After turn 1 expect ~4 messages (human, AI-with-tool-call, tool-result, AI-final). After turn 2 you should see ~7–8 total — meaning turn 2 <em>added to</em> the existing list, not replaced it.</p>
+      <p>If turn 2 shows <code>Message count: 4</code> (instead of 7–8), memory isn't working — the checkpointer or <code>thread_id</code> is misconfigured.</p>
+    </details>
+
+    <h4>Cross-restart persistence test — the real win</h4>
+    <p>After the script works:</p>
+    <ol>
+      <li>Comment out turn 1 entirely</li>
+      <li>Quit Python, restart, run the script again (turn 2 only)</li>
+      <li>If turn 2 still answers contextually — knowing "what about" refers to org status — <strong>the SQLite file remembered across processes</strong>. That's production-grade.</li>
+    </ol>
+
+    <h4>Security question to chew on</h4>
+    <p>If <code>thread_id</code> is just a string the caller chooses, what stops a malicious user from passing <em>someone else's</em> <code>thread_id</code> and reading their conversation? (Hint: think about what <code>thread_id</code> is — and isn't.)</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <p class="quiz-q">1. Why is <code>thread_id</code> not the same as <code>user_id</code>?</p>
+    <details><summary>Answer</summary>
+      <p>A <code>thread_id</code> identifies one <em>conversation</em>. One user can have many threads (parallel conversations, different chat windows). A user_id identifies a person. In production you typically derive <code>thread_id</code> from <code>user_id</code> + some scope (project, session, chat tab), and you validate that the requester owns the thread before serving it. <code>thread_id</code> alone is not auth.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">2. <code>app.invoke(None, config=config)</code> vs <code>app.invoke({"messages": [...]}, config=config)</code> — what's the difference?</p>
+    <details><summary>Answer</summary>
+      <p><code>None</code> means "resume from the last checkpoint, no new input." Used after a graph paused (e.g., waiting for human approval).</p>
+      <p>Passing an input dict means "apply this as a state update from <code>START</code>, then run." For chat, this <em>adds</em> the new user message and the agent processes it.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">3. Why does the graph topology stay identical when you add a checkpointer?</p>
+    <details><summary>Answer</summary>
+      <p>Checkpointing is orthogonal to graph structure — it's a side effect attached at compile time. Every super-step, LangGraph serialises the state and saves it. The nodes and edges don't know or care. This is why you can develop a graph without a checkpointer, then add one in production without touching graph code.</p>
+    </details>
+  </div>
+
+  <h2>What you now know</h2>
+  <ul>
+    <li>A checkpointer + <code>thread_id</code> = persistent, resumable conversation</li>
+    <li><code>InMemorySaver</code> for dev, <code>SqliteSaver</code> for real persistence</li>
+    <li>State, config, and history are inspectable: <code>get_state</code>, <code>get_state_history</code></li>
+    <li>Time travel: pass a past <code>checkpoint_id</code> to rewind; invoke from there to fork</li>
+    <li>Graph topology doesn't change when you add a checkpointer — it's orthogonal</li>
+  </ul>
+
+  <h2>What's next — L23 preview</h2>
+  <p>You can now save and resume. But you still can't <em>see</em> the agent thinking in real time. <strong>L23 adds streaming and observability</strong>: <code>app.stream()</code> for token-by-token output, <code>stream_mode</code> for choosing what gets emitted (values, updates, messages, debug), and tracing via LangSmith or Phoenix so you can inspect every node call in a UI. That's the last piece before your agent is production-shaped.</p>
+
+  <div class="footer-links">
+    <a href="0021-llm-node-tools-graph.html">← L21 — LLM Node + Tools</a>
+    &nbsp; · &nbsp;
+    <a href="0020-langgraph-state-nodes-edges.html">L20 — State, Nodes, Edges</a>
+    &nbsp; · &nbsp;
+    <a href="0019-frameworks-side-by-side.html">L19 — Frameworks survey</a>
+    &nbsp; · &nbsp;
+    <a href="../MISSION.md">Mission</a>
+  </div>
+
+</div>
+</body>
+</html>

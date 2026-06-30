@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 7 — Embeddings: The Foundation of RAG</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 800px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-update { background: #fdf2f8; border-color: #ec4899; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .tryit { background: #fff; border: 2px dashed #94a3b8; border-radius: 10px; padding: 1.2rem 1.4rem; margin: 1.5rem 0; }
+    .tryit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-bottom: 0.6rem; }
+
+    /* 2D embedding visualisation */
+    .vis-box {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1rem;
+      margin: 1rem 0;
+      text-align: center;
+    }
+    .vis-box svg { max-width: 100%; height: auto; }
+
+    .vec-display {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.6rem 0.9rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      margin: 0.4rem 0 1rem;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 7 of ?</p>
+    <h1>Embeddings: The Foundation of RAG</h1>
+    <p class="tagline">Turn text into numbers, find what's "similar in meaning", and feel why RAG works.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <span class="pill pill-now">L7 — Embeddings</span>
+      <span class="pill pill-next">L8 — Chunking</span>
+    </div>
+  </header>
+
+  <h2>The big idea in one paragraph</h2>
+  <p>An <strong>embedding</strong> turns a piece of text into a list of numbers — a <em>vector</em> — that represents its <em>meaning</em>. Texts about similar topics produce similar vectors, even when they share no words. Computers can compare numbers fast, so once your documents are vectors you can ask "which document is closest in meaning to this question?" and get an answer in milliseconds. That's the <em>retrieval</em> in Retrieval-Augmented Generation.</p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Connection to your mission</div>
+    By the end of this lesson you'll have done the core operation of RAG by hand: embed a corpus, embed a question, find the closest match. Lessons 8–9 just dress it up with chunking and a vector DB.
+  </div>
+
+  <!-- ═══ 1. Intuition ═══ -->
+  <h2>1 — Intuition: meaning as coordinates</h2>
+  <p>Imagine plotting words on a 2D map where similar words end up close to each other:</p>
+
+  <div class="vis-box">
+    <svg viewBox="0 0 500 280" xmlns="http://www.w3.org/2000/svg">
+      <!-- axes -->
+      <line x1="40" y1="240" x2="480" y2="240" stroke="#cbd5e1" stroke-width="1"/>
+      <line x1="40" y1="20"  x2="40"  y2="240" stroke="#cbd5e1" stroke-width="1"/>
+      <text x="250" y="265" text-anchor="middle" fill="#64748b" font-size="11">dimension 1</text>
+      <text x="20" y="130" text-anchor="middle" fill="#64748b" font-size="11" transform="rotate(-90 20 130)">dimension 2</text>
+
+      <!-- API security cluster -->
+      <circle cx="120" cy="80"  r="6" fill="#3b82f6"/>
+      <text x="130" y="84" font-size="13" fill="#1e3a8a">"OAuth 2.0"</text>
+      <circle cx="160" cy="110" r="6" fill="#3b82f6"/>
+      <text x="170" y="114" font-size="13" fill="#1e3a8a">"API security"</text>
+      <circle cx="100" cy="130" r="6" fill="#3b82f6"/>
+      <text x="40" y="155" font-size="13" fill="#1e3a8a">"JWT tokens"</text>
+
+      <!-- Integration cluster -->
+      <circle cx="360" cy="60"  r="6" fill="#16a34a"/>
+      <text x="280" y="55" font-size="13" fill="#14532d">"DataWeave transform"</text>
+      <circle cx="400" cy="100" r="6" fill="#16a34a"/>
+      <text x="320" y="120" font-size="13" fill="#14532d">"MuleSoft connector"</text>
+
+      <!-- Cooking outlier -->
+      <circle cx="240" cy="210" r="6" fill="#f59e0b"/>
+      <text x="180" y="225" font-size="13" fill="#7c2d12">"chocolate cake recipe"</text>
+    </svg>
+    <p style="font-size: 0.82rem; color:#64748b; margin-top:0.4rem">Made-up visualisation — real embeddings have hundreds of dimensions, but the principle is identical.</p>
+  </div>
+
+  <p>Real embeddings don't use 2 dimensions — they use <strong>768 to 3072</strong>. Each dimension captures some abstract "feature" the model has learned (formality, topic, tense, sentiment, syntax). You never inspect them individually; you just compare whole vectors with each other.</p>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft analogy</div>
+    Think of an embedding as a richer hash. A normal hash (MD5, SHA) maps text → a unique fingerprint where any change scrambles the output. An embedding maps text → a fingerprint where <em>similar meaning</em> produces <em>similar fingerprints</em>. That's what makes it useful for search.
+  </div>
+
+  <!-- ═══ 2. The call ═══ -->
+  <h2>2 — Calling Gemini's embedding API</h2>
+  <p>Same SDK as before. Different method: <code>embed_content</code>.</p>
+
+<pre><code><span class="kw">from</span> <span class="var">dotenv</span> <span class="kw">import</span> <span class="var">load_dotenv</span>
+<span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+
+<span class="fn">load_dotenv</span>()
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()
+
+<span class="var">result</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">embed_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-embedding-001"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="str">"What is OAuth 2.0?"</span>
+<span class="op">)</span>
+
+<span class="var">vector</span> <span class="op">=</span> <span class="var">result</span><span class="op">.</span><span class="attr">embeddings</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="attr">values</span>
+<span class="fn">print</span>(<span class="fn">len</span>(<span class="var">vector</span>))      <span class="cm"># 3072 by default</span>
+<span class="fn">print</span>(<span class="var">vector</span><span class="op">[</span><span class="op">:</span><span class="num">5</span><span class="op">]</span>)      <span class="cm"># first 5 dimensions</span></code></pre>
+
+  <p>Output (yours will differ slightly):</p>
+  <div class="vec-display">3072
+[0.0123, -0.0871, 0.0245, -0.0339, 0.0712]</div>
+
+  <p>That's it — text in, list of floats out. <a href="https://ai.google.dev/gemini-api/docs/embeddings" target="_blank">Source: official embeddings docs</a>.</p>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Tip — control vector size</div>
+    Default is 3072 dimensions. Pass <code>config=types.EmbedContentConfig(output_dimensionality=768)</code> for smaller, faster vectors. 768 is the sweet spot for most RAG systems — quality is nearly identical to 3072 but storage is 4× smaller.
+  </div>
+
+  <!-- ═══ Sidebar — model landscape ═══ -->
+  <h2>Aside — <code>gemini-embedding-001</code> vs <code>gemini-embedding-2</code></h2>
+  <p>Google ships two embedding models in 2026. They produce <strong>incompatible vector spaces</strong> — a vector from one is meaningless when compared to a vector from the other. Picking the right one up front saves a full re-indexing job later.</p>
+
+  <h3>Side-by-side</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:0.9rem; margin:0.6rem 0 1rem">
+    <thead>
+      <tr style="background:#1a1a1a; color:#fff">
+        <th style="padding:0.5rem 0.7rem; text-align:left">Feature</th>
+        <th style="padding:0.5rem 0.7rem; text-align:left"><code>gemini-embedding-001</code></th>
+        <th style="padding:0.5rem 0.7rem; text-align:left"><code>gemini-embedding-2</code></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Modalities</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Text only</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Text, image, video, audio, PDF</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Input token limit</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">2,048</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">8,192 (4× larger chunks)</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Task specification</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb"><code>task_type=</code> parameter</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Embed task as prompt prefix</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">List of strings →</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">One vector per string</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">⚠ One <em>aggregated</em> vector by default</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Truncated-dim normalization</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Manual</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Automatic</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem">Position</td><td style="padding:0.5rem 0.7rem">Stable text workhorse</td><td style="padding:0.5rem 0.7rem">Latest / frontier (multimodal)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>When to use which — for your mission</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:0.9rem; margin:0.6rem 0 1rem">
+    <thead>
+      <tr style="background:#1a1a1a; color:#fff">
+        <th style="padding:0.5rem 0.7rem; text-align:left">You want to…</th>
+        <th style="padding:0.5rem 0.7rem; text-align:left">Pick</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Build your <strong>first RAG</strong> to learn the pieces</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb"><code>001</code> — simpler API, no batching gotcha</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">RAG over text-only Confluence / wiki content</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb"><code>001</code></td></tr>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Search MuleSoft API docs by typing a question</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb"><code>001</code> (text only)</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">RAG that ingests <strong>PDFs and embedded images</strong></td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb"><code>-2</code> — single model, single vector space</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Build an IDP-style "ask questions about this scan" feature</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb"><code>-2</code></td></tr>
+      <tr><td style="padding:0.5rem 0.7rem">Refactor an existing <code>001</code> pipeline you already have</td><td style="padding:0.5rem 0.7rem">Stay on <code>001</code> (re-embedding has real cost)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-update">
+    <div class="callout-label">⚠ Trap to avoid — incompatible vector spaces</div>
+    A vector from <code>001</code> and a vector from <code>-2</code> live in <strong>different mathematical spaces</strong>. Comparing them is meaningless — you'll get nonsense scores. If you ever migrate, plan to <strong>re-embed your entire corpus</strong>. So if you suspect you'll want PDFs/images later, consider starting on <code>-2</code> now to avoid a re-indexing job. <a href="https://ai.google.dev/gemini-api/docs/embeddings" target="_blank">Source: official docs.</a>
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Why this lesson uses <code>001</code></div>
+    <ol style="margin-top:0.4rem">
+      <li>The clean "one string in → one vector out" behaviour makes the core concepts easier to feel.</li>
+      <li>Your immediate target is text-based MuleSoft Q&amp;A.</li>
+      <li>You'll understand <code>task_type</code> better by using it explicitly first; the prompt-prefix style of <code>-2</code> will then make sense.</li>
+    </ol>
+    <p style="margin-top:0.4rem">In a later lesson we'll port the same RAG to <code>-2</code> so you feel both APIs back to back.</p>
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft analogy</div>
+    Choosing between <code>001</code> and <code>-2</code> is like choosing between an HTTP connector and a generic API connector with image/audio support. Same shape, but the broader connector can carry richer payloads — and you can't mix flows that use different message-type contracts.
+  </div>
+
+  <!-- ═══ Aside 2 — the batching gotcha ═══ -->
+  <h2>Aside 2 — what is "the batching gotcha"?</h2>
+  <p>I've used the phrase "batching gotcha" a few times. Let me unpack it properly because it's the single most common <code>gemini-embedding-2</code> bug.</p>
+
+  <h3>What "batching" means</h3>
+  <p><strong>Batching</strong> = sending several pieces of work to an API in a single call instead of one call per item. Cheaper and faster — you avoid the overhead of N HTTP round-trips.</p>
+
+  <p>You'd <em>expect</em> batching to work like this:</p>
+
+<pre><code><span class="var">texts</span> <span class="op">=</span> <span class="op">[</span><span class="str">"doc 1"</span><span class="op">,</span> <span class="str">"doc 2"</span><span class="op">,</span> <span class="str">"doc 3"</span><span class="op">]</span>
+<span class="var">vectors</span> <span class="op">=</span> <span class="fn">embed</span>(<span class="var">texts</span>)
+<span class="cm"># Expected: 3 vectors, one per text</span></code></pre>
+
+  <p>That's exactly how <code>gemini-embedding-001</code> works.</p>
+
+  <h3>The gotcha — <code>gemini-embedding-2</code> does it differently</h3>
+  <p>If you pass a list of strings to <code>gemini-embedding-2</code>, you get back <strong>one vector</strong> that represents the <em>aggregated meaning</em> of all the inputs — not one vector per input.</p>
+
+<pre><code><span class="cm"># gemini-embedding-001 — what you'd expect</span>
+<span class="var">result</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">embed_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-embedding-001"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="op">[</span><span class="str">"OAuth"</span><span class="op">,</span> <span class="str">"DataWeave"</span><span class="op">,</span> <span class="str">"CloudHub"</span><span class="op">]</span>
+<span class="op">)</span>
+<span class="cm"># → 3 vectors</span>
+
+<span class="cm"># gemini-embedding-2 — the gotcha</span>
+<span class="var">result</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">embed_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-embedding-2"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="op">[</span><span class="str">"OAuth"</span><span class="op">,</span> <span class="str">"DataWeave"</span><span class="op">,</span> <span class="str">"CloudHub"</span><span class="op">]</span>
+<span class="op">)</span>
+<span class="cm"># → 1 vector — an aggregated blob of all 3 meanings</span></code></pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Why it's a "gotcha"</div>
+    The API doesn't error. You think you've embedded 3 documents — you've actually embedded one average. Your RAG retrieval silently returns garbage. That's the footgun: <strong>wrong, not crashed</strong>.
+  </div>
+
+  <h3>But wait — when <em>would</em> you want aggregation?</h3>
+  <p>It exists by design. There are real use cases where "merge these inputs into one vector" is what you want.</p>
+
+  <h4>1. Multimodal items (the big one)</h4>
+  <p>This is probably <em>why</em> the default exists. <code>-2</code> is multimodal — a single "item" in your corpus might be text + image + audio together.</p>
+
+<pre><code><span class="cm"># Embed a product as ONE vector — image + description combined</span>
+<span class="var">result</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">embed_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-embedding-2"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="op">[</span>
+        <span class="var">product_image</span><span class="op">,</span>                              <span class="cm"># the photo</span>
+        <span class="str">"Wireless headphones, 30hr battery, ANC"</span>     <span class="cm"># the description</span>
+    <span class="op">]</span>
+<span class="op">)</span>
+<span class="cm"># → 1 product-vector capturing both modalities together</span></code></pre>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft-relevant analog</div>
+    An Anypoint Exchange asset = name + description + RAML spec + screenshots. With <code>-2</code> you pass all of these in one call and get a single asset-vector capturing the whole thing.
+  </div>
+
+  <h4>2. Multi-field records as one entity</h4>
+<pre><code><span class="cm"># Embed a resume as ONE vector — find a person, not a paragraph</span>
+<span class="var">contents</span> <span class="op">=</span> <span class="op">[</span>
+    <span class="str">"Name: Attapol Thomprasert"</span><span class="op">,</span>
+    <span class="str">"Role: MuleSoft Architect"</span><span class="op">,</span>
+    <span class="str">"Summary: 10+ years of integration architecture..."</span><span class="op">,</span>
+    <span class="str">"Skills: Anypoint, DataWeave, OAuth 2.0..."</span>
+<span class="op">]</span></code></pre>
+
+  <h4>3. Query expansion / robust queries</h4>
+  <p>One user intent often has many phrasings. Aggregating them gives a sturdier query vector — less sensitive to wording.</p>
+
+<pre><code><span class="var">contents</span> <span class="op">=</span> <span class="op">[</span>
+    <span class="str">"How do I secure my API?"</span><span class="op">,</span>
+    <span class="str">"What's the best authentication for APIs?"</span><span class="op">,</span>
+    <span class="str">"API security best practices"</span>
+<span class="op">]</span>
+<span class="cm"># → 1 robust query vector less brittle to user phrasing</span></code></pre>
+
+  <h4>4. Session-level memory</h4>
+<pre><code><span class="cm"># Embed a 10-turn conversation as ONE vector — for routing or cache lookup</span>
+<span class="var">contents</span> <span class="op">=</span> <span class="op">[</span><span class="var">turn</span><span class="op">.</span><span class="attr">text</span> <span class="kw">for</span> <span class="var">turn</span> <span class="kw">in</span> <span class="var">chat_history</span><span class="op">]</span></code></pre>
+
+  <h3>The decision rule</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:0.92rem; margin:0.6rem 0 1.2rem">
+    <thead>
+      <tr style="background:#1a1a1a; color:#fff">
+        <th style="padding:0.5rem 0.7rem; text-align:left">Are the inputs…</th>
+        <th style="padding:0.5rem 0.7rem; text-align:left">Use</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb"><strong>Parts of ONE thing</strong> (multimodal item, multi-field record, query variants)</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Aggregation — the default <code>-2</code> behaviour</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem"><strong>Separate things</strong> (classic RAG corpus, distinct docs)</td><td style="padding:0.5rem 0.7rem">Per-input vectors — use <code>001</code>, or wrap each in <code>Content</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>The three ways to force per-input vectors with <code>-2</code></h3>
+
+<pre><code><span class="cm"># Fix 1 — call the API once per string (slowest, simplest)</span>
+<span class="var">vectors</span> <span class="op">=</span> <span class="op">[</span><span class="fn">embed_one</span>(<span class="var">text</span>) <span class="kw">for</span> <span class="var">text</span> <span class="kw">in</span> <span class="var">texts</span><span class="op">]</span>
+
+<span class="cm"># Fix 2 — wrap each string in its own Content object</span>
+<span class="kw">from</span> <span class="var">google</span><span class="op">.</span><span class="var">genai</span> <span class="kw">import</span> <span class="var">types</span>
+<span class="var">result</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">embed_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-embedding-2"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="op">[</span><span class="var">types</span><span class="op">.</span><span class="fn">Content</span>(<span class="var">parts</span><span class="op">=</span><span class="op">[</span><span class="var">types</span><span class="op">.</span><span class="fn">Part</span>(<span class="var">text</span><span class="op">=</span><span class="var">t</span>)<span class="op">]</span>) <span class="kw">for</span> <span class="var">t</span> <span class="kw">in</span> <span class="var">texts</span><span class="op">]</span>
+<span class="op">)</span>
+<span class="cm"># → N vectors, as expected</span>
+
+<span class="cm"># Fix 3 — use the Batch API (best for large corpora; 50% cheaper)</span>
+<span class="cm">#       Submit a job, results come back asynchronously</span></code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Reframe</div>
+    The "gotcha" isn't a bug — it's that the default helps the <em>multimodal-item</em> use case but surprises the <em>classic-RAG</em> use case. Once you know which side you're on, the choice is obvious.
+  </div>
+
+  <!-- ═══ 3. Cosine similarity ═══ -->
+  <h2>3 — Comparing two vectors with cosine similarity</h2>
+  <p>"Closeness in meaning" = "closeness of vectors". The standard measure is <strong>cosine similarity</strong> — the cosine of the angle between two vectors. The math sounds scary; the code is one line.</p>
+
+  <h3>What it returns</h3>
+  <ul>
+    <li><strong>1.0</strong> → vectors point in the same direction (very similar)</li>
+    <li><strong>0.0</strong> → vectors are perpendicular (unrelated)</li>
+    <li><strong>-1.0</strong> → vectors point in opposite directions (rare with embeddings; you mostly see 0–1)</li>
+  </ul>
+
+  <h3>The formula</h3>
+  <p><code>cos(A, B) = dot(A, B) / (||A|| × ||B||)</code></p>
+  <p>In English: divide the dot product by the product of the lengths. Don't memorise — just remember it's a one-liner.</p>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — <code>zip()</code> and tuple unpacking</div>
+    The cosine code below uses two new things. Quick tour first:
+    <h4 style="margin-top:0.6rem; font-size:0.95rem"><code>zip(a, b)</code> — pair items from two lists</h4>
+    <p><code>zip</code> walks two (or more) lists in lockstep, yielding pairs:</p>
+<pre style="margin:0.4rem 0"><code><span class="kw">for</span> <span class="var">pair</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="op">[</span><span class="num">1</span><span class="op">,</span> <span class="num">2</span><span class="op">,</span> <span class="num">3</span><span class="op">]</span><span class="op">,</span> <span class="op">[</span><span class="str">"a"</span><span class="op">,</span> <span class="str">"b"</span><span class="op">,</span> <span class="str">"c"</span><span class="op">]</span>)<span class="op">:</span>
+    <span class="fn">print</span>(<span class="var">pair</span>)
+<span class="cm"># (1, 'a')</span>
+<span class="cm"># (2, 'b')</span>
+<span class="cm"># (3, 'c')</span></code></pre>
+    <p style="margin-top:0.5rem">Imagine a zipper joining two rows of items — that's the mental model.</p>
+
+    <h4 style="margin-top:0.6rem; font-size:0.95rem">Tuple unpacking — <code>for x, y in ...</code></h4>
+    <p>Instead of getting one tuple <code>pair</code>, you can split it into two named variables on the spot:</p>
+<pre style="margin:0.4rem 0"><code><span class="kw">for</span> <span class="var">x</span><span class="op">,</span> <span class="var">y</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="op">[</span><span class="num">1</span><span class="op">,</span> <span class="num">2</span><span class="op">,</span> <span class="num">3</span><span class="op">]</span><span class="op">,</span> <span class="op">[</span><span class="str">"a"</span><span class="op">,</span> <span class="str">"b"</span><span class="op">,</span> <span class="str">"c"</span><span class="op">]</span>)<span class="op">:</span>
+    <span class="fn">print</span>(<span class="var">x</span><span class="op">,</span> <span class="var">y</span>)
+<span class="cm"># 1 a</span>
+<span class="cm"># 2 b</span>
+<span class="cm"># 3 c</span></code></pre>
+
+    <h4 style="margin-top:0.6rem; font-size:0.95rem">Generator expression inside <code>sum(...)</code></h4>
+    <p><code>sum(x * y for x, y in zip(a, b))</code> looks like a list comprehension <em>without the brackets</em>. That's a <strong>generator expression</strong> — it produces values one at a time instead of building a full list in memory. <code>sum()</code> walks them and adds them up. Use it whenever you'd build a list <em>just</em> to <code>sum</code> or <code>min</code> or <code>max</code> it — it's the same syntax, more efficient.</p>
+
+    <p style="margin-top:0.4rem"><strong>MuleSoft analogy:</strong> <code>zip</code> is like joining two arrays element-by-element in DataWeave (<code>a zip b</code> exists too); the generator expression is like a streaming transform that doesn't materialise the whole result.</p>
+  </div>
+
+<pre><code><span class="kw">import</span> <span class="var">math</span>
+
+<span class="kw">def</span> <span class="fn">cosine_similarity</span>(<span class="var">a</span><span class="op">,</span> <span class="var">b</span>)<span class="op">:</span>
+    <span class="str">"""Return cosine similarity between two equal-length vectors."""</span>
+    <span class="var">dot</span>     <span class="op">=</span> <span class="fn">sum</span>(<span class="var">x</span> <span class="op">*</span> <span class="var">y</span> <span class="kw">for</span> <span class="var">x</span><span class="op">,</span> <span class="var">y</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="var">a</span><span class="op">,</span> <span class="var">b</span>))
+    <span class="var">norm_a</span>  <span class="op">=</span> <span class="var">math</span><span class="op">.</span><span class="fn">sqrt</span>(<span class="fn">sum</span>(<span class="var">x</span> <span class="op">*</span> <span class="var">x</span> <span class="kw">for</span> <span class="var">x</span> <span class="kw">in</span> <span class="var">a</span>))
+    <span class="var">norm_b</span>  <span class="op">=</span> <span class="var">math</span><span class="op">.</span><span class="fn">sqrt</span>(<span class="fn">sum</span>(<span class="var">y</span> <span class="op">*</span> <span class="var">y</span> <span class="kw">for</span> <span class="var">y</span> <span class="kw">in</span> <span class="var">b</span>))
+    <span class="kw">return</span> <span class="var">dot</span> <span class="op">/</span> (<span class="var">norm_a</span> <span class="op">*</span> <span class="var">norm_b</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">In real projects</div>
+    Use <code>numpy</code>: <code>np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))</code>. Same math, much faster on large arrays. We're using pure Python for clarity.
+  </div>
+
+  <!-- ═══ 4. Hands-on RAG-by-hand ═══ -->
+  <h2>4 — Hands-on: RAG retrieval, by hand</h2>
+  <p>This is the lesson's main exercise. Save it as <code>tiny_rag.py</code> in your activated venv.</p>
+
+<pre><code><span class="cm"># tiny_rag.py — the retrieval half of RAG, no vector DB</span>
+<span class="kw">import</span> <span class="var">math</span>
+<span class="kw">from</span> <span class="var">dotenv</span> <span class="kw">import</span> <span class="var">load_dotenv</span>
+<span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+<span class="kw">from</span> <span class="var">google</span><span class="op">.</span><span class="var">genai</span> <span class="kw">import</span> <span class="var">types</span>
+
+<span class="fn">load_dotenv</span>()
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()
+<span class="var">MODEL</span> <span class="op">=</span> <span class="str">"gemini-embedding-001"</span>
+
+<span class="cm"># ─── 1. Our tiny "knowledge base" ───────────────────────────</span>
+<span class="var">DOCS</span> <span class="op">=</span> <span class="op">[</span>
+    <span class="str">"OAuth 2.0 is the industry-standard protocol for API authorization "</span>
+    <span class="str">"on the Anypoint Platform; it issues short-lived access tokens."</span><span class="op">,</span>
+
+    <span class="str">"DataWeave is MuleSoft's expression language for transforming data "</span>
+    <span class="str">"between formats like JSON, XML and CSV inside a Mule flow."</span><span class="op">,</span>
+
+    <span class="str">"A System API exposes raw data from a system of record. "</span>
+    <span class="str">"A Process API orchestrates one or more System APIs to model a business process."</span><span class="op">,</span>
+
+    <span class="str">"CloudHub 2.0 is MuleSoft's managed runtime that deploys Mule applications "</span>
+    <span class="str">"as containers, with auto-scaling and replicas."</span><span class="op">,</span>
+
+    <span class="str">"To make chocolate cake, mix flour, sugar, cocoa, eggs and butter, "</span>
+    <span class="str">"then bake at 180°C for about 30 minutes."</span>
+<span class="op">]</span>
+
+<span class="cm"># ─── 2. Helpers ─────────────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">embed</span>(<span class="var">text</span><span class="op">,</span> <span class="var">task_type</span>)<span class="op">:</span>
+    <span class="str">"""Embed a single string. task_type tells the model how this text will be used."""</span>
+    <span class="var">result</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">embed_content</span>(
+        <span class="var">model</span><span class="op">=</span><span class="var">MODEL</span><span class="op">,</span>
+        <span class="var">contents</span><span class="op">=</span><span class="var">text</span><span class="op">,</span>
+        <span class="var">config</span><span class="op">=</span><span class="var">types</span><span class="op">.</span><span class="fn">EmbedContentConfig</span>(<span class="var">task_type</span><span class="op">=</span><span class="var">task_type</span>)
+    <span class="op">)</span>
+    <span class="kw">return</span> <span class="var">result</span><span class="op">.</span><span class="attr">embeddings</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="attr">values</span>
+
+<span class="kw">def</span> <span class="fn">cosine</span>(<span class="var">a</span><span class="op">,</span> <span class="var">b</span>)<span class="op">:</span>
+    <span class="var">dot</span> <span class="op">=</span> <span class="fn">sum</span>(<span class="var">x</span> <span class="op">*</span> <span class="var">y</span> <span class="kw">for</span> <span class="var">x</span><span class="op">,</span> <span class="var">y</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="var">a</span><span class="op">,</span> <span class="var">b</span>))
+    <span class="kw">return</span> <span class="var">dot</span> <span class="op">/</span> (<span class="var">math</span><span class="op">.</span><span class="fn">sqrt</span>(<span class="fn">sum</span>(<span class="var">x</span><span class="op">*</span><span class="var">x</span> <span class="kw">for</span> <span class="var">x</span> <span class="kw">in</span> <span class="var">a</span>)) <span class="op">*</span> <span class="var">math</span><span class="op">.</span><span class="fn">sqrt</span>(<span class="fn">sum</span>(<span class="var">y</span><span class="op">*</span><span class="var">y</span> <span class="kw">for</span> <span class="var">y</span> <span class="kw">in</span> <span class="var">b</span>)))
+
+<span class="cm"># ─── 3. Index the corpus (do this once) ─────────────────────</span>
+<span class="fn">print</span>(<span class="str">"Embedding corpus..."</span>)
+<span class="var">doc_vectors</span> <span class="op">=</span> <span class="op">[</span><span class="fn">embed</span>(<span class="var">doc</span><span class="op">,</span> <span class="str">"RETRIEVAL_DOCUMENT"</span>) <span class="kw">for</span> <span class="var">doc</span> <span class="kw">in</span> <span class="var">DOCS</span><span class="op">]</span>
+
+<span class="cm"># ─── 4. Search ───────────────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">search</span>(<span class="var">question</span><span class="op">,</span> <span class="var">top_k</span><span class="op">=</span><span class="num">2</span>)<span class="op">:</span>
+    <span class="var">q_vec</span> <span class="op">=</span> <span class="fn">embed</span>(<span class="var">question</span><span class="op">,</span> <span class="str">"RETRIEVAL_QUERY"</span>)
+    <span class="var">scored</span> <span class="op">=</span> <span class="op">[</span>(<span class="fn">cosine</span>(<span class="var">q_vec</span><span class="op">,</span> <span class="var">d</span>)<span class="op">,</span> <span class="var">doc</span>) <span class="kw">for</span> <span class="var">d</span><span class="op">,</span> <span class="var">doc</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="var">doc_vectors</span><span class="op">,</span> <span class="var">DOCS</span>)<span class="op">]</span>
+    <span class="var">scored</span><span class="op">.</span><span class="fn">sort</span>(<span class="var">reverse</span><span class="op">=</span><span class="kw">True</span>)
+    <span class="kw">return</span> <span class="var">scored</span><span class="op">[</span><span class="op">:</span><span class="var">top_k</span><span class="op">]</span>
+
+<span class="cm"># ─── 5. Try it ──────────────────────────────────────────────</span>
+<span class="kw">for</span> <span class="var">q</span> <span class="kw">in</span> <span class="op">[</span>
+    <span class="str">"How do I secure my API on Anypoint?"</span><span class="op">,</span>
+    <span class="str">"What's the difference between System and Process APIs?"</span><span class="op">,</span>
+    <span class="str">"How do I deploy a Mule app?"</span>
+<span class="op">]</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">f"\nQ: {q}"</span>)
+    <span class="kw">for</span> <span class="var">score</span><span class="op">,</span> <span class="var">doc</span> <span class="kw">in</span> <span class="fn">search</span>(<span class="var">q</span>)<span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"  [{score:.3f}] {doc[:80]}..."</span>)</code></pre>
+
+  <p><strong>Expected output</strong> (scores will vary slightly):</p>
+<pre><code>Q: How do I secure my API on Anypoint?
+  [0.78] OAuth 2.0 is the industry-standard protocol for API authorization...
+  [0.51] CloudHub 2.0 is MuleSoft's managed runtime...
+
+Q: What's the difference between System and Process APIs?
+  [0.81] A System API exposes raw data from a system of record...
+  [0.49] OAuth 2.0 is the industry-standard protocol...
+
+Q: How do I deploy a Mule app?
+  [0.74] CloudHub 2.0 is MuleSoft's managed runtime...
+  [0.46] A System API exposes raw data...</code></pre>
+
+  <p>Notice three things:</p>
+  <ol>
+    <li>The cake recipe never wins — it's not relevant to any MuleSoft question.</li>
+    <li>"How do I secure my API?" matches OAuth, even though the words don't overlap. <strong>That's the magic.</strong></li>
+    <li>The right doc has a noticeably higher score than the runner-up — that gap is your confidence signal.</li>
+  </ol>
+
+  <!-- ═══ 5. task_type ═══ -->
+  <h2>5 — A subtle but important parameter: <code>task_type</code></h2>
+  <p>You may have noticed two different <code>task_type</code> values in the script: <code>RETRIEVAL_DOCUMENT</code> for the corpus and <code>RETRIEVAL_QUERY</code> for the question. Why two?</p>
+
+  <p>The embedding model produces <em>slightly different</em> vectors for the same text depending on what you'll use it for. A long document and a short question are written in different styles, so the model "tilts" the embedding to make them match better when the right pairing is used.</p>
+
+  <table style="width:100%; border-collapse:collapse; font-size:0.92rem; margin:0.8rem 0 1.2rem">
+    <thead>
+      <tr style="background:#1a1a1a; color:#fff">
+        <th style="padding:0.5rem 0.8rem; text-align:left">Use case</th>
+        <th style="padding:0.5rem 0.8rem; text-align:left">Corpus side</th>
+        <th style="padding:0.5rem 0.8rem; text-align:left">Query side</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb">Search / RAG</td><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb"><code>RETRIEVAL_DOCUMENT</code></td><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb"><code>RETRIEVAL_QUERY</code></td></tr>
+      <tr><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb">Q&amp;A over docs</td><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb"><code>RETRIEVAL_DOCUMENT</code></td><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb"><code>QUESTION_ANSWERING</code></td></tr>
+      <tr><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb">Find duplicates / similarity</td><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb"><code>SEMANTIC_SIMILARITY</code></td><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb"><code>SEMANTIC_SIMILARITY</code></td></tr>
+      <tr><td style="padding:0.5rem 0.8rem">Group similar docs</td><td style="padding:0.5rem 0.8rem"><code>CLUSTERING</code></td><td style="padding:0.5rem 0.8rem">N/A</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Heads-up</div>
+    <code>task_type</code> is a parameter on <code>gemini-embedding-001</code>. On the newer <code>gemini-embedding-2</code>, you bake the task type into the prompt text (e.g. <code>"task: search result | query: ..."</code>). Different shape, same idea.
+  </div>
+
+  <!-- ═══ Try it ═══ -->
+  <div class="tryit">
+    <div class="tryit-label">Try it yourself</div>
+    <ol>
+      <li>Activate your venv and run <code>python tiny_rag.py</code>. Confirm you see scored results for each question.</li>
+      <li><strong>Modify:</strong> Add 2–3 of your own MuleSoft topic descriptions to <code>DOCS</code>. Add a question that targets one of them. Does it win?</li>
+      <li><strong>Try a trick question:</strong> ask <code>"What's the recipe for chocolate cake?"</code>. Confirm the cake doc wins by a wide margin — proof the embeddings are doing real work.</li>
+      <li><strong>Compare apples to apples:</strong> embed two near-duplicates ("OAuth 2.0 is an authorization protocol" vs "Authorization in APIs uses OAuth 2.0"). What cosine score do you get? (Should be ~0.9+.)</li>
+      <li><strong>Stretch:</strong> add a <code>top_k</code> filter — only return docs with cosine &gt; 0.5. Below that threshold, print "no relevant document found."</li>
+    </ol>
+  </div>
+
+  <!-- ═══ Worked example: threshold ═══ -->
+  <h2>Worked example — adding a relevance threshold</h2>
+  <p>Stretch challenge #5 above asks you to filter out weak matches. Here's the answer in full, with the reasoning. This is a real production pattern, not just an exercise.</p>
+
+  <h3>The problem</h3>
+  <p>Right now <code>search()</code> always returns the top K docs — even if every one of them is a poor match. If a user asks "what's the weather in Tokyo?", your MuleSoft corpus has nothing relevant, but the function will still hand back its <em>least bad</em> docs. Those will then be fed to the LLM and produce a confident-sounding hallucination.</p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Why this matters</div>
+    <strong>Refusing to retrieve is a feature, not a failure.</strong> A RAG system that says "I don't have information about that" is more trustworthy than one that always answers. The threshold check is what turns retrieval from "best of a bad bunch" into "good answer or none".
+  </div>
+
+  <h3>The plan</h3>
+  <ol>
+    <li>Score every doc as before.</li>
+    <li><strong>Filter</strong> out anything with cosine ≤ <code>THRESHOLD</code>.</li>
+    <li>Return the top K of what's left (which might be nothing).</li>
+    <li>In the caller, check for an empty result and print the friendly message.</li>
+  </ol>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — list comprehension with <code>if</code></div>
+    Lesson 1 introduced list comprehensions <code>[x for x in items]</code>. Adding an <code>if</code> at the end turns it into a <strong>filter</strong>:
+<pre style="margin:0.4rem 0"><code><span class="cm"># Lesson 1 reminder — transform every item</span>
+<span class="op">[</span><span class="var">x</span> <span class="op">*</span> <span class="num">2</span> <span class="kw">for</span> <span class="var">x</span> <span class="kw">in</span> <span class="op">[</span><span class="num">1</span><span class="op">,</span> <span class="num">2</span><span class="op">,</span> <span class="num">3</span><span class="op">]</span><span class="op">]</span>           <span class="cm"># [2, 4, 6]</span>
+
+<span class="cm"># New — keep only items that pass a test</span>
+<span class="op">[</span><span class="var">x</span> <span class="kw">for</span> <span class="var">x</span> <span class="kw">in</span> <span class="op">[</span><span class="num">1</span><span class="op">,</span> <span class="num">2</span><span class="op">,</span> <span class="num">3</span><span class="op">,</span> <span class="num">4</span><span class="op">]</span> <span class="kw">if</span> <span class="var">x</span> <span class="op">&gt;</span> <span class="num">2</span><span class="op">]</span>     <span class="cm"># [3, 4]</span>
+
+<span class="cm"># Combine — transform AND filter</span>
+<span class="op">[</span><span class="var">x</span> <span class="op">*</span> <span class="num">2</span> <span class="kw">for</span> <span class="var">x</span> <span class="kw">in</span> <span class="op">[</span><span class="num">1</span><span class="op">,</span> <span class="num">2</span><span class="op">,</span> <span class="num">3</span><span class="op">,</span> <span class="num">4</span><span class="op">]</span> <span class="kw">if</span> <span class="var">x</span> <span class="op">&gt;</span> <span class="num">2</span><span class="op">]</span> <span class="cm"># [6, 8]</span></code></pre>
+    <p style="margin-top:0.4rem"><strong>Order is fixed:</strong> <code>[expression  for x in items  if condition]</code>. The <code>if</code> always comes last.</p>
+  </div>
+
+  <h3>The code</h3>
+  <p>Replace the <code>search()</code> function and the print loop in <code>tiny_rag.py</code> with these:</p>
+
+<pre><code><span class="var">THRESHOLD</span> <span class="op">=</span> <span class="num">0.5</span>     <span class="cm"># cosine below this = "not relevant"</span>
+
+<span class="kw">def</span> <span class="fn">search</span>(<span class="var">question</span><span class="op">,</span> <span class="var">top_k</span><span class="op">=</span><span class="num">2</span>)<span class="op">:</span>
+    <span class="var">q_vec</span> <span class="op">=</span> <span class="fn">embed</span>(<span class="var">question</span><span class="op">,</span> <span class="str">"RETRIEVAL_QUERY"</span>)
+    <span class="var">scored</span> <span class="op">=</span> <span class="op">[</span>(<span class="fn">cosine</span>(<span class="var">q_vec</span><span class="op">,</span> <span class="var">d</span>)<span class="op">,</span> <span class="var">doc</span>) <span class="kw">for</span> <span class="var">d</span><span class="op">,</span> <span class="var">doc</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="var">doc_vectors</span><span class="op">,</span> <span class="var">DOCS</span>)<span class="op">]</span>
+    <span class="var">scored</span><span class="op">.</span><span class="fn">sort</span>(<span class="var">reverse</span><span class="op">=</span><span class="kw">True</span>)
+
+    <span class="cm"># Filter — keep only pairs whose score beats the threshold</span>
+    <span class="var">relevant</span> <span class="op">=</span> <span class="op">[</span>(<span class="var">score</span><span class="op">,</span> <span class="var">doc</span>) <span class="kw">for</span> <span class="var">score</span><span class="op">,</span> <span class="var">doc</span> <span class="kw">in</span> <span class="var">scored</span> <span class="kw">if</span> <span class="var">score</span> <span class="op">&gt;</span> <span class="var">THRESHOLD</span><span class="op">]</span>
+
+    <span class="kw">return</span> <span class="var">relevant</span><span class="op">[</span><span class="op">:</span><span class="var">top_k</span><span class="op">]</span>     <span class="cm"># may be empty if nothing passed the filter</span>
+
+<span class="cm"># Updated print loop with a "no answer" branch</span>
+<span class="kw">for</span> <span class="var">q</span> <span class="kw">in</span> <span class="op">[</span>
+    <span class="str">"How do I secure my API on Anypoint?"</span><span class="op">,</span>
+    <span class="str">"What's the difference between System and Process APIs?"</span><span class="op">,</span>
+    <span class="str">"How do I deploy a Mule app?"</span><span class="op">,</span>
+    <span class="str">"What's the weather in Tokyo?"</span>     <span class="cm"># nothing in the corpus answers this</span>
+<span class="op">]</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">f"\nQ: {q}"</span>)
+    <span class="var">results</span> <span class="op">=</span> <span class="fn">search</span>(<span class="var">q</span>)
+    <span class="kw">if</span> <span class="kw">not</span> <span class="var">results</span><span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">"  no relevant document found."</span>)
+    <span class="kw">else</span><span class="op">:</span>
+        <span class="kw">for</span> <span class="var">score</span><span class="op">,</span> <span class="var">doc</span> <span class="kw">in</span> <span class="var">results</span><span class="op">:</span>
+            <span class="fn">print</span>(<span class="str">f"  [{score:.3f}] {doc[:80]}..."</span>)</code></pre>
+
+  <p><strong>Expected output:</strong></p>
+<pre><code>Q: How do I secure my API on Anypoint?
+  [0.78] OAuth 2.0 is the industry-standard protocol...
+
+Q: What's the difference between System and Process APIs?
+  [0.81] A System API exposes raw data from a system of record...
+
+Q: How do I deploy a Mule app?
+  [0.74] CloudHub 2.0 is MuleSoft's managed runtime...
+
+Q: What's the weather in Tokyo?
+  no relevant document found.</code></pre>
+
+  <h3>How to pick a good threshold</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:0.92rem; margin:0.6rem 0 1.2rem">
+    <thead>
+      <tr style="background:#1a1a1a; color:#fff">
+        <th style="padding:0.5rem 0.7rem; text-align:left">Threshold</th>
+        <th style="padding:0.5rem 0.7rem; text-align:left">Behaviour</th>
+        <th style="padding:0.5rem 0.7rem; text-align:left">Best for</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb"><code>&gt; 0.7</code></td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Very strict — misses borderline matches</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Compliance Q&amp;A, "answer or admit you don't know"</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb"><code>&gt; 0.5</code></td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">Balanced — picks up reasonable matches, filters obvious junk</td><td style="padding:0.5rem 0.7rem; border-bottom:1px solid #e5e7eb">General-purpose RAG (good default)</td></tr>
+      <tr><td style="padding:0.5rem 0.7rem"><code>&gt; 0.3</code></td><td style="padding:0.5rem 0.7rem">Loose — most things pass</td><td style="padding:0.5rem 0.7rem">Exploratory tools, "give me anything related"</td></tr>
+    </tbody>
+  </table>
+
+  <p>You'll usually tune the threshold by running real questions through your real corpus and watching the scores. Threshold values are model-specific too — vectors from <code>gemini-embedding-2</code> may cluster at different magnitudes, so what's "0.5" on <code>001</code> isn't necessarily "0.5" on <code>-2</code>.</p>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Why <code>&gt;</code> not <code>&gt;=</code>?</div>
+    A cosine of <em>exactly</em> 0.5 in a 768+ dimension space is essentially noise — basically a coincidence. Strict <code>&gt;</code> makes the threshold a real bar. Use <code>&gt;=</code> only if you genuinely need to keep ties.
+  </div>
+
+  <!-- ═══ Quiz ═══ -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q1.</strong> What does the embedding API return for a single piece of text?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">A summary string</li>
+        <li data-i="1">A list of related documents</li>
+        <li data-i="2">A list of floating-point numbers (a vector)</li>
+        <li data-i="3">A confidence score between 0 and 1</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q2.</strong> Two texts about the same topic, with no overlapping words. Their embedding vectors will:</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Be very different — embeddings work like keyword matching</li>
+        <li data-i="1">Be similar — embeddings capture meaning, not vocabulary</li>
+        <li data-i="2">Be identical</li>
+        <li data-i="3">Throw an error because they share no words</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q3.</strong> A cosine similarity of <strong>0.92</strong> between two vectors means…</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Very similar in meaning</li>
+        <li data-i="1">Roughly unrelated</li>
+        <li data-i="2">Opposite in meaning</li>
+        <li data-i="3">Cannot be compared — values must be 0 or 1</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q4.</strong> When indexing docs for search and embedding the user's question, why pair <code>RETRIEVAL_DOCUMENT</code> with <code>RETRIEVAL_QUERY</code>?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">It's just naming convention; behaviour is identical</li>
+        <li data-i="1">The model tilts each embedding for its role so they match better at search time</li>
+        <li data-i="2">It changes the vector dimensionality</li>
+        <li data-i="3">It's required to avoid an API error</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+
+    <div class="quiz-question" id="q5">
+      <p><strong>Q5.</strong> You pass a <em>list</em> of 10 strings to <code>gemini-embedding-2</code>. By default, you get back…</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">10 separate vectors, one per string</li>
+        <li data-i="1">An error</li>
+        <li data-i="2">One combined vector aggregating all 10 inputs</li>
+        <li data-i="3">No vectors, just a confidence score</li>
+      </ul>
+      <p class="feedback" id="fb5"></p>
+    </div>
+  </div>
+
+  <h2>What's next</h2>
+  <p>You now understand the heart of RAG retrieval. <strong>Lesson 8</strong> covers <strong>chunking</strong> — how to slice a long document into embedding-sized pieces without losing meaning at the seams.</p>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"How do I store these vectors so I don't re-embed every run?"</li>
+      <li>"Why 768 dimensions specifically — is it always enough?"</li>
+      <li>"How does this compare to keyword search like Elasticsearch?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0006-system-and-env.html">← Lesson 6 — System &amp; .env</a>
+      <a href="0008-chunking.html">Lesson 8 — Chunking →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! A vector — typically 768–3072 floats representing the text's meaning.", err: "Not quite. Embeddings return a vector (list of floats). The vector represents meaning numerically." },
+    1: { ok: "Correct! That's the whole point of embeddings — they capture meaning, not vocabulary.", err: "Not quite. Two texts about the same topic will have similar vectors even with zero word overlap. That's why embeddings beat keyword search." },
+    2: { ok: "Correct! 0.92 is very high — the meanings are very close.", err: "Not quite. Cosine ranges roughly 0–1 for embeddings; 0.92 is very high similarity." },
+    3: { ok: "Correct! Asymmetric task types (corpus vs query) match better at search time than using the same type on both sides.", err: "Not quite. The model produces slightly tilted embeddings for each role; pairing DOCUMENT + QUERY gives better retrieval than DOCUMENT + DOCUMENT." },
+    4: { ok: "Correct! gemini-embedding-2 aggregates a list of inputs into one vector by default — a common gotcha.", err: "Not quite. Passing a list to gemini-embedding-2 returns ONE combined vector. Use one call per string, or wrap each in a Content object, or use gemini-embedding-001 which returns one per input." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

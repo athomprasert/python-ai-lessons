@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 10 — From JSON to a Real Vector Database</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .step {
+      background: #fff;
+      border-left: 3px solid #1a1a1a;
+      padding: 0.8rem 1rem 0.8rem 1.2rem;
+      margin: 1rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .step-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 0.3rem; }
+
+    .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .twocol > div { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 0.9rem 1rem; }
+    .twocol h4 { margin-top: 0; }
+    @media (max-width: 700px) { .twocol { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 10 of ?</p>
+    <h1>From JSON to a Real Vector Database</h1>
+    <p class="tagline">Survey the vector DB market, then upgrade your RAG to use Chroma — the gentle starting point for production.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <a href="0008-chunking.html"><span class="pill pill-done">L8 ✓</span></a>
+      <a href="0009-build-rag.html"><span class="pill pill-done">L9 ✓</span></a>
+      <span class="pill pill-now">L10 — Vector DB</span>
+      <span class="pill pill-next">L11 — Contextual Retrieval</span>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Why this lesson</h2>
+  <p>
+    In Lesson 9 you stored every chunk's embedding in a single <code>index.json</code> file. That works — for ten chunks. The moment your corpus grows, the cracks show:
+  </p>
+  <ul>
+    <li><strong>Linear scan.</strong> Every query compares against <em>every</em> chunk. 10 chunks is fine. 10,000 is slow. 1,000,000 is impossible.</li>
+    <li><strong>Full reload.</strong> One byte changes → you load the entire JSON into memory.</li>
+    <li><strong>No metadata filter.</strong> Can't say "search only chunks tagged <code>auth</code>".</li>
+    <li><strong>No concurrency.</strong> Two processes writing at once = corrupted file.</li>
+  </ul>
+  <p>
+    <strong>Vector databases</strong> solve all four. They store vectors, run nearest-neighbour search with proper indexes (HNSW, IVF, etc.), let you attach metadata, and handle reads/writes safely. This is the single biggest upgrade you can make to a RAG system.
+  </p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Part 1 — The vector DB market in 2026</h2>
+  <p>
+    There are dozens. You only need to know seven. Here's what each is good for:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Tool</th><th>Type</th><th>Sweet spot</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Chroma</strong></td>
+        <td>Open-source, embedded</td>
+        <td>Prototypes, single-machine apps. Zero setup — runs in your Python process. <em>This lesson uses it.</em></td>
+      </tr>
+      <tr>
+        <td><strong>Pinecone</strong></td>
+        <td>Managed SaaS</td>
+        <td>The default "I want it to just work in production". No servers to run. Pay per usage.</td>
+      </tr>
+      <tr>
+        <td><strong>Weaviate</strong></td>
+        <td>Open-source + managed</td>
+        <td>Strong <em>hybrid search</em> (vector + keyword) and built-in modules for embeddings, generation, multi-tenancy.</td>
+      </tr>
+      <tr>
+        <td><strong>Qdrant</strong></td>
+        <td>Open-source, Rust core</td>
+        <td>Fast metadata filtering at scale. Self-host or managed cloud. Good when you query by tags often.</td>
+      </tr>
+      <tr>
+        <td><strong>pgvector</strong></td>
+        <td>Postgres extension</td>
+        <td>You already run Postgres and want vectors next to your business data. One DB to back up, one to monitor.</td>
+      </tr>
+      <tr>
+        <td><strong>Milvus</strong></td>
+        <td>Open-source, distributed</td>
+        <td>Billion-scale. Built for serious scale-out clusters. Heavier ops cost — overkill for most.</td>
+      </tr>
+      <tr>
+        <td><strong>Vertex AI Vector Search</strong></td>
+        <td>Google managed</td>
+        <td>You're all-in on GCP and using Gemini. Tightest integration with the Google stack.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Decision shortcut</div>
+    <ul style="margin-top:0.4rem">
+      <li><strong>Learning / prototype:</strong> Chroma</li>
+      <li><strong>Already on Postgres:</strong> pgvector</li>
+      <li><strong>Want it managed, no ops:</strong> Pinecone</li>
+      <li><strong>All-in on Google Cloud:</strong> Vertex AI Vector Search</li>
+      <li><strong>Need hybrid search (vector + keyword):</strong> Weaviate</li>
+      <li><strong>Heavy metadata filtering:</strong> Qdrant</li>
+      <li><strong>Billions of vectors, big team:</strong> Milvus</li>
+    </ul>
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft analogue</div>
+    Think of it like picking a system of record. Chroma = SQLite (embedded, easy). Pinecone = managed SaaS API like Anypoint Cloud. pgvector = "we already have Postgres, just put it there". Vertex Vector Search = the GCP-native option, like using CloudHub when your platform is already Anypoint.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Don't get distracted by the leaderboard</div>
+    Benchmarks change quarterly. The boring truth: for &lt; 1 million vectors and a small team, <strong>any</strong> of these works. Pick by operational fit (where will it run? who maintains it?), not raw QPS numbers.
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Part 2 — Hands-on: upgrade <code>rag.py</code> to use Chroma</h2>
+  <p>
+    We'll keep everything from Lesson 9 — chunking, system instruction, the "I don't know" guard — and only swap out the storage and retrieval pieces.
+  </p>
+
+  <h3>Concepts you'll meet</h3>
+  <ul>
+    <li><strong>Client</strong> — connects to the database. <code>PersistentClient(path=...)</code> stores data on disk.</li>
+    <li><strong>Collection</strong> — like a table. Holds documents + their vectors + metadata. You name them.</li>
+    <li><strong>Add</strong> — insert chunks. You provide your own IDs and (optionally) embeddings.</li>
+    <li><strong>Query</strong> — give it an embedding (or text), get the top-K nearest neighbours back. The DB does the search.</li>
+  </ul>
+
+  <!-- Step 1 -->
+  <div class="step">
+    <p class="step-title">Step 1 — Install Chroma</p>
+    <p>From your project's virtual environment (the one from Lesson 4):</p>
+<pre><code><span class="cm"># Activate venv first if not already active</span>
+<span class="kw">source</span> .venv/bin/activate
+
+pip install chromadb</code></pre>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <p class="step-title">Step 2 — Create a client and a collection</p>
+<pre><code><span class="kw">import</span> chromadb
+
+<span class="cm"># Persistent = saves to disk; survives restarts</span>
+client <span class="op">=</span> chromadb.PersistentClient(path<span class="op">=</span><span class="str">"./chroma_store"</span>)
+
+<span class="cm"># get_or_create_collection avoids "already exists" errors on re-runs</span>
+collection <span class="op">=</span> client.get_or_create_collection(name<span class="op">=</span><span class="str">"anypoint_docs"</span>)</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: keyword arguments with <code>=</code></div>
+      <code>path="./chroma_store"</code> is a <em>keyword argument</em>. Chroma's <code>PersistentClient</code> accepts several optional parameters; using the name <code>path=</code> lets you pass just the one you want without worrying about position. You've seen this pattern already (e.g. <code>config=</code> in Gemini calls), but worth naming it.
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <p class="step-title">Step 3 — Add chunks (with their embeddings)</p>
+    <p>
+      Chroma <em>can</em> embed text for you, but we'll keep using Gemini's embedding model so we stay consistent with Lesson 9. We pass the vectors ourselves.
+    </p>
+<pre><code><span class="kw">def</span> <span class="fn">build_index</span>(collection):
+    text <span class="op">=</span> DOC_PATH.read_text()
+    chunks <span class="op">=</span> chunk_markdown(text)
+    vectors <span class="op">=</span> [embed(c, <span class="str">"RETRIEVAL_DOCUMENT"</span>) <span class="kw">for</span> c <span class="kw">in</span> chunks]
+    ids <span class="op">=</span> [<span class="fn">str</span>(i) <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(chunks))]
+
+    collection.add(
+        documents<span class="op">=</span>chunks,
+        embeddings<span class="op">=</span>vectors,
+        ids<span class="op">=</span>ids,
+    )</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: <code>str(i) for i in range(len(chunks))</code></div>
+      Three small things stacked together:
+      <ul style="margin-top:0.4rem">
+        <li><code>len(chunks)</code> — number of chunks (e.g. 12).</li>
+        <li><code>range(12)</code> — produces <code>0, 1, 2, ... 11</code>.</li>
+        <li><code>str(i)</code> — converts each integer to a string. Chroma requires IDs to be strings.</li>
+      </ul>
+      Wrapped in <code>[...]</code>, it's a list comprehension that builds <code>["0", "1", "2", ..., "11"]</code>.
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <p class="step-title">Step 4 — Query it</p>
+<pre><code><span class="kw">def</span> <span class="fn">search</span>(question, collection):
+    q_vec <span class="op">=</span> embed(question, <span class="str">"RETRIEVAL_QUERY"</span>)
+    results <span class="op">=</span> collection.query(
+        query_embeddings<span class="op">=</span>[q_vec],
+        n_results<span class="op">=</span>TOP_K,
+    )
+
+    <span class="cm"># Chroma returns lists-of-lists (one inner list per query).</span>
+    <span class="cm"># We sent one query, so take index [0] of each.</span>
+    docs <span class="op">=</span> results[<span class="str">"documents"</span>][<span class="num">0</span>]
+    distances <span class="op">=</span> results[<span class="str">"distances"</span>][<span class="num">0</span>]
+
+    <span class="cm"># Chroma returns DISTANCE (lower = closer), not similarity.</span>
+    <span class="cm"># Convert to similarity so our threshold logic stays the same.</span>
+    scored <span class="op">=</span> [(<span class="num">1</span> <span class="op">-</span> d, doc) <span class="kw">for</span> d, doc <span class="kw">in</span> <span class="fn">zip</span>(distances, docs)]
+    <span class="kw">return</span> [(s, c) <span class="kw">for</span> s, c <span class="kw">in</span> scored <span class="kw">if</span> s <span class="op">&gt;</span> THRESHOLD]</code></pre>
+
+    <div class="callout callout-warn">
+      <div class="callout-label">Gotcha — distance vs similarity</div>
+      Chroma returns <strong>distance</strong> (smaller = more similar). Our Lesson 9 threshold logic was written for <strong>cosine similarity</strong> (larger = more similar). The line <code>1 - d</code> converts Chroma's default cosine distance back to similarity, so all our existing thresholds (<code>0.5</code>, etc.) keep working.
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="step">
+    <p class="step-title">Step 5 — Wire it together</p>
+<pre><code><span class="kw">def</span> <span class="fn">load_or_build</span>():
+    client <span class="op">=</span> chromadb.PersistentClient(path<span class="op">=</span>CHROMA_PATH)
+    collection <span class="op">=</span> client.get_or_create_collection(name<span class="op">=</span><span class="str">"anypoint_docs"</span>)
+
+    <span class="cm"># If empty, populate it. Otherwise it's already on disk.</span>
+    <span class="kw">if</span> collection.count() <span class="op">==</span> <span class="num">0</span>:
+        build_index(collection)
+
+    <span class="kw">return</span> collection</code></pre>
+    <p>
+      <code>collection.count()</code> replaces the <code>INDEX_PATH.exists()</code> check from Lesson 9. The data is in the <code>./chroma_store/</code> directory, but you don't manage the files — Chroma does.
+    </p>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Side-by-side: before vs after</h2>
+  <div class="twocol">
+    <div>
+      <h4>Lesson 9 (JSON)</h4>
+<pre><code>index <span class="op">=</span> {
+  <span class="str">"chunks"</span>: chunks,
+  <span class="str">"vectors"</span>: vectors
+}
+INDEX_PATH.write_text(
+  json.dumps(index)
+)
+
+<span class="cm"># search</span>
+scored <span class="op">=</span> [
+  (cosine(q_vec, v), c)
+  <span class="kw">for</span> v, c
+  <span class="kw">in</span> <span class="fn">zip</span>(
+    index[<span class="str">"vectors"</span>],
+    index[<span class="str">"chunks"</span>]
+  )
+]
+scored.sort(reverse<span class="op">=</span><span class="kw">True</span>)
+top <span class="op">=</span> scored[:TOP_K]</code></pre>
+    </div>
+    <div>
+      <h4>Lesson 10 (Chroma)</h4>
+<pre><code>collection.add(
+  documents<span class="op">=</span>chunks,
+  embeddings<span class="op">=</span>vectors,
+  ids<span class="op">=</span>ids,
+)
+
+<span class="cm"># search</span>
+results <span class="op">=</span> collection.query(
+  query_embeddings<span class="op">=</span>[q_vec],
+  n_results<span class="op">=</span>TOP_K,
+)
+<span class="cm"># DB does the ranking.</span>
+<span class="cm"># You just read the result.</span></code></pre>
+    </div>
+  </div>
+  <p>
+    Same Gemini calls. Same chunking. Same prompt. Same threshold. Only the storage layer changed — and we've removed the manual cosine + sort.
+  </p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>The complete <code>rag_chroma.py</code></h2>
+  <p>One file you can copy and run. Save next to your <code>anypoint-auth.md</code>.</p>
+<pre><code><span class="cm"># rag_chroma.py — RAG backed by Chroma vector database</span>
+<span class="kw">import</span> re
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+<span class="kw">from</span> dotenv <span class="kw">import</span> load_dotenv
+<span class="kw">from</span> google <span class="kw">import</span> genai
+<span class="kw">from</span> google.genai <span class="kw">import</span> types
+<span class="kw">import</span> chromadb
+
+load_dotenv()
+client <span class="op">=</span> genai.Client()
+
+<span class="cm"># ─── Config ───────────────────────────────</span>
+EMBED_MODEL  <span class="op">=</span> <span class="str">"gemini-embedding-001"</span>
+CHAT_MODEL   <span class="op">=</span> <span class="str">"gemini-3.5-flash"</span>
+DOC_PATH     <span class="op">=</span> Path(<span class="str">"anypoint-auth.md"</span>)
+CHROMA_PATH  <span class="op">=</span> <span class="str">"./chroma_store"</span>
+COLLECTION   <span class="op">=</span> <span class="str">"anypoint_docs"</span>
+THRESHOLD    <span class="op">=</span> <span class="num">0.5</span>
+TOP_K        <span class="op">=</span> <span class="num">3</span>
+
+SYSTEM_INSTRUCTION <span class="op">=</span> <span class="str">"""</span>
+<span class="str">You are an expert assistant answering questions from a provided document.</span>
+<span class="str">RULES (must follow):</span>
+<span class="str">1. Answer ONLY from the CONTEXT below. Do not use outside knowledge.</span>
+<span class="str">2. If the CONTEXT does not contain the answer, reply exactly:</span>
+<span class="str">   "I don't have that information in the provided document."</span>
+<span class="str">3. Cite the chunk number(s) you used at the end of your answer, e.g. [1] [3].</span>
+<span class="str">4. Be concise. Maximum 4 sentences.</span>
+<span class="str">"""</span>
+
+<span class="cm"># ─── Helpers ──────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">chunk_markdown</span>(text):
+    parts <span class="op">=</span> re.split(<span class="str">r"(?=^## )"</span>, text, flags<span class="op">=</span>re.MULTILINE)
+    <span class="kw">return</span> [p.strip() <span class="kw">for</span> p <span class="kw">in</span> parts <span class="kw">if</span> p.strip()]
+
+<span class="kw">def</span> <span class="fn">embed</span>(text, task_type):
+    result <span class="op">=</span> client.models.embed_content(
+        model<span class="op">=</span>EMBED_MODEL,
+        contents<span class="op">=</span>text,
+        config<span class="op">=</span>types.EmbedContentConfig(task_type<span class="op">=</span>task_type)
+    )
+    <span class="kw">return</span> result.embeddings[<span class="num">0</span>].values
+
+<span class="cm"># ─── Index build / load ───────────────────</span>
+<span class="kw">def</span> <span class="fn">build_index</span>(collection):
+    text <span class="op">=</span> DOC_PATH.read_text()
+    chunks <span class="op">=</span> chunk_markdown(text)
+    vectors <span class="op">=</span> [embed(c, <span class="str">"RETRIEVAL_DOCUMENT"</span>) <span class="kw">for</span> c <span class="kw">in</span> chunks]
+    ids <span class="op">=</span> [<span class="fn">str</span>(i) <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(chunks))]
+    collection.add(documents<span class="op">=</span>chunks, embeddings<span class="op">=</span>vectors, ids<span class="op">=</span>ids)
+    <span class="fn">print</span>(<span class="str">f"Indexed {</span><span class="fn">len</span><span class="str">(chunks)} chunks into Chroma."</span>)
+
+<span class="kw">def</span> <span class="fn">get_collection</span>():
+    db <span class="op">=</span> chromadb.PersistentClient(path<span class="op">=</span>CHROMA_PATH)
+    collection <span class="op">=</span> db.get_or_create_collection(name<span class="op">=</span>COLLECTION)
+    <span class="kw">if</span> collection.count() <span class="op">==</span> <span class="num">0</span>:
+        build_index(collection)
+    <span class="kw">return</span> collection
+
+<span class="cm"># ─── Retrieval ────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">search</span>(question, collection):
+    q_vec <span class="op">=</span> embed(question, <span class="str">"RETRIEVAL_QUERY"</span>)
+    results <span class="op">=</span> collection.query(query_embeddings<span class="op">=</span>[q_vec], n_results<span class="op">=</span>TOP_K)
+    docs      <span class="op">=</span> results[<span class="str">"documents"</span>][<span class="num">0</span>]
+    distances <span class="op">=</span> results[<span class="str">"distances"</span>][<span class="num">0</span>]
+    scored <span class="op">=</span> [(<span class="num">1</span> <span class="op">-</span> d, doc) <span class="kw">for</span> d, doc <span class="kw">in</span> <span class="fn">zip</span>(distances, docs)]
+    <span class="kw">return</span> [(s, c) <span class="kw">for</span> s, c <span class="kw">in</span> scored <span class="kw">if</span> s <span class="op">&gt;</span> THRESHOLD]
+
+<span class="cm"># ─── Prompt + ask ─────────────────────────</span>
+<span class="kw">def</span> <span class="fn">build_user_message</span>(question, retrieved):
+    blocks <span class="op">=</span> []
+    <span class="kw">for</span> i, (score, chunk) <span class="kw">in</span> <span class="fn">enumerate</span>(retrieved, start<span class="op">=</span><span class="num">1</span>):
+        blocks.append(<span class="str">f"[{i}] (relevance {score:.2f})\n{chunk}"</span>)
+    context <span class="op">=</span> <span class="str">"\n\n"</span>.join(blocks)
+    <span class="kw">return</span> <span class="str">f"CONTEXT:\n{context}\n\nQUESTION: {question}"</span>
+
+<span class="kw">def</span> <span class="fn">ask</span>(question, collection):
+    retrieved <span class="op">=</span> search(question, collection)
+    <span class="kw">if</span> <span class="kw">not</span> retrieved:
+        <span class="kw">return</span> <span class="str">"I don't have that information in the provided document."</span>
+    user_msg <span class="op">=</span> build_user_message(question, retrieved)
+    response <span class="op">=</span> client.models.generate_content(
+        model<span class="op">=</span>CHAT_MODEL,
+        contents<span class="op">=</span>user_msg,
+        config<span class="op">=</span>types.GenerateContentConfig(system_instruction<span class="op">=</span>SYSTEM_INSTRUCTION),
+    )
+    <span class="kw">return</span> response.text
+
+<span class="cm"># ─── Entry point ──────────────────────────</span>
+<span class="kw">if</span> __name__ <span class="op">==</span> <span class="str">"__main__"</span>:
+    coll <span class="op">=</span> get_collection()
+    <span class="kw">for</span> q <span class="kw">in</span> [
+        <span class="str">"How do I rotate a Connected App secret?"</span>,
+        <span class="str">"What is the capital of France?"</span>,  <span class="cm"># should fall back</span>
+    ]:
+        <span class="fn">print</span>(<span class="str">f"\nQ: {q}\nA: {ask(q, coll)}"</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">First run vs subsequent runs</div>
+    First run: Chroma is empty → <code>build_index()</code> embeds your doc and writes to <code>./chroma_store/</code>. Every later run: <code>collection.count()</code> is non-zero → no re-embedding, instant startup.
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Run it</h2>
+<pre><code><span class="kw">source</span> .venv/bin/activate
+python rag_chroma.py</code></pre>
+  <p>You should see "Indexed N chunks into Chroma." once, then your Q/A output. On the second run, no indexing message — it loaded from disk.</p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Don't forget .gitignore</div>
+    The <code>chroma_store/</code> directory contains your indexed vectors — add it to <code>.gitignore</code>. Same reason as <code>.env</code>: it's generated, sometimes large, and may contain copies of your source documents.
+<pre style="margin-top:0.6rem"><code><span class="cm"># .gitignore</span>
+.env
+.venv/
+chroma_store/
+index.json</code></pre>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>What you gained — and what's still missing</h2>
+  <h4>Gained</h4>
+  <ul>
+    <li><strong>Real index.</strong> Chroma uses HNSW under the hood — sub-linear search.</li>
+    <li><strong>Concurrency-safe.</strong> Multiple readers OK; no JSON corruption.</li>
+    <li><strong>Metadata-ready.</strong> You can add <code>metadatas=[{"section": "auth"}, ...]</code> on <code>add()</code>, then filter on query (we'll do this in a later lesson).</li>
+    <li><strong>Incremental updates.</strong> <code>collection.add()</code> with new IDs adds without rebuilding everything.</li>
+  </ul>
+  <h4>Still missing (for production)</h4>
+  <ul>
+    <li><strong>Hybrid search</strong> (vector + keyword) — Weaviate does this best out of the box. Lesson 12.</li>
+    <li><strong>Multi-machine.</strong> Embedded Chroma runs in one Python process. For a real service, run Chroma in server mode or move to Pinecone/Qdrant/pgvector.</li>
+  </ul>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Updating chunks without rebuilding</h2>
+  <p>
+    The <code>collection.count() == 0</code> trick from Step 5 only handles the first run. Once your source doc changes — a new section, an updated paragraph, a deleted FAQ entry — you need a way to <em>sync</em> the index without re-embedding everything.
+  </p>
+  <p>
+    The naive approach: <code>rm -rf chroma_store/</code> and rebuild. That works, but you pay the full embedding bill (slow, and it costs money) every time. Let's do better.
+  </p>
+
+  <h3>The four CRUD operations</h3>
+  <p>Chroma exposes the same four basics you'd find in any database:</p>
+<pre><code>collection.add(...)      <span class="cm"># insert new records</span>
+collection.update(...)   <span class="cm"># replace by ID (record must exist)</span>
+collection.upsert(...)   <span class="cm"># update if exists, else insert</span>
+collection.delete(...)   <span class="cm"># remove by ID</span></code></pre>
+
+  <p>One direct example — you edited chunk <code>"3"</code> and want only that chunk re-embedded:</p>
+<pre><code>new_text <span class="op">=</span> <span class="str">"## Rotating secrets\nUse the new self-service portal..."</span>
+new_vec  <span class="op">=</span> embed(new_text, <span class="str">"RETRIEVAL_DOCUMENT"</span>)
+
+collection.update(
+    ids<span class="op">=</span>[<span class="str">"3"</span>],
+    documents<span class="op">=</span>[new_text],
+    embeddings<span class="op">=</span>[new_vec],
+)</code></pre>
+  <p>One API call, one re-embedding. The other 99 chunks aren't touched.</p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Gotcha — update doesn't auto-re-embed</div>
+    If you call <code>collection.update(ids=["3"], documents=[new_text])</code> <strong>without passing <code>embeddings=...</code></strong>, Chroma keeps the old vector. We told it we'd supply our own embeddings, so it won't re-call Gemini behind your back. Always pass the new vector explicitly.
+  </div>
+
+  <h3>The harder problem — knowing <em>which</em> chunk to update</h3>
+  <p>
+    The example above assumes you already know the ID. In real life, you re-process a Markdown file and need to figure out: <em>which chunks are new, changed, deleted, or unchanged?</em>
+  </p>
+  <p>The clean trick: <strong>use a hash of the chunk text as its ID</strong>. Then a chunk's ID changes if and only if its content changes.</p>
+
+<pre><code><span class="kw">import</span> hashlib
+
+<span class="kw">def</span> <span class="fn">chunk_id</span>(text):
+    <span class="cm"># SHA-256 of the chunk text → first 16 hex chars</span>
+    <span class="kw">return</span> hashlib.sha256(text.encode()).hexdigest()[:<span class="num">16</span>]</code></pre>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax: <code>hashlib</code>, <code>.encode()</code>, <code>.hexdigest()</code></div>
+    Three things at once:
+    <ul style="margin-top:0.4rem">
+      <li><code>hashlib</code> — Python's built-in module for cryptographic hashes (SHA-256, MD5, etc.).</li>
+      <li><code>text.encode()</code> — converts a Python <code>str</code> into raw <code>bytes</code>. Hash functions only work on bytes, not strings, so this step is mandatory.</li>
+      <li><code>.hexdigest()</code> — returns the hash as a hex string (e.g. <code>"a3f2c1b9..."</code>) instead of raw bytes. The <code>[:16]</code> slice keeps the first 16 characters — plenty unique for a small corpus and shorter to log.</li>
+    </ul>
+  </div>
+
+  <p>
+    Visualise what content-hash IDs do for you when the source doc changes:
+  </p>
+<pre><code>BEFORE EDIT                       AFTER EDIT (chunk 3 edited, chunk 4 deleted)
+
+  IDs in DB:                        New IDs from doc:
+    a3f2  ← chunk 1                   a3f2  ← unchanged ✓
+    9b4e  ← chunk 2                   9b4e  ← unchanged ✓
+    77c1  ← chunk 3 (edit me)         6d8a  ← edited (new hash!)
+    bb09  ← chunk 4 (delete me)       e5ff  ← unchanged ✓
+    e5ff  ← chunk 5
+
+  Diff:
+    delete: {77c1, bb09}
+    add:    {6d8a}
+    keep:   {a3f2, 9b4e, e5ff}     ← no re-embedding for these</code></pre>
+
+  <h3>The sync function</h3>
+  <p>Drop-in replacement for the <code>get_collection()</code> from Step 5. Computes the diff, then only embeds what's new:</p>
+
+<pre><code><span class="kw">import</span> hashlib
+
+<span class="kw">def</span> <span class="fn">chunk_id</span>(text):
+    <span class="kw">return</span> hashlib.sha256(text.encode()).hexdigest()[:<span class="num">16</span>]
+
+<span class="kw">def</span> <span class="fn">sync_index</span>(collection):
+    <span class="cm"># 1. What's in the doc right now?</span>
+    text       <span class="op">=</span> DOC_PATH.read_text()
+    chunks     <span class="op">=</span> chunk_markdown(text)
+    new_ids    <span class="op">=</span> [chunk_id(c) <span class="kw">for</span> c <span class="kw">in</span> chunks]
+    new_id_set <span class="op">=</span> <span class="fn">set</span>(new_ids)
+
+    <span class="cm"># 2. What's already in the DB?</span>
+    existing_ids <span class="op">=</span> <span class="fn">set</span>(collection.get()[<span class="str">"ids"</span>])
+
+    <span class="cm"># 3. Diff: what to delete, what to add</span>
+    to_delete <span class="op">=</span> existing_ids <span class="op">-</span> new_id_set
+    to_add    <span class="op">=</span> [(cid, c) <span class="kw">for</span> cid, c <span class="kw">in</span> <span class="fn">zip</span>(new_ids, chunks)
+                 <span class="kw">if</span> cid <span class="kw">not</span> <span class="kw">in</span> existing_ids]
+
+    <span class="cm"># 4. Apply changes</span>
+    <span class="kw">if</span> to_delete:
+        collection.delete(ids<span class="op">=</span><span class="fn">list</span>(to_delete))
+        <span class="fn">print</span>(<span class="str">f"Deleted {</span><span class="fn">len</span><span class="str">(to_delete)} stale chunks"</span>)
+
+    <span class="kw">if</span> to_add:
+        ids   <span class="op">=</span> [cid <span class="kw">for</span> cid, _ <span class="kw">in</span> to_add]
+        docs  <span class="op">=</span> [c   <span class="kw">for</span> _, c <span class="kw">in</span> to_add]
+        vecs  <span class="op">=</span> [embed(c, <span class="str">"RETRIEVAL_DOCUMENT"</span>) <span class="kw">for</span> c <span class="kw">in</span> docs]
+        collection.add(ids<span class="op">=</span>ids, documents<span class="op">=</span>docs, embeddings<span class="op">=</span>vecs)
+        <span class="fn">print</span>(<span class="str">f"Added {</span><span class="fn">len</span><span class="str">(to_add)} new/changed chunks"</span>)
+
+    <span class="kw">if</span> <span class="kw">not</span> to_delete <span class="kw">and</span> <span class="kw">not</span> to_add:
+        <span class="fn">print</span>(<span class="str">"Index already up to date."</span>)
+
+<span class="kw">def</span> <span class="fn">get_collection</span>():
+    db <span class="op">=</span> chromadb.PersistentClient(path<span class="op">=</span>CHROMA_PATH)
+    collection <span class="op">=</span> db.get_or_create_collection(name<span class="op">=</span>COLLECTION)
+    sync_index(collection)   <span class="cm"># ← always run sync; it's a no-op if nothing changed</span>
+    <span class="kw">return</span> collection</code></pre>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax: <code>set()</code> and set difference (<code>-</code>)</div>
+    A <strong>set</strong> is like a list, but with two superpowers: items are unique, and membership checks (<code>x in s</code>) are very fast — constant time, not linear.
+    <ul style="margin-top:0.4rem">
+      <li><code>set([1, 2, 2, 3])</code> → <code>{1, 2, 3}</code> (duplicates dropped)</li>
+      <li><code>{1, 2, 3} - {2, 4}</code> → <code>{1, 3}</code> (everything in the left set that isn't in the right)</li>
+    </ul>
+    That's exactly what <code>existing_ids - new_id_set</code> does: "give me the IDs in the DB that are no longer in the doc — those are the ones to delete."
+  </div>
+
+  <h3>Run it</h3>
+<pre><code><span class="cm"># Edit anypoint-auth.md, then:</span>
+python rag_chroma.py
+
+<span class="cm"># Output on first run:</span>
+<span class="cm"># Added 12 new/changed chunks</span>
+
+<span class="cm"># Output on second run (no edits):</span>
+<span class="cm"># Index already up to date.</span>
+
+<span class="cm"># After editing one paragraph:</span>
+<span class="cm"># Deleted 1 stale chunks</span>
+<span class="cm"># Added 1 new/changed chunks</span></code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Why this matters operationally</div>
+    Embeddings are the slow, paid step. The whole point of incremental sync is to <strong>only pay the embedding bill for what actually changed</strong>. A 500-chunk doc with one edit = 1 embedding call, not 500.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Vector DB ≠ source of truth</div>
+    Treat your source markdown (or wherever the docs really live) as the source of truth. The vector DB is a <em>derived</em> index — like a search index over a database. Don't try to edit chunks directly inside Chroma; edit the source and re-run sync.
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft analogue</div>
+    Content-hash IDs are basically git's content-addressable model: a blob's identity <em>is</em> the hash of its bytes. Same idea applied to chunks — unchanged content keeps its identity across rebuilds, so derived indexes (like vector embeddings) can be reused safely.
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> Why does Lesson 9's JSON cache fall over at scale?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">JSON files can't store floats accurately</li>
+        <li data-i="1">Python can't read files larger than 100 MB</li>
+        <li data-i="2">Every query scans every chunk linearly — no index</li>
+        <li data-i="3">JSON loses the order of keys</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> You already run Postgres for your business data. Cheapest way to add vectors?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Stand up a separate Pinecone account</li>
+        <li data-i="1">Install the pgvector extension in your existing Postgres</li>
+        <li data-i="2">Migrate everything to Milvus</li>
+        <li data-i="3">Run Chroma in a sidecar container</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Why do we convert Chroma's distance with <code>1 - d</code>?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Chroma returns distance (smaller = closer); our threshold logic uses similarity (larger = closer)</li>
+        <li data-i="1">It's required by the Gemini API</li>
+        <li data-i="2">It normalises the vectors</li>
+        <li data-i="3">It's a typo and should be removed</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> What does <code>collection.count() == 0</code> guard against?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">Network errors when calling Gemini</li>
+        <li data-i="1">Bad embeddings being stored</li>
+        <li data-i="2">Two processes writing at once</li>
+        <li data-i="3">Re-embedding the whole document on every run after the first</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> Which vector DB choice fits "I want managed, no servers, easiest path to production"?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Milvus</li>
+        <li data-i="1">Chroma (embedded mode)</li>
+        <li data-i="2">Pinecone</li>
+        <li data-i="3">pgvector</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+
+    <div class="quiz-question" id="q5">
+      <p><strong>Q6.</strong> Why use a content hash (e.g. SHA-256 of the chunk text) as the chunk's ID?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Hashes are shorter than UUIDs, so the DB is faster</li>
+        <li data-i="1">A chunk's ID changes only when its content changes — unchanged chunks keep their ID and don't get re-embedded</li>
+        <li data-i="2">SHA-256 is required by Chroma</li>
+        <li data-i="3">It encrypts the chunk so it can't be read back</li>
+      </ul>
+      <p class="feedback" id="fb5"></p>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>What's next</h2>
+  <ul>
+    <li><strong>Lesson 11</strong> — Anthropic's <strong>contextual retrieval</strong>: prepend an LLM-generated context blurb to each chunk before embedding (35–67% retrieval-failure reduction). Plugs straight into your Chroma pipeline.</li>
+    <li><strong>Lesson 12</strong> — Wrap this RAG as a <strong>tool</strong> for an ADK agent. The agent decides when to call it.</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Direct MuleSoft application</div>
+    Swap <code>anypoint-auth.md</code> for a folder of RAML specs, runbooks, or design docs and you have a private MuleSoft Q&amp;A bot backed by a real vector store. Same code shape, production-ready storage. Add a metadata filter (<code>{"team": "integrations"}</code>) and you have multi-team isolation in one collection.
+  </div>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Show me how to add metadata filters (e.g. only search chunks tagged 'auth')"</li>
+      <li>"Run Chroma in client/server mode so my web app can connect to it"</li>
+      <li>"What changes if I switch the embedding model later — do I need to re-embed everything?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0009-build-rag.html">← Lesson 9 — Build RAG</a>
+      <a href="0011-contextual-retrieval.html">Lesson 11 — Contextual Retrieval →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! Linear scan is fine for tens of chunks but kills you at thousands. Vector DBs use HNSW or IVF indexes for sub-linear search.", err: "Not quite. JSON loads fine — the problem is search cost. Every query has to compare against every vector, which is O(n)." },
+    1: { ok: "Correct! pgvector adds vector search to your existing database. One thing to back up, monitor, and secure.", err: "Not quite. If you already run Postgres, pgvector is the lowest-cost addition — no new infrastructure to manage." },
+    2: { ok: "Correct! Chroma returns cosine distance by default (0 = identical, 2 = opposite). 1 - d converts back to similarity so our existing threshold checks still work.", err: "Not quite. Distance and similarity are inverses. Without converting, a small distance (good) would fail a 'similarity > 0.5' check." },
+    3: { ok: "Correct! On second-and-later runs the count is non-zero, so you skip the (slow, paid) embedding step entirely.", err: "Not quite. The check exists so we don't re-embed every chunk — that's the slow, expensive part of building the index." },
+    4: { ok: "Correct! Pinecone is the canonical 'managed, just works, no ops' choice. You pay for it, but you don't run it.", err: "Not quite. Milvus and pgvector require you to run servers; Chroma embedded only runs in your own process. Pinecone is the managed-SaaS answer." },
+    5: { ok: "Correct! Content-hash IDs are stable for unchanged chunks, so the diff (existing - new) cleanly tells you what was edited or deleted. Embedding is paid only for the changed chunks.", err: "Not quite. The win isn't speed or encryption — it's stability. Same content → same hash → same ID, so unchanged chunks survive the rebuild without being re-embedded." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

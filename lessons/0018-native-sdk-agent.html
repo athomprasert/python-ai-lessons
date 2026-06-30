@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 18 — Building an Agent in Native Gemini SDK</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .step {
+      background: #fff;
+      border-left: 3px solid #1a1a1a;
+      padding: 0.8rem 1rem 0.8rem 1.2rem;
+      margin: 1rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .step-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 0.3rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 18 of ?</p>
+    <h1>Building an Agent in Native Gemini SDK</h1>
+    <p class="tagline">No framework. No magic. Just the agent loop, four primitives, and your RAG pipeline as a tool. The mission's payoff lesson.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <a href="0008-chunking.html"><span class="pill pill-done">L8 ✓</span></a>
+      <a href="0009-build-rag.html"><span class="pill pill-done">L9 ✓</span></a>
+      <a href="0010-vector-db.html"><span class="pill pill-done">L10 ✓</span></a>
+      <a href="0011-contextual-retrieval.html"><span class="pill pill-done">L11 ✓</span></a>
+      <a href="0012-hybrid-search.html"><span class="pill pill-done">L12 ✓</span></a>
+      <a href="0013-advanced-retrieval-patterns.html"><span class="pill pill-done">L13 ✓</span></a>
+      <a href="0014-rag-evaluation.html"><span class="pill pill-done">L14 ✓</span></a>
+      <a href="0015-enterprise-rag-eval.html"><span class="pill pill-done">L15 ✓</span></a>
+      <a href="0016-improving-rag-metrics.html"><span class="pill pill-done">L16 ✓</span></a>
+      <a href="0017-agent-framework-landscape.html"><span class="pill pill-done">L17 ✓</span></a>
+      <span class="pill pill-now">L18 — Native SDK Agent</span>
+      <span class="pill pill-next">L19 — Five Frameworks</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    Your <a href="../MISSION.md">MISSION.md</a> says: <em>build AI agents that interact with integration systems</em>. Up until now your RAG has been a script you invoke. After this lesson, an <strong>agent</strong> invokes it — and decides <em>when</em> to call RAG vs answer directly vs reach for another tool.
+  </p>
+  <p>
+    L17 surveyed 9 frameworks. We're going below all of them — the native Gemini SDK with no framework — so you feel exactly what frameworks abstract away. After this lesson, when L19 shows you LangGraph or LlamaIndex doing the same job in 4 lines, you'll know what those 4 lines are <em>doing</em>.
+  </p>
+
+  <!-- ───────────────────────────── -->
+  <h2>What "tool use" actually means</h2>
+
+  <p>The single most important misconception to clear: <strong>the LLM doesn't actually call your code</strong>.</p>
+
+  <p>It returns a structured request — "I'd like to call <code>search_docs</code> with these arguments" — and your code chooses to execute it. Then your code returns the result to the LLM, which decides what to do next.</p>
+
+<pre><code>USER: "How do I rotate a Connected App secret?"
+        │
+        ▼
+   ┌────────────────────────────────────────┐
+   │ LLM (sees question + list of tools)    │
+   │                                        │
+   │ Output: function_call(                 │
+   │   name="search_docs",                  │
+   │   args={"query": "rotate connected   "│
+   │             " app secret"})            │
+   └─────────────────┬──────────────────────┘
+                     │ NOT a real call —
+                     │ just a request
+                     ▼
+   ┌────────────────────────────────────────┐
+   │ YOUR CODE                              │
+   │  - parses the function_call            │
+   │  - dispatches to your search_docs()    │
+   │  - captures the return value           │
+   └─────────────────┬──────────────────────┘
+                     │ result string
+                     ▼
+   ┌────────────────────────────────────────┐
+   │ LLM (now sees the function_response)   │
+   │                                        │
+   │ Output: text                           │
+   │  "Rotate it via the self-service       │
+   │   portal at /admin/secrets [chunk 5]"  │
+   └─────────────────┬──────────────────────┘
+                     ▼
+   FINAL ANSWER to user</code></pre>
+
+  <p>That round-trip — request → execute → response → next decision — is the <strong>agent loop</strong>. Some questions need no tool call (the LLM answers directly). Some need one. Some need many in sequence. Your code's job is to keep the loop running until the LLM stops calling tools.</p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Why this design?</div>
+    LLMs are hosted services. They can't reach into your laptop and run Python. So they describe what they'd like to do; you decide whether to do it. This separation is the <em>safety boundary</em> — your code stays in control of which tools exist, which arguments are accepted, and what data goes back.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The four ingredients of any agent</h2>
+
+  <table>
+    <thead><tr><th>Ingredient</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Tools</strong></td><td>Plain Python functions you wrote — the agent's "actions"</td></tr>
+      <tr><td><strong>Tool schemas</strong></td><td>Descriptions the LLM reads to know what each tool does and what arguments it takes</td></tr>
+      <tr><td><strong>Agent loop</strong></td><td>The orchestration: send → check function_calls → execute → send results back → repeat until done</td></tr>
+      <tr><td><strong>System instruction</strong></td><td>Tells the agent <em>when</em> to use which tool, when to answer directly, and when to refuse</td></tr>
+    </tbody>
+  </table>
+
+  <p>Every agent framework in L17 — LangGraph, CrewAI, Pydantic AI, LlamaIndex — implements these four. They differ in how much they hide and how much control they give you. We'll write all four ourselves, then in L19 see how each framework shrinks the code.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>Hands-on — build <code>agent.py</code></h2>
+
+  <!-- Step 1 -->
+  <div class="step">
+    <p class="step-title">Step 1 — Wrap your RAG pipeline as a tool</p>
+    <p>Your <code>rag_chroma.py</code> already has an <code>ask()</code> function. We'll wrap it as a regular Python function with a clear docstring. The docstring matters — Gemini reads it to decide when to call this tool.</p>
+
+<pre><code><span class="cm"># agent.py</span>
+<span class="kw">from</span> google <span class="kw">import</span> genai
+<span class="kw">from</span> google.genai <span class="kw">import</span> types
+<span class="kw">from</span> dotenv <span class="kw">import</span> load_dotenv
+<span class="kw">from</span> rag_chroma <span class="kw">import</span> ask <span class="kw">as</span> rag_ask, get_collection
+
+load_dotenv()
+client <span class="op">=</span> genai.Client()
+
+<span class="cm"># The tool: a regular Python function. Docstring is the LLM-facing description.</span>
+<span class="kw">def</span> <span class="fn">search_docs</span>(query: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">str</span>:
+    <span class="str">"""Search the internal MuleSoft Anypoint documentation for an answer.</span>
+<span class="str">    Use this for any question about MuleSoft, Anypoint Platform, Connected</span>
+<span class="str">    Apps, OAuth, RAML, or related platform concepts.</span>
+<span class="str">    """</span>
+    coll, bm25, chunk_ids <span class="op">=</span> get_collection()
+    <span class="kw">return</span> rag_ask(query, coll, bm25, chunk_ids)</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: type hints (<code>query: str -&gt; str</code>)</div>
+      <code>query: str</code> declares the parameter is a string. <code>-&gt; str</code> declares the return type. Python doesn't enforce these at runtime — they're hints for tools and humans. <strong>The Gemini SDK reads them to build the tool schema</strong>, so they're load-bearing here, not decoration.
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <p class="step-title">Step 2 — Add a second tool (mocked)</p>
+    <p>One tool is just RAG. Two tools is an agent — because now there's a routing decision to make.</p>
+
+<pre><code><span class="kw">def</span> <span class="fn">get_anypoint_org_status</span>(org_id: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">str</span>:
+    <span class="str">"""Get the operational status of a specific Anypoint organization.</span>
+<span class="str">    Use this for live status questions about a known org_id.</span>
+<span class="str">    Returns 'healthy', 'degraded', or 'down' plus a message.</span>
+<span class="str">    """</span>
+    <span class="cm"># In real life this would call Anypoint's status API.</span>
+    <span class="cm"># Mocked for this lesson.</span>
+    fake_data <span class="op">=</span> {
+        <span class="str">"12345"</span>: <span class="str">"healthy: all systems operational"</span>,
+        <span class="str">"99999"</span>: <span class="str">"degraded: API Manager experiencing 5% error rate"</span>,
+    }
+    <span class="kw">return</span> fake_data.get(org_id, <span class="str">f"unknown org_id: {org_id}"</span>)</code></pre>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <p class="step-title">Step 3 — Register the tools and start a chat</p>
+    <p>The Gemini SDK can build the tool schema directly from a Python function — type hints + docstring is enough. Pass the functions in a list and the SDK handles the JSON-schema part.</p>
+
+<pre><code>SYSTEM_INSTRUCTION <span class="op">=</span> <span class="str">"""</span>
+<span class="str">You are a MuleSoft assistant. You have two tools:</span>
+
+<span class="str">- search_docs: for questions about MuleSoft, Anypoint Platform,</span>
+<span class="str">  Connected Apps, OAuth, RAML, or platform concepts.</span>
+<span class="str">- get_anypoint_org_status: for live operational status of a</span>
+<span class="str">  specific Anypoint org by ID.</span>
+
+<span class="str">Rules:</span>
+<span class="str">1. For documentation questions → use search_docs.</span>
+<span class="str">2. For "what's the status of org X" → use get_anypoint_org_status.</span>
+<span class="str">3. For unrelated questions (math, general knowledge) → answer directly</span>
+<span class="str">   without calling tools.</span>
+<span class="str">4. If you cannot help, say so — don't fabricate.</span>
+<span class="str">"""</span>
+
+TOOLS <span class="op">=</span> [search_docs, get_anypoint_org_status]
+
+chat <span class="op">=</span> client.chats.create(
+    model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>,
+    config<span class="op">=</span>types.GenerateContentConfig(
+        system_instruction<span class="op">=</span>SYSTEM_INSTRUCTION,
+        tools<span class="op">=</span>TOOLS,
+    ),
+)</code></pre>
+
+    <div class="callout callout-tip">
+      <div class="callout-label">Automatic vs manual function calling</div>
+      The Gemini SDK has an "automatic" mode where it executes tools for you — but doing that hides the agent loop. We're staying in <strong>manual mode</strong> (default when you handle <code>function_calls</code> yourself) precisely so you see what's happening. Frameworks pick automatic mode and add their own loop on top.
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <p class="step-title">Step 4 — Write the agent loop</p>
+    <p>This is the heart of every agent ever written. Send the user's question. Check whether the LLM wants to call tools. If yes, execute and send results back. Repeat until the LLM is done calling tools and just returns text.</p>
+
+<pre><code><span class="kw">def</span> <span class="fn">run_agent</span>(user_message: <span class="fn">str</span>, max_steps: <span class="fn">int</span> <span class="op">=</span> <span class="num">10</span>) <span class="op">-&gt;</span> <span class="fn">str</span>:
+    <span class="cm"># Tool name → Python function dispatch table</span>
+    tool_map <span class="op">=</span> {tool.__name__: tool <span class="kw">for</span> tool <span class="kw">in</span> TOOLS}
+
+    response <span class="op">=</span> chat.send_message(user_message)
+
+    <span class="kw">for</span> step <span class="kw">in</span> <span class="fn">range</span>(max_steps):
+        <span class="cm"># Did the LLM ask to call any tools?</span>
+        function_calls <span class="op">=</span> response.function_calls
+
+        <span class="kw">if</span> <span class="kw">not</span> function_calls:
+            <span class="cm"># No tool calls → the LLM gave a final text answer</span>
+            <span class="kw">return</span> response.text
+
+        <span class="cm"># Execute every requested tool call and collect responses</span>
+        responses <span class="op">=</span> []
+        <span class="kw">for</span> call <span class="kw">in</span> function_calls:
+            <span class="fn">print</span>(<span class="str">f"  → tool: {call.name}({</span><span class="fn">dict</span><span class="str">(call.args)})"</span>)
+            <span class="kw">if</span> call.name <span class="kw">not</span> <span class="kw">in</span> tool_map:
+                result <span class="op">=</span> <span class="fn">f</span><span class="str">"unknown tool: {call.name}"</span>
+            <span class="kw">else</span>:
+                result <span class="op">=</span> tool_map[call.name](<span class="op">**</span><span class="fn">dict</span>(call.args))
+            responses.append(types.Part.from_function_response(
+                name<span class="op">=</span>call.name,
+                response<span class="op">=</span>{<span class="str">"result"</span>: result},
+            ))
+
+        <span class="cm"># Send the tool results back to the LLM and let it continue</span>
+        response <span class="op">=</span> chat.send_message(responses)
+
+    <span class="kw">return</span> <span class="str">"agent stopped: hit max_steps without final answer"</span></code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: dict comprehension <code>{x: y for ...}</code></div>
+      <code>{tool.__name__: tool for tool in TOOLS}</code> builds a dict mapping each tool's function name to the function object. Same shape as a list comprehension, but with <code>key: value</code> pairs and curly braces instead of square brackets. Result: <code>{"search_docs": &lt;func&gt;, "get_anypoint_org_status": &lt;func&gt;}</code>.
+    </div>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: <code>**dict(call.args)</code> — splat unpacking on a call</div>
+      <code>**{"query": "rotate"}</code> spreads the dict into keyword arguments — the call becomes <code>tool_map["search_docs"](query="rotate")</code>. The mirror of <code>**kwargs</code> from L15. Used here because <code>call.args</code> is a dict-like object and you want to pass each entry as a named argument.
+    </div>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">Pattern: the bounded loop</div>
+      <code>for step in range(max_steps)</code> with an early <code>return</code> inside is the safe way to write an agent loop. <code>while True</code> would also work but risks runaway: a buggy tool that always errors could keep the LLM calling tools forever. <code>max_steps=10</code> is a hard ceiling — production agents typically use 10–30.
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="step">
+    <p class="step-title">Step 5 — Run it on three queries</p>
+<pre><code><span class="kw">if</span> __name__ <span class="op">==</span> <span class="str">"__main__"</span>:
+    questions <span class="op">=</span> [
+        <span class="str">"How do I rotate a Connected App secret?"</span>,
+        <span class="str">"What's the status of org 12345?"</span>,
+        <span class="str">"What's 2 + 2?"</span>,
+    ]
+    <span class="kw">for</span> q <span class="kw">in</span> questions:
+        <span class="fn">print</span>(<span class="str">f"\nQ: {q}"</span>)
+        answer <span class="op">=</span> run_agent(q)
+        <span class="fn">print</span>(<span class="str">f"A: {answer}"</span>)</code></pre>
+
+    <p>Expected output (yours will vary slightly — LLMs are stochastic):</p>
+<pre><code>Q: How do I rotate a Connected App secret?
+  → tool: search_docs({'query': 'rotate Connected App secret'})
+A: Rotate it via the self-service portal at /admin/secrets [chunk 5].
+
+Q: What's the status of org 12345?
+  → tool: get_anypoint_org_status({'org_id': '12345'})
+A: Org 12345 is healthy — all systems operational.
+
+Q: What's 2 + 2?
+A: 4.</code></pre>
+
+    <p>Look at the third query — <strong>no tool call printed</strong>. The agent answered directly from its own knowledge because the system instruction told it to.</p>
+    <p>That's the win this lesson exists for: the agent <em>chooses</em> when to use tools.</p>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>What you just felt that frameworks remove</h2>
+
+  <p>Look back at <code>run_agent</code>. Honest list of what's painful or missing:</p>
+
+  <table>
+    <thead><tr><th>Pain point in the native loop</th><th>What frameworks add</th></tr></thead>
+    <tbody>
+      <tr><td>Manual <code>function_calls</code> parsing and dispatch table</td><td>Auto tool routing (LangGraph, LlamaIndex)</td></tr>
+      <tr><td>Manual <code>Part.from_function_response</code> packaging</td><td>Hidden behind decorators (Pydantic AI's <code>@agent.tool</code>)</td></tr>
+      <tr><td>No retry logic — if a tool errors, you'll send a string error to the LLM</td><td>Built-in retry, fallbacks, error policies (LangGraph)</td></tr>
+      <tr><td>No streaming — <code>response.text</code> is the whole reply at once</td><td>Streaming primitives in every framework</td></tr>
+      <tr><td>No memory beyond the in-process <code>chat</code> object — restart Python and history is gone</td><td>Persistent memory (LangGraph checkpointer, ADK sessions)</td></tr>
+      <tr><td>No observability — you'd add the <code>@measure</code> decorator from L15 yourself</td><td>LangSmith, Phoenix, Logfire integrations one-line</td></tr>
+      <tr><td>No timeout per tool — a slow API hangs your loop</td><td>Per-tool timeouts and circuit breakers</td></tr>
+      <tr><td>No validation — a typo in tool args returns garbage</td><td>Pydantic-validated tool schemas (Pydantic AI)</td></tr>
+    </tbody>
+  </table>
+
+  <p>That's the gap L17 promised. You've now <em>felt</em> it. <strong>Frameworks aren't magic — they're solutions to these specific pain points.</strong> When you compare them in L19 you'll know exactly which pains each one addresses.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>System instruction craft — the hidden skill</h2>
+
+  <p>The agent's quality is <strong>almost entirely shaped by the system instruction</strong>. Look back at ours:</p>
+
+<pre><code>You are a MuleSoft assistant. You have two tools:
+
+- search_docs: for questions about MuleSoft, Anypoint Platform,
+  Connected Apps, OAuth, RAML, or platform concepts.
+- get_anypoint_org_status: for live operational status of a
+  specific Anypoint org by ID.
+
+Rules:
+1. For documentation questions → use search_docs.
+2. For "what's the status of org X" → use get_anypoint_org_status.
+3. For unrelated questions (math, general knowledge) → answer directly.
+4. If you cannot help, say so — don't fabricate.</code></pre>
+
+  <p>Three principles that consistently work:</p>
+  <ol>
+    <li><strong>Name each tool and what it's for</strong> — the docstring on the function is also seen, but reinforcing it in the system instruction reduces routing mistakes</li>
+    <li><strong>Explicit "when to use which" rules</strong> — vague guidance leads to the LLM guessing</li>
+    <li><strong>Refusal rule</strong> — without it the agent will fabricate; with it, it says "I cannot help with that" cleanly</li>
+  </ol>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">When tool routing goes wrong</div>
+    If the agent calls the wrong tool, the fix is almost always the system instruction or the tool docstring — not more code. Add a sentence: "For X, use Y. Do NOT use Z." Re-test.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Productionising — what to add next</h2>
+
+  <p>The native loop above is a real working agent. To take it to production you'd want:</p>
+
+  <table>
+    <thead><tr><th>Addition</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Tool schema validation</strong></td><td>Validate <code>call.args</code> against a Pydantic model before dispatching</td></tr>
+      <tr><td><strong>Per-tool error handling</strong></td><td>Wrap the tool dispatch in try/except; return a structured error string to the LLM so it can retry or refuse</td></tr>
+      <tr><td><strong>Latency / cost capture</strong></td><td>Apply the <code>@measure</code> decorator from L15 to each tool</td></tr>
+      <tr><td><strong>Streaming responses</strong></td><td>Switch <code>send_message</code> → <code>send_message_stream</code> and yield chunks</td></tr>
+      <tr><td><strong>Persistent memory</strong></td><td>Serialise <code>chat.get_history()</code> to disk/Redis between sessions. Gemini's <code>chat</code> object only lives in-process — see <a href="../reference/llm-sdk-comparison.html">SDK comparison reference</a> for how OpenAI/Anthropic handle this differently.</td></tr>
+      <tr><td><strong>Provider portability</strong></td><td>If you ever need to swap Gemini for another model (local Ollama for dev, Groq for latency tests, a different cloud), use the <a href="../reference/openai-compatible-api.html">OpenAI-compatible API reference</a> — same client code, only <code>base_url</code> changes. Trade-off: you lose Gemini's auto-schema-from-Python-fn ergonomics that this lesson relies on.</td></tr>
+      <tr><td><strong>Observability</strong></td><td>Pipe traces to Phoenix or Logfire via OpenTelemetry (see L17)</td></tr>
+      <tr><td><strong>Timeout per tool</strong></td><td>Wrap tool calls in <code>asyncio.wait_for(...)</code> or use a thread-pool with timeout</td></tr>
+    </tbody>
+  </table>
+
+  <p>Each of these is a small addition — but together they're 200 lines of boilerplate. <strong>That's the framework value proposition.</strong> When the cost of that boilerplate exceeds the cost of a framework dependency, switch frameworks. The eval (L14–L16) and your operational pain tell you when.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> When the LLM "calls a tool", what is actually happening?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">The LLM reaches into your Python process and runs the function</li>
+        <li data-i="1">Gemini's servers run your function for you</li>
+        <li data-i="2">The LLM returns a structured request describing which tool and what arguments — your code chooses to execute it and returns the result</li>
+        <li data-i="3">The function gets compiled to JavaScript and runs in the browser</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Why use <code>for step in range(max_steps)</code> instead of <code>while True</code> for the agent loop?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0"><code>while True</code> doesn't work in Python</li>
+        <li data-i="1">It's faster</li>
+        <li data-i="2">Range loops are required by the Gemini SDK</li>
+        <li data-i="3">Bounded steps prevent runaway loops — a buggy tool that always errors could otherwise keep the LLM calling tools forever</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> The LLM saw "What's 2 + 2?" and answered without calling any tool. Why?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">The tools were broken</li>
+        <li data-i="1">The system instruction told it to answer unrelated questions directly without tools, and arithmetic doesn't need search_docs or org_status</li>
+        <li data-i="2">Gemini disabled tool calling for math</li>
+        <li data-i="3">The agent is broken — it should always call a tool</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> Why are the type hints (<code>query: str -&gt; str</code>) and the docstring on each tool function load-bearing, not decoration?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">The Gemini SDK reads them to build the tool schema and tell the LLM what each tool does and what arguments it expects</li>
+        <li data-i="1">Python enforces type hints at runtime</li>
+        <li data-i="2">They speed up function calls</li>
+        <li data-i="3">They're required for OAuth</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> The agent calls the wrong tool for a question. What's the first fix to try?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Add a try/except around the loop</li>
+        <li data-i="1">Switch to a different LLM</li>
+        <li data-i="2">Tighten the system instruction or tool docstring with explicit "when to use this / not this" rules</li>
+        <li data-i="3">Rewrite in LangGraph</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>What's next</h2>
+  <ul>
+    <li><strong>Lesson 19</strong> — Same agent, five frameworks: LangGraph, CrewAI, Pydantic AI, LlamaIndex, Haystack. Same mission, very different code. You'll leave with a strong opinion grounded in hands-on, not vendor PR.</li>
+    <li><strong>Future</strong> — Streaming, persistent memory, observability hookups for the agent.</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Direct MuleSoft application</div>
+    Replace <code>get_anypoint_org_status</code> with a real call to <code>cloudhub-monitoring-api</code> and the agent becomes a private assistant for your platform. Add a <code>create_jira_ticket</code> tool and it becomes an integration-incident triage agent. The pattern is identical; only the tools change. This is exactly the "AI agents that interact with integration systems" line from your MISSION.md — now operational.
+  </div>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Show me how to add streaming so the answer appears word by word"</li>
+      <li>"How do I persist conversation memory across restarts?"</li>
+      <li>"What if a tool raises an exception — how should the loop respond?"</li>
+      <li>"Add a third tool that creates a Jira ticket via real API"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0017-agent-framework-landscape.html">← Lesson 17 — Framework Landscape</a>
+      <a href="0019-frameworks-side-by-side.html">Lesson 19 — Five Frameworks Side-by-Side →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! The LLM only proposes calls. Your code stays in control of execution — that's the safety boundary that makes tool use viable for hosted models.", err: "Not quite. The LLM can't reach into your process. It returns a structured request; your code chooses whether and how to execute. That separation is intentional." },
+    1: { ok: "Correct! A buggy tool plus an over-eager LLM can produce an infinite loop. max_steps=10 is a hard cap — production agents use 10–30.", err: "Not quite. Bounded loops are about safety, not speed. A while-True loop with a buggy tool can spin forever; range(max_steps) is a guarantee that the loop terminates." },
+    2: { ok: "Correct! The system instruction explicitly says 'unrelated questions → answer directly without tools'. That's why the agent didn't reach for search_docs.", err: "Not quite. The agent obeyed the system instruction's rule that unrelated questions (math, general knowledge) should be answered directly. That's the intended design." },
+    3: { ok: "Correct! Gemini SDK auto-builds the JSON schema from your function's signature and docstring. They're the agent's only window into what each tool does.", err: "Not quite. Type hints and docstrings are read by the SDK to construct the tool schema sent to the LLM. Without them, the LLM doesn't know what the tool does or what arguments to pass." },
+    4: { ok: "Correct! Tool routing problems are almost always prompt-engineering problems. Tighten the rules; re-test. Code changes come last.", err: "Not quite. The fastest fix for wrong tool selection is the system instruction and tool docstrings. Code changes come only if the prompt fix doesn't hold." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

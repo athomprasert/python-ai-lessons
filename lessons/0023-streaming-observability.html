@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L23 — Streaming &amp; Observability</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .series-banner {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      color: #4338ca;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .series-banner strong { color: #312e81; }
+
+    .lesson-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .lesson-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.3rem; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0.9rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .ty  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.6rem 0 1.1rem; font-size: 0.88rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.65rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+      border-left: 4px solid;
+      font-size: 0.9rem;
+    }
+    .callout strong { font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .callout-tip      { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn     { background: #fffbeb; border-color: #f59e0b; }
+    .callout-syntax   { background: #fdf4ff; border-color: #a855f7; }
+    .callout-pedagogy { background: #f1f5ff; border-color: #6366f1; }
+
+    .exercise-box {
+      border: 2px solid #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+      background: #fefefe;
+    }
+    .exercise-box h3 { margin-top: 0; }
+    .exercise-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    details {
+      margin: 0.5rem 0;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+    }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    details[open] summary { margin-bottom: 0.4rem; }
+
+    .quiz { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.7rem 0; }
+    .quiz-q { font-weight: 600; margin-bottom: 0.4rem; }
+
+    .ascii-diagram {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 6px;
+      margin: 0.7rem 0;
+    }
+
+    .footer-links { margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid #ddd; font-size: 0.82rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="series-banner">
+    <strong>LangGraph mini-series · part 4 of 4</strong> · The final lesson — you're learning by writing code, not reading it.
+    &nbsp;<a href="0022-checkpointing-time-travel.html">← L22: Checkpointing</a>
+  </div>
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Lesson 23 · Python for AI/ML</p>
+    <h1>Streaming &amp; observability — making the agent visible</h1>
+    <p class="tagline">Your agent works. Now make it watchable. Stream output as it happens; trace every node call in a UI; debug in seconds instead of minutes.</p>
+  </header>
+
+  <div class="callout callout-pedagogy">
+    <strong>Pedagogy reminder.</strong> Same rules — TODO skeleton, you write, paste back, then canonical.
+  </div>
+
+  <h2>Two problems, two tools</h2>
+
+  <table>
+    <thead><tr><th>Problem</th><th>Tool</th><th>Where it surfaces</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Latency feels broken.</strong> User asks a question, stares at a blank screen for 8 seconds, finally sees the answer. Looks frozen.</td>
+        <td><code>app.stream()</code></td>
+        <td>End-user UX</td>
+      </tr>
+      <tr>
+        <td><strong>Debugging is impossible.</strong> Agent gave a wrong answer 3 days ago. Was it the tool result? Wrong system prompt? Token limit? Print statements don't scale.</td>
+        <td>Tracing (LangSmith / Phoenix)</td>
+        <td>Developer UX</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Both attach orthogonally to the graph — same code, new powers.</p>
+
+  <h2>Part 1 — Streaming</h2>
+
+  <p>Until now you've called <code>app.invoke(...)</code>, which blocks until the whole graph finishes. <code>app.stream(...)</code> instead returns an <strong>iterator</strong> that yields intermediate updates as they happen. You loop over it.</p>
+
+  <div class="callout callout-syntax">
+    <strong>New syntax — generators / iterators</strong>
+    <p>An <em>iterator</em> is an object you walk through with <code>for ... in</code>. Each iteration produces one value. Unlike a list, the iterator computes values <em>on demand</em> — perfect for "give me the next event when it's ready."</p>
+<pre style="margin-top:0.5rem"><code><span class="kw">for</span> event <span class="kw">in</span> app.<span class="fn">stream</span>(input, config<span class="op">=</span>config):
+    <span class="fn">print</span>(event)
+    <span class="cm"># prints each update AS the graph runs, not after</span></code></pre>
+    <p>You'll see this same shape elsewhere: <code>open(file)</code>, range-loops, file-reading-line-by-line. Python generators are first-class.</p>
+  </div>
+
+  <h3>The four <code>stream_mode</code> options</h3>
+
+  <p>The same <code>stream()</code> call can emit different shapes of event depending on the <code>stream_mode</code> argument. Each is useful for a different job.</p>
+
+  <table>
+    <thead><tr><th><code>stream_mode</code></th><th>What it yields</th><th>Use when</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>"updates"</code></td>
+        <td>The dict each node returns, one event per node execution</td>
+        <td>Debugging — see the agent loop unfold step by step</td>
+      </tr>
+      <tr>
+        <td><code>"values"</code></td>
+        <td>The full state after each node, every time</td>
+        <td>You want to see the cumulative state at each step</td>
+      </tr>
+      <tr>
+        <td><code>"messages"</code></td>
+        <td>LLM tokens as the model generates them + tool call/result events</td>
+        <td>End-user UX — the typewriter effect</td>
+      </tr>
+      <tr>
+        <td><code>"debug"</code></td>
+        <td>Everything: node entry, exit, errors, internal events</td>
+        <td>Deep debugging — you want it all</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>What <code>"updates"</code> looks like</h3>
+<pre><code><span class="kw">for</span> event <span class="kw">in</span> app.<span class="fn">stream</span>(input, config<span class="op">=</span>config, stream_mode<span class="op">=</span><span class="str">"updates"</span>):
+    <span class="fn">print</span>(event)</code></pre>
+  <p>For your L22 agent answering <em>"Is org acme-prod healthy?"</em>, you'd see roughly:</p>
+<pre><code>{<span class="str">"agent"</span>: {<span class="str">"messages"</span>: [AIMessage(content<span class="op">=</span><span class="str">""</span>, tool_calls<span class="op">=</span>[...])]}}   <span class="cm"># agent decided to call a tool</span>
+{<span class="str">"tools"</span>: {<span class="str">"messages"</span>: [ToolMessage(content<span class="op">=</span><span class="str">"[mock] Org acme-prod: ..."</span>)]}}  <span class="cm"># tool ran</span>
+{<span class="str">"agent"</span>: {<span class="str">"messages"</span>: [AIMessage(content<span class="op">=</span><span class="str">"Yes, acme-prod is healthy..."</span>)]}}   <span class="cm"># agent answered</span></code></pre>
+  <p>Each dict's top-level key is the node name. The value is what that node returned. <strong>Three events = three super-steps</strong>. You can <em>see</em> the loop.</p>
+
+  <h3>What <code>"messages"</code> looks like — the typewriter effect</h3>
+<pre><code><span class="kw">for</span> msg_chunk, metadata <span class="kw">in</span> app.<span class="fn">stream</span>(input, config<span class="op">=</span>config, stream_mode<span class="op">=</span><span class="str">"messages"</span>):
+    <span class="kw">if</span> msg_chunk.content:
+        <span class="fn">print</span>(msg_chunk.content, end<span class="op">=</span><span class="str">""</span>, flush<span class="op">=</span><span class="kw">True</span>)</code></pre>
+  <p>Each iteration is a <strong>tuple</strong> of <code>(message_chunk, metadata)</code>. The chunk is one fragment of an AI message — usually a few tokens. The metadata tells you which node produced it. <code>end=""</code> + <code>flush=True</code> together create the streaming-typing-into-terminal effect.</p>
+
+  <div class="callout callout-warn">
+    <strong>Common gotcha.</strong> <code>stream_mode="messages"</code> yields chunks <em>per token</em>, but tool-call chunks are <em>empty strings</em> until the model finishes constructing the tool call. So <code>if msg_chunk.content:</code> filters out the empty noise.
+  </div>
+
+  <h2>Part 2 — Observability</h2>
+
+  <p>Streaming shows you what's happening <em>right now</em>. Tracing records what happened <em>across every run</em> so you can debug retrospectively, compare runs side by side, and measure cost.</p>
+
+  <p>Two production-grade options. Both let you click into any past run and see:</p>
+  <ul>
+    <li>Every node that executed</li>
+    <li>Each LLM call's exact prompt, response, latency, token count, $ cost</li>
+    <li>Each tool call's input and output</li>
+    <li>The full message tree</li>
+    <li>Errors with full stack traces</li>
+  </ul>
+
+  <h3>The two contenders</h3>
+
+  <table>
+    <thead><tr><th></th><th>LangSmith</th><th>Phoenix (Arize)</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Vendor</strong></td><td>LangChain Inc. (commercial)</td><td>Arize AI (open source)</td></tr>
+      <tr><td><strong>Where state lives</strong></td><td>Their cloud</td><td>Self-host (Docker / pip / cloud)</td></tr>
+      <tr><td><strong>Cost</strong></td><td>Free dev tier; paid by trace volume</td><td>Free open source; paid managed</td></tr>
+      <tr><td><strong>Auth model</strong></td><td>API key + cloud account</td><td>Your infra, your auth</td></tr>
+      <tr><td><strong>LangGraph integration</strong></td><td>Native — env vars + done</td><td>Via OpenTelemetry / LangChain callback</td></tr>
+      <tr><td><strong>Best for</strong></td><td>Speed of setup, team collaboration UI</td><td>Privacy-sensitive data, on-prem requirements</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>For learning, use LangSmith</strong> — the on-ramp is shorter (3 env vars and you're tracing). <strong>For MuleSoft customer demos, lean Phoenix</strong> — your customers' integration data shouldn't leave their network.</p>
+
+  <h3>LangSmith — the 3-env-var trick</h3>
+<pre><code><span class="cm"># Add to your .env:</span>
+LANGSMITH_TRACING<span class="op">=</span><span class="str">true</span>
+LANGSMITH_API_KEY<span class="op">=</span>your_key_from_smith.langchain.com
+LANGSMITH_PROJECT<span class="op">=</span>mulesoft-agent-dev</code></pre>
+  <p><strong>That's the entire integration.</strong> LangGraph reads those env vars at startup; every <code>app.invoke()</code> and <code>app.stream()</code> from then on streams a trace to LangSmith. Open <a href="https://smith.langchain.com">smith.langchain.com</a> and your runs appear in real time.</p>
+
+  <p>No code changes. No SDK imports. Just env vars. This is what "instrumentation as a cross-cutting concern" looks like done right.</p>
+
+  <h3>Phoenix — the local Docker move</h3>
+<pre><code><span class="cm"># Run Phoenix locally (one command):</span>
+docker run -p <span class="num">6006</span>:<span class="num">6006</span> arizephoenix/phoenix:latest</code></pre>
+<pre><code><span class="cm"># In your Python code:</span>
+<span class="kw">from</span> phoenix.otel <span class="kw">import</span> register
+
+tracer_provider <span class="op">=</span> <span class="fn">register</span>(
+    project_name<span class="op">=</span><span class="str">"mulesoft-agent-dev"</span>,
+    endpoint<span class="op">=</span><span class="str">"http://localhost:6006/v1/traces"</span>,
+    auto_instrument<span class="op">=</span><span class="kw">True</span>,  <span class="cm"># auto-detects LangChain / LangGraph</span>
+)</code></pre>
+  <p>Open <code>http://localhost:6006</code> in your browser. Same UI shape as LangSmith but you own the data.</p>
+
+  <h2 id="step-0">Step 0 — install</h2>
+<pre><code><span class="cm"># From your venv:</span>
+cd ~/ai/claude/projects/python/exercises/langgraph
+source .venv/bin/activate
+
+<span class="cm"># Streaming needs nothing new (ships with langgraph).</span>
+<span class="cm"># Pick ONE tracer for Exercise 2:</span>
+
+<span class="cm"># Option A — LangSmith (cloud, easier):</span>
+pip install langsmith
+<span class="cm"># Then sign up at https://smith.langchain.com and grab an API key.</span>
+
+<span class="cm"># Option B — Phoenix (self-hosted, more aligned with MuleSoft customer ops):</span>
+pip install arize-phoenix arize-phoenix-otel openinference-instrumentation-langchain</code></pre>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 1 · guided</span>
+    <h3>Stream your agent two ways</h3>
+
+    <p>Copy <code>l22_ex2_persistent_agent.py</code> to <code>l23_ex1_streaming.py</code>. Replace the two <code>app.invoke(...)</code> calls with <code>app.stream(...)</code> — once with <code>stream_mode="updates"</code>, once with <code>stream_mode="messages"</code> — and observe the difference.</p>
+
+    <h4>Skeleton — fill in the TODOs</h4>
+<pre><code><span class="cm"># ... all the imports, tools, llm, agent_node, graph from L22 ...</span>
+
+<span class="kw">with</span> SqliteSaver.<span class="fn">from_conn_string</span>(<span class="str">"agent_state.db"</span>) <span class="kw">as</span> memory:
+    app <span class="op">=</span> graph.<span class="fn">compile</span>(checkpointer<span class="op">=</span>memory)
+
+    <span class="cm"># Use a FRESH thread_id so we don't pile on top of L22's history</span>
+    config <span class="op">=</span> {<span class="str">"configurable"</span>: {<span class="str">"thread_id"</span>: <span class="str">"streaming-demo-1"</span>}}
+
+    user_question <span class="op">=</span> <span class="str">"Find docs about Connected App rotation"</span>
+
+    <span class="cm"># --- Part A: stream_mode="updates" — watch the agent loop ---</span>
+    <span class="fn">print</span>(<span class="str">"=== Part A: stream_mode='updates' ==="</span>)
+    <span class="cm"># TODO 1: stream the invocation with stream_mode="updates"</span>
+    <span class="cm"># For each event, print which node fired and a short summary.</span>
+    <span class="kw">for</span> event <span class="kw">in</span> app.<span class="fn">stream</span>(...):
+        <span class="kw">for</span> node_name, payload <span class="kw">in</span> event.<span class="fn">items</span>():
+            <span class="fn">print</span>(<span class="str">f"[node: {node_name}] -> "</span>, payload)
+
+    <span class="cm"># --- Part B: stream_mode="messages" — token-by-token typewriter ---</span>
+    <span class="cm"># Use a SECOND fresh thread_id so we re-run from scratch</span>
+    config2 <span class="op">=</span> {<span class="str">"configurable"</span>: {<span class="str">"thread_id"</span>: <span class="str">"streaming-demo-2"</span>}}
+
+    <span class="fn">print</span>(<span class="str">"\n\n=== Part B: stream_mode='messages' ==="</span>)
+    <span class="cm"># TODO 2: stream with stream_mode="messages"</span>
+    <span class="cm"># Each yield is (msg_chunk, metadata). Print msg_chunk.content character-by-character.</span>
+    <span class="kw">for</span> msg_chunk, metadata <span class="kw">in</span> app.<span class="fn">stream</span>(...):
+        <span class="cm"># TODO 3: print msg_chunk.content with end="" and flush=True</span>
+        <span class="cm"># Filter out empty content (tool-call placeholders).</span>
+        ...
+    <span class="fn">print</span>()  <span class="cm"># newline at the end</span></code></pre>
+
+    <details>
+      <summary>Hint 1 — the <code>app.stream(...)</code> call</summary>
+<pre><code>app.<span class="fn">stream</span>(
+    {<span class="str">"messages"</span>: [(<span class="str">"user"</span>, user_question)]},
+    config<span class="op">=</span>config,
+    stream_mode<span class="op">=</span><span class="str">"updates"</span>,
+)</code></pre>
+      <p>Same first two args as <code>invoke</code> — only <code>stream_mode</code> is new.</p>
+    </details>
+
+    <details>
+      <summary>Hint 2 — the messages-mode filter</summary>
+<pre><code><span class="kw">for</span> msg_chunk, metadata <span class="kw">in</span> app.<span class="fn">stream</span>(
+    {<span class="str">"messages"</span>: [(<span class="str">"user"</span>, user_question)]},
+    config<span class="op">=</span>config2,
+    stream_mode<span class="op">=</span><span class="str">"messages"</span>,
+):
+    <span class="kw">if</span> msg_chunk.content:
+        <span class="fn">print</span>(msg_chunk.content, end<span class="op">=</span><span class="str">""</span>, flush<span class="op">=</span><span class="kw">True</span>)</code></pre>
+    </details>
+
+    <h4>Verification</h4>
+    <ul>
+      <li><strong>Part A</strong> — you should see 3 lines (roughly): <code>[node: agent] ... tool_calls</code>, <code>[node: tools] ... ToolMessage(...)</code>, <code>[node: agent] ... AIMessage(content=...)</code>. Each line prints as that node finishes.</li>
+      <li><strong>Part B</strong> — text appears <em>letter by letter</em> like a typewriter. If it all appears at once, your terminal is buffering — make sure <code>flush=True</code>.</li>
+    </ul>
+
+    <div class="callout callout-tip" style="margin-top:0.5rem">
+      <strong>Checkpoint.</strong> Paste your code + a snippet of the output for both parts. I'll review before showing canonical.
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 2 · stretch · pick A or B</span>
+    <h3>Wire up real tracing</h3>
+
+    <p>Pick <strong>one</strong> of the two paths. No skeleton, no canonical answer. The point is to see your agent's trace in a real observability UI.</p>
+
+    <h4>Path A — LangSmith (15 minutes, cloud)</h4>
+    <ol>
+      <li>Sign up at <a href="https://smith.langchain.com">smith.langchain.com</a></li>
+      <li>Settings → API Keys → create a new key</li>
+      <li>Add the 3 env vars to your <code>.env</code> (see "LangSmith — the 3-env-var trick" above)</li>
+      <li>Re-run <code>l23_ex1_streaming.py</code> — no code changes needed</li>
+      <li>Refresh smith.langchain.com — your run appears under project <code>mulesoft-agent-dev</code></li>
+      <li>Click into the run. Expand the agent → tools → agent tree. <strong>Note the per-LLM-call latency and token count.</strong></li>
+    </ol>
+
+    <h4>Path B — Phoenix (30 minutes, self-hosted)</h4>
+    <ol>
+      <li>Run Phoenix in Docker: <code>docker run -p 6006:6006 arizephoenix/phoenix:latest</code></li>
+      <li>Open <code>http://localhost:6006</code> — confirm Phoenix UI loads</li>
+      <li>Install: <code>pip install arize-phoenix-otel openinference-instrumentation-langchain</code></li>
+      <li>Add the <code>register(...)</code> call at the top of your script (see "Phoenix — the local Docker move")</li>
+      <li>Run the script. Refresh Phoenix UI.</li>
+      <li>Inspect the trace. <strong>Same questions as Path A: where's the latency? what's the token count per call?</strong></li>
+    </ol>
+
+    <h4>The question to chew on after either path</h4>
+    <p>You'll see the LLM call dominates total latency. If you wanted to reduce p95 latency by 40%, would you:</p>
+    <ol style="list-style-type: lower-alpha">
+      <li>Switch to a smaller model (<code>gemini-2.5-flash-lite</code>)?</li>
+      <li>Add prompt caching?</li>
+      <li>Reduce the system-prompt size?</li>
+      <li>Run tools in parallel instead of sequential?</li>
+    </ol>
+    <p>(The trace tells you which lever will actually move the needle. Without it, you'd be guessing.)</p>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <p class="quiz-q">1. What's the difference between <code>stream_mode="updates"</code> and <code>stream_mode="values"</code>?</p>
+    <details><summary>Answer</summary>
+      <p><code>"updates"</code> yields only the <em>diff</em> each node returned — useful for "what did this step contribute?". <code>"values"</code> yields the <em>full state</em> after each step — useful for "what does the world look like now?".</p>
+      <p>For a graph with 3 super-steps, <code>"updates"</code> emits 3 small dicts; <code>"values"</code> emits 3 cumulatively larger ones.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">2. Why does <code>app.stream()</code> not require any change to the graph topology?</p>
+    <details><summary>Answer</summary>
+      <p>Streaming is orthogonal to graph structure — it's just a different way to <em>iterate</em> the same execution. Same nodes, same edges, same state. The only difference is the caller's API: you loop over results instead of getting one final dict. Same orthogonality principle as checkpointing in L22.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">3. Your customer has a strict no-data-leaves-network policy. Which tracer do you reach for?</p>
+    <details><summary>Answer</summary>
+      <p>Phoenix. You run it in their VPC; traces never leave their network. LangSmith is hosted by LangChain Inc. — fine for your own dev, problematic for a regulated customer's production data.</p>
+      <p>Real-world MuleSoft customers in finance/healthcare almost always hit this constraint. Knowing the answer up front saves a procurement cycle.</p>
+    </details>
+  </div>
+
+  <h2>What you now know</h2>
+  <ul>
+    <li><code>app.stream()</code> turns invocation into a generator — events arrive as they happen</li>
+    <li>Four <code>stream_mode</code> options: <code>updates</code>, <code>values</code>, <code>messages</code>, <code>debug</code> — pick the right shape for the job</li>
+    <li>Tracing attaches via env vars (LangSmith) or one <code>register()</code> call (Phoenix) — zero graph code changes</li>
+    <li>Streaming = end-user UX; tracing = developer UX. Both orthogonal to graph topology.</li>
+    <li>For MuleSoft customer demos, default to Phoenix; for dev velocity, LangSmith</li>
+  </ul>
+
+  <h2>The mini-series is done — what you can now build</h2>
+  <p>Across L20 → L23 you've built up the entire LangGraph mental model:</p>
+  <table>
+    <thead><tr><th>Lesson</th><th>Capability gained</th></tr></thead>
+    <tbody>
+      <tr><td>L20</td><td>Compose state machines from typed state + nodes + edges. Conditional routing. Fan-out / fan-in.</td></tr>
+      <tr><td>L21</td><td>Drop an LLM into a node. Loop agent ↔ tools until the model is done.</td></tr>
+      <tr><td>L22</td><td>Persist conversations across invocations and process restarts. Time-travel and branch.</td></tr>
+      <tr><td>L23</td><td>Stream output for users; trace runs for developers. Production-shaped.</td></tr>
+    </tbody>
+  </table>
+
+  <p>That's the foundation for the rest of the agent work in this curriculum. From here you can:</p>
+  <ul>
+    <li>Plug your L21 agent's tool set into the L9 RAG pipeline — call <em>real</em> MuleSoft docs instead of mocks</li>
+    <li>Add a second agent — <strong>multi-agent supervisor pattern</strong> (a future lesson)</li>
+    <li>Add <code>interrupt()</code> for human-in-the-loop approval before destructive tool calls</li>
+    <li>Wire your agent into a Mule application as a MuleSoft <strong>MCP server tool</strong> — the integration story is the one nobody else in your peer group can tell</li>
+  </ul>
+
+  <p>That last bullet is your differentiator. The intersection of <em>"I can build agents"</em> and <em>"I can integrate them with enterprise systems"</em> is rare in the market and is exactly your <a href="../MISSION.md">mission</a>.</p>
+
+  <div class="footer-links">
+    <a href="0022-checkpointing-time-travel.html">← L22 — Checkpointing</a>
+    &nbsp; · &nbsp;
+    <a href="0021-llm-node-tools-graph.html">L21 — LLM Node + Tools</a>
+    &nbsp; · &nbsp;
+    <a href="0020-langgraph-state-nodes-edges.html">L20 — State, Nodes, Edges</a>
+    &nbsp; · &nbsp;
+    <a href="../MISSION.md">Mission</a>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 6 — System Instructions, Multi-turn &amp; .env</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 760px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .tryit { background: #fff; border: 2px dashed #94a3b8; border-radius: 10px; padding: 1.2rem 1.4rem; margin: 1.5rem 0; }
+    .tryit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-bottom: 0.6rem; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 6 of ?</p>
+    <h1>System Instructions, Multi-turn &amp; .env</h1>
+    <p class="tagline">Give Gemini a personality, hold a real conversation, and store your API key like a professional.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">Lesson 1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">Lesson 2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">Lesson 3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">Lesson 4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">Lesson 5 ✓</span></a>
+      <span class="pill pill-now">Lesson 6 — System &amp; .env</span>
+      <span class="pill pill-next">Lesson 7 — Embeddings</span>
+    </div>
+  </header>
+
+  <h2>Why this lesson</h2>
+  <p>Four small upgrades take your Gemini calls from "toy" to "production-shaped":</p>
+  <ol>
+    <li><strong>System instructions</strong> — tell the model who it is and how to answer</li>
+    <li><strong>Multi-turn</strong> — keep context across messages</li>
+    <li><strong>.env file</strong> — the right way to store your API key</li>
+    <li><strong>Trimming history</strong> — keep cost from spiralling as the chat grows</li>
+  </ol>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Connection to your mission</div>
+    A RAG system is a system instruction ("Answer using only the provided context") + a list of past turns + a retrieved chunk. You're learning the scaffolding now.
+  </div>
+
+  <!-- ═══ 1. System instructions ═══ -->
+  <h2>1 — System instructions: giving Gemini a role</h2>
+  <p>A <strong>system instruction</strong> is a separate prompt that sets the model's behaviour for the whole conversation. The user's question goes in <code>contents</code>; the persona/rules go in the system instruction.</p>
+
+<pre><code><span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+<span class="kw">from</span> <span class="var">google</span><span class="op">.</span><span class="var">genai</span> <span class="kw">import</span> <span class="var">types</span>
+
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()
+
+<span class="var">response</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="str">"What is OAuth?"</span><span class="op">,</span>
+    <span class="var">config</span><span class="op">=</span><span class="var">types</span><span class="op">.</span><span class="fn">GenerateContentConfig</span>(
+        <span class="var">system_instruction</span><span class="op">=</span><span class="op">(</span>
+            <span class="str">"You are a senior MuleSoft architect. "</span>
+            <span class="str">"Answer in 2 sentences. "</span>
+            <span class="str">"Always relate your answer to API security in the Anypoint Platform."</span>
+        <span class="op">)</span>
+    <span class="op">)</span>
+<span class="op">)</span>
+
+<span class="fn">print</span>(<span class="var">response</span><span class="op">.</span><span class="attr">text</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Tip — what to put there</div>
+    Good system instructions tell the model:
+    <ul style="margin-top:0.4rem">
+      <li><strong>Who it is</strong> ("You are a senior MuleSoft architect")</li>
+      <li><strong>How to answer</strong> ("In 2 sentences", "In bullet points", "JSON only")</li>
+      <li><strong>What to avoid</strong> ("Don't speculate", "Don't invent API names")</li>
+    </ul>
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft analogy</div>
+    System instructions are like a global error handler or a connector configuration in a Mule project — set once, applied to every message that flows through.
+  </div>
+
+  <!-- ═══ 2. Multi-turn ═══ -->
+  <h2>2 — Multi-turn: holding a conversation</h2>
+  <p>The Gemini SDK has a built-in <code>chats</code> helper that tracks history for you. <a href="https://ai.google.dev/gemini-api/docs/text-generation" target="_blank">Source: Gemini API docs</a>.</p>
+
+<pre><code><span class="var">chat</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">chats</span><span class="op">.</span><span class="fn">create</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+    <span class="var">config</span><span class="op">=</span><span class="var">types</span><span class="op">.</span><span class="fn">GenerateContentConfig</span>(
+        <span class="var">system_instruction</span><span class="op">=</span><span class="str">"You are a MuleSoft architect. Be concise."</span>
+    <span class="op">)</span>
+<span class="op">)</span>
+
+<span class="var">r1</span> <span class="op">=</span> <span class="var">chat</span><span class="op">.</span><span class="fn">send_message</span>(<span class="str">"What's a System API?"</span>)
+<span class="fn">print</span>(<span class="str">"A1:"</span><span class="op">,</span> <span class="var">r1</span><span class="op">.</span><span class="attr">text</span>)
+
+<span class="cm"># The chat object remembers turn 1 — no need to re-send it</span>
+<span class="var">r2</span> <span class="op">=</span> <span class="var">chat</span><span class="op">.</span><span class="fn">send_message</span>(<span class="str">"How does it differ from a Process API?"</span>)
+<span class="fn">print</span>(<span class="str">"A2:"</span><span class="op">,</span> <span class="var">r2</span><span class="op">.</span><span class="attr">text</span>)
+
+<span class="cm"># Inspect the history any time</span>
+<span class="kw">for</span> <span class="var">m</span> <span class="kw">in</span> <span class="var">chat</span><span class="op">.</span><span class="fn">get_history</span>()<span class="op">:</span>
+    <span class="fn">print</span>(<span class="var">m</span><span class="op">.</span><span class="attr">role</span><span class="op">,</span> <span class="str">"→"</span><span class="op">,</span> <span class="var">m</span><span class="op">.</span><span class="attr">parts</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="attr">text</span><span class="op">[</span><span class="op">:</span><span class="num">60</span><span class="op">]</span>)</code></pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Cost consciousness</div>
+    Each turn re-sends the full history under the hood — so a 20-message chat costs ~20× a single call. Trim or summarise old turns when conversations grow long. (We'll cover this when we build the RAG system.)
+  </div>
+
+  <h3>What if you want manual control?</h3>
+  <p>If you want full control (logging, custom trimming, persistence), drop <code>chats</code> and pass a list of messages to <code>generate_content</code> yourself:</p>
+
+<pre><code><span class="var">history</span> <span class="op">=</span> <span class="op">[</span>
+    <span class="op">{</span><span class="str">"role"</span><span class="op">:</span> <span class="str">"user"</span><span class="op">,</span>  <span class="str">"parts"</span><span class="op">:</span> <span class="op">[</span><span class="op">{</span><span class="str">"text"</span><span class="op">:</span> <span class="str">"What's a System API?"</span><span class="op">}</span><span class="op">]</span><span class="op">}</span><span class="op">,</span>
+    <span class="op">{</span><span class="str">"role"</span><span class="op">:</span> <span class="str">"model"</span><span class="op">,</span> <span class="str">"parts"</span><span class="op">:</span> <span class="op">[</span><span class="op">{</span><span class="str">"text"</span><span class="op">:</span> <span class="str">"A System API exposes core data..."</span><span class="op">}</span><span class="op">]</span><span class="op">}</span><span class="op">,</span>
+    <span class="op">{</span><span class="str">"role"</span><span class="op">:</span> <span class="str">"user"</span><span class="op">,</span>  <span class="str">"parts"</span><span class="op">:</span> <span class="op">[</span><span class="op">{</span><span class="str">"text"</span><span class="op">:</span> <span class="str">"How is it different from a Process API?"</span><span class="op">}</span><span class="op">]</span><span class="op">}</span><span class="op">,</span>
+<span class="op">]</span>
+
+<span class="var">response</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="var">history</span>
+<span class="op">)</span></code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Roles you'll see</div>
+    Only two: <code>user</code> (you) and <code>model</code> (Gemini). The system instruction is separate — it doesn't have a role.
+  </div>
+
+  <!-- ═══ 3. .env ═══ -->
+  <h2>3 — .env: the proper home for your API key</h2>
+  <p><code>export GEMINI_API_KEY=...</code> works for one terminal session. For real projects, use a <code>.env</code> file that's <strong>git-ignored</strong>.</p>
+
+  <h3>Step 1: install <code>python-dotenv</code></h3>
+<pre><code>pip install python-dotenv</code></pre>
+
+  <h3>Step 2: create <code>.env</code> in your project folder</h3>
+<pre><code><span class="cm"># ~/ai/claude/projects/python/.env</span>
+GEMINI_API_KEY=AIza...your-key-here</code></pre>
+
+  <h3>Step 3: add it to <code>.gitignore</code></h3>
+<pre><code><span class="cm"># ~/ai/claude/projects/python/.gitignore</span>
+.env
+.venv/
+__pycache__/</code></pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Critical — don't skip this</div>
+    Adding <code>.env</code> to <code>.gitignore</code> is what stops you from accidentally pushing your key to GitHub. Many leaks happen this way. Treat your API key like a password.
+  </div>
+
+  <h3>Step 4: load it in your script</h3>
+<pre><code><span class="kw">from</span> <span class="var">dotenv</span> <span class="kw">import</span> <span class="var">load_dotenv</span>
+<span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+
+<span class="fn">load_dotenv</span>()                    <span class="cm"># reads .env into os.environ</span>
+
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()        <span class="cm"># picks up GEMINI_API_KEY automatically</span>
+
+<span class="var">response</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="str">"Say hi."</span>
+<span class="op">)</span>
+<span class="fn">print</span>(<span class="var">response</span><span class="op">.</span><span class="attr">text</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Bonus — share a template safely</div>
+    Create a <code>.env.example</code> with placeholder values and commit <em>that</em>. Teammates copy it to <code>.env</code> and fill in their own keys.
+<pre style="margin-top:0.6rem"><code><span class="cm"># .env.example  (safe to commit)</span>
+GEMINI_API_KEY=your-key-here</code></pre>
+  </div>
+
+  <!-- ═══ 4. Trimming history ═══ -->
+  <h2>4 — Trimming history to control cost</h2>
+  <p>Remember the warning in section 2: every turn re-sends the full history. Concrete numbers make this real.</p>
+
+  <h3>The problem in numbers</h3>
+  <p>Suppose each user message is ~50 tokens and each model reply is ~150 tokens (200 tokens per round). After 20 rounds you're sending <strong>~4,000 tokens</strong> of history with every new question — even if your new question is 10 tokens long. The bill grows linearly with conversation length.</p>
+
+<pre><code><span class="cm"># A quick way to see the growth yourself</span>
+<span class="kw">for</span> <span class="var">i</span><span class="op">,</span> <span class="var">turn</span> <span class="kw">in</span> <span class="fn">enumerate</span>(<span class="var">chat</span><span class="op">.</span><span class="fn">get_history</span>())<span class="op">:</span>
+    <span class="fn">print</span>(<span class="var">i</span><span class="op">,</span> <span class="var">turn</span><span class="op">.</span><span class="attr">role</span><span class="op">,</span> <span class="fn">len</span>(<span class="var">turn</span><span class="op">.</span><span class="attr">parts</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="attr">text</span>))</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — list slicing</div>
+    The trimming code uses Python's <strong>slice</strong> notation <code>list[start:stop]</code> to take a portion of a list. Quick reference:
+    <ul style="margin-top:0.4rem">
+      <li><code>lst[-10:]</code> → the <strong>last 10 items</strong> (negative = count from the end)</li>
+      <li><code>lst[2:]</code> → everything <strong>except the first 2 items</strong></li>
+      <li><code>lst[:3]</code> → just the <strong>first 3 items</strong></li>
+      <li><code>lst[1:4]</code> → items at indexes 1, 2, 3 (stop is exclusive)</li>
+    </ul>
+    <p style="margin-top:0.4rem">Slicing always returns a <em>new</em> list; the original is unchanged unless you reassign it (<code>history = history[2:]</code>).</p>
+    <p style="margin-top:0.4rem"><strong>MuleSoft analogy:</strong> the same idea as <code>payload[2..-1]</code> in DataWeave — extract a sub-array without mutating the original.</p>
+  </div>
+
+  <h3>Strategy 1 — Sliding window (start here)</h3>
+  <p>Keep only the last N messages. Drop the oldest. Simple, predictable, works for most chatbots.</p>
+
+<pre><code><span class="cm"># sliding_window_chat.py</span>
+<span class="kw">from</span> <span class="var">dotenv</span> <span class="kw">import</span> <span class="var">load_dotenv</span>
+<span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+<span class="kw">from</span> <span class="var">google</span><span class="op">.</span><span class="var">genai</span> <span class="kw">import</span> <span class="var">types</span>
+
+<span class="fn">load_dotenv</span>()
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()
+
+<span class="var">PERSONA</span>     <span class="op">=</span> <span class="str">"You are a concise MuleSoft architect."</span>
+<span class="var">MAX_MSGS</span>    <span class="op">=</span> <span class="num">10</span>          <span class="cm"># keep last 10 messages = 5 user/model rounds</span>
+
+<span class="var">history</span> <span class="op">=</span> <span class="op">[]</span>           <span class="cm"># list of {"role", "parts"} dicts (we manage it)</span>
+
+<span class="kw">def</span> <span class="fn">say</span>(<span class="var">user_text</span>)<span class="op">:</span>
+    <span class="cm"># 1. Append the user's message</span>
+    <span class="var">history</span><span class="op">.</span><span class="fn">append</span>(<span class="op">{</span><span class="str">"role"</span><span class="op">:</span> <span class="str">"user"</span><span class="op">,</span> <span class="str">"parts"</span><span class="op">:</span> <span class="op">[</span><span class="op">{</span><span class="str">"text"</span><span class="op">:</span> <span class="var">user_text</span><span class="op">}</span><span class="op">]</span><span class="op">}</span>)
+
+    <span class="cm"># 2. Take only the most recent MAX_MSGS messages</span>
+    <span class="var">trimmed</span> <span class="op">=</span> <span class="var">history</span><span class="op">[</span><span class="op">-</span><span class="var">MAX_MSGS</span><span class="op">:</span><span class="op">]</span>
+
+    <span class="cm"># 3. Call the model — system_instruction is separate, never trimmed</span>
+    <span class="var">response</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(
+        <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+        <span class="var">contents</span><span class="op">=</span><span class="var">trimmed</span><span class="op">,</span>
+        <span class="var">config</span><span class="op">=</span><span class="var">types</span><span class="op">.</span><span class="fn">GenerateContentConfig</span>(<span class="var">system_instruction</span><span class="op">=</span><span class="var">PERSONA</span>)
+    <span class="op">)</span>
+
+    <span class="cm"># 4. Append the model's reply so future turns can see it</span>
+    <span class="var">history</span><span class="op">.</span><span class="fn">append</span>(<span class="op">{</span><span class="str">"role"</span><span class="op">:</span> <span class="str">"model"</span><span class="op">,</span> <span class="str">"parts"</span><span class="op">:</span> <span class="op">[</span><span class="op">{</span><span class="str">"text"</span><span class="op">:</span> <span class="var">response</span><span class="op">.</span><span class="attr">text</span><span class="op">}</span><span class="op">]</span><span class="op">}</span>)
+    <span class="kw">return</span> <span class="var">response</span><span class="op">.</span><span class="attr">text</span><span class="op">,</span> <span class="var">response</span><span class="op">.</span><span class="attr">usage_metadata</span><span class="op">.</span><span class="attr">total_token_count</span>
+
+<span class="kw">for</span> <span class="var">q</span> <span class="kw">in</span> <span class="op">[</span><span class="str">"What's a System API?"</span><span class="op">,</span> <span class="str">"Give me 3 examples."</span><span class="op">,</span> <span class="str">"Pick one and elaborate."</span><span class="op">]</span><span class="op">:</span>
+    <span class="var">answer</span><span class="op">,</span> <span class="var">tokens</span> <span class="op">=</span> <span class="fn">say</span>(<span class="var">q</span>)
+    <span class="fn">print</span>(<span class="str">f"\nQ: {q}\nA: {answer}\n(tokens: {tokens})"</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Why we manage history ourselves</div>
+    The built-in <code>chats</code> helper grows forever. The moment you care about cost or context limits, switch to the manual list-of-messages pattern (section 2) — that's the only place you can trim.
+  </div>
+
+  <h3>Strategy 2 — Token budget (more precise)</h3>
+  <p>A sliding window of "last N messages" is rough — one long message can blow the budget. A smarter approach drops the oldest message until the total token count fits a budget. Use <code>client.models.count_tokens()</code> to measure.</p>
+
+<pre><code><span class="var">TOKEN_BUDGET</span> <span class="op">=</span> <span class="num">2000</span>
+
+<span class="kw">def</span> <span class="fn">trim_to_budget</span>(<span class="var">history</span>)<span class="op">:</span>
+    <span class="kw">while</span> <span class="kw">True</span><span class="op">:</span>
+        <span class="var">count</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">count_tokens</span>(
+            <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+            <span class="var">contents</span><span class="op">=</span><span class="var">history</span>
+        <span class="op">)</span><span class="op">.</span><span class="attr">total_tokens</span>
+        <span class="kw">if</span> <span class="var">count</span> <span class="op">&lt;=</span> <span class="var">TOKEN_BUDGET</span> <span class="kw">or</span> <span class="fn">len</span>(<span class="var">history</span>) <span class="op">&lt;=</span> <span class="num">2</span><span class="op">:</span>
+            <span class="kw">return</span> <span class="var">history</span>
+        <span class="cm"># Drop the oldest pair (user + model) to keep turns balanced</span>
+        <span class="var">history</span> <span class="op">=</span> <span class="var">history</span><span class="op">[</span><span class="num">2</span><span class="op">:</span><span class="op">]</span></code></pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Drop in pairs</div>
+    Always remove a <code>user</code>+<code>model</code> pair together. If you leave an orphan <code>model</code> reply at the start of history, Gemini gets confused — the conversation must start with a <code>user</code> turn.
+  </div>
+
+  <h3>Strategy 3 — Summarisation (advanced, mention only)</h3>
+  <p>Once a chat gets long, ask Gemini itself to compress old turns into a 1-paragraph summary, then prepend that summary as the first user message. You preserve context at a fraction of the token cost. We'll use this technique inside the RAG system later.</p>
+
+  <h3>Quick decision guide</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:0.92rem; margin-bottom:1.2rem">
+    <thead>
+      <tr style="background:#1a1a1a; color:#fff">
+        <th style="padding:0.5rem 0.8rem; text-align:left">Use case</th>
+        <th style="padding:0.5rem 0.8rem; text-align:left">Strategy</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb">Short chats, predictable messages</td><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb">Sliding window</td></tr>
+      <tr><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb">Variable-length messages, strict cost cap</td><td style="padding:0.5rem 0.8rem; border-bottom:1px solid #e5e7eb">Token budget</td></tr>
+      <tr><td style="padding:0.5rem 0.8rem">Long-running assistants, important early context</td><td style="padding:0.5rem 0.8rem">Summarisation</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ═══ Put it together ═══ -->
+  <h2>Put it all together</h2>
+  <p>One file that uses all three patterns. Save as <code>chat_with_persona.py</code>:</p>
+
+<pre><code><span class="cm"># chat_with_persona.py</span>
+<span class="kw">from</span> <span class="var">dotenv</span> <span class="kw">import</span> <span class="var">load_dotenv</span>
+<span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+<span class="kw">from</span> <span class="var">google</span><span class="op">.</span><span class="var">genai</span> <span class="kw">import</span> <span class="var">types</span>
+
+<span class="fn">load_dotenv</span>()
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()
+
+<span class="var">PERSONA</span> <span class="op">=</span> <span class="op">(</span>
+    <span class="str">"You are a senior MuleSoft architect helping a colleague. "</span>
+    <span class="str">"Be concise (max 3 sentences). "</span>
+    <span class="str">"If the question is ambiguous, ask one clarifying question instead of guessing."</span>
+<span class="op">)</span>
+
+<span class="var">chat</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">chats</span><span class="op">.</span><span class="fn">create</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+    <span class="var">config</span><span class="op">=</span><span class="var">types</span><span class="op">.</span><span class="fn">GenerateContentConfig</span>(<span class="var">system_instruction</span><span class="op">=</span><span class="var">PERSONA</span>)
+<span class="op">)</span>
+
+<span class="fn">print</span>(<span class="str">"Chat ready. Type your question (or 'quit'):"</span>)
+<span class="kw">while</span> <span class="kw">True</span><span class="op">:</span>
+    <span class="var">q</span> <span class="op">=</span> <span class="fn">input</span>(<span class="str">"\nYou: "</span>)<span class="op">.</span><span class="fn">strip</span>()
+    <span class="kw">if</span> <span class="var">q</span><span class="op">.</span><span class="fn">lower</span>() <span class="kw">in</span> <span class="op">{</span><span class="str">"quit"</span><span class="op">,</span> <span class="str">"exit"</span><span class="op">}</span><span class="op">:</span>
+        <span class="kw">break</span>
+    <span class="kw">if</span> <span class="kw">not</span> <span class="var">q</span><span class="op">:</span>
+        <span class="kw">continue</span>
+    <span class="var">resp</span> <span class="op">=</span> <span class="var">chat</span><span class="op">.</span><span class="fn">send_message</span>(<span class="var">q</span>)
+    <span class="fn">print</span>(<span class="str">f"\nGemini: {resp.text}"</span>)</code></pre>
+
+  <div class="tryit">
+    <div class="tryit-label">Try it yourself</div>
+    <ol>
+      <li>Set up your <code>.env</code> file and <code>.gitignore</code> as shown above.</li>
+      <li>Run <code>pip install python-dotenv</code> (in your venv if you have one).</li>
+      <li>Save the script and run <code>python3 chat_with_persona.py</code>.</li>
+      <li>Ask a follow-up question that depends on your previous one (e.g. "What's a System API?" then "Give me 3 examples"). Confirm the model remembers the topic.</li>
+      <li><strong>Modify:</strong> Change <code>PERSONA</code> to make Gemini behave like a presales engineer — short, benefit-focused answers. Notice the tone shift.</li>
+      <li><strong>Stretch:</strong> After each answer, print <code>resp.usage_metadata.total_token_count</code>. Watch the number grow as the chat history grows — that's why you'll need to trim later.</li>
+    </ol>
+  </div>
+
+  <!-- ═══ Quiz ═══ -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q1.</strong> Where does a system instruction go?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">In the <code>contents</code> argument as the first message</li>
+        <li data-i="1">As an environment variable</li>
+        <li data-i="2">In <code>config=GenerateContentConfig(system_instruction=...)</code></li>
+        <li data-i="3">In the <code>system_role</code> argument</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q2.</strong> When you use <code>client.chats.create(...)</code> and call <code>send_message</code> three times, how many turns of history are sent on the third call?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Only the latest message</li>
+        <li data-i="1">All previous turns plus the new one (history grows each turn)</li>
+        <li data-i="2">Only the system instruction</li>
+        <li data-i="3">None — chat is stateful on the server</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q3.</strong> You added a <code>.env</code> file with your API key. Which is the safest setup?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Commit <code>.env</code> to git so teammates can use the same key</li>
+        <li data-i="1">Email the <code>.env</code> file to teammates</li>
+        <li data-i="2">Add <code>.env</code> to <code>.gitignore</code>; commit a <code>.env.example</code> with placeholder values</li>
+        <li data-i="3">Hardcode the key in the script and gitignore the script</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q4.</strong> Which roles can appear in Gemini's chat history?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0"><code>user</code>, <code>assistant</code>, <code>system</code></li>
+        <li data-i="1"><code>user</code> and <code>model</code> (system instruction is separate)</li>
+        <li data-i="2"><code>human</code> and <code>ai</code></li>
+        <li data-i="3"><code>question</code> and <code>answer</code></li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <h2>What's next</h2>
+  <p>You now have everything you need to call Gemini in a structured way. <strong>Lesson 7</strong> will be the first true RAG-foundation lesson: <strong>embeddings</strong> — how Gemini turns text into vectors that you can compare. This is the single most important concept for the retrieval half of RAG.</p>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Show me how to stream the response token by token"</li>
+      <li>"How do I trim chat history to control cost?"</li>
+      <li>"What's the difference between system_instruction and a long user prompt?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0005-sdk-vs-adk.html">← Lesson 5 — SDK vs ADK</a>
+      <a href="0007-embeddings.html">Lesson 7 — Embeddings →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! system_instruction is a config field, separate from contents.", err: "Not quite. The system instruction goes in config=GenerateContentConfig(system_instruction=...). It is NOT in contents." },
+    1: { ok: "Correct! Each call re-sends the full history — that's why long chats get expensive.", err: "Not quite. Every turn re-sends the entire history (the API itself is stateless). That's why you'll need to trim or summarise eventually." },
+    2: { ok: "Correct! .gitignore the secret, commit a placeholder template.", err: "Not quite. Real keys never go in git. Gitignore .env, then commit a .env.example template with placeholder values for teammates." },
+    3: { ok: "Correct! Just user and model. The system instruction is a separate config field.", err: "Not quite. Gemini uses 'user' and 'model'. The system instruction is NOT a role — it's a separate config field." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

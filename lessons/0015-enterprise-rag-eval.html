@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 15 — Enterprise RAG Eval — Beyond the Basics</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .metric-card {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin: 0.8rem 0;
+    }
+    .metric-card h4 { margin: 0 0 0.4rem; font-size: 1rem; }
+    .metric-card .formula { font-family: "JetBrains Mono", monospace; background: #1e1e2e; color: #cdd6f4; padding: 0.5rem 0.8rem; border-radius: 6px; font-size: 0.85rem; margin: 0.4rem 0; }
+    .metric-tag { display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; padding: 0.1rem 0.5rem; border-radius: 4px; margin-left: 0.4rem; vertical-align: middle; }
+    .tag-judge { background: #fef3c7; color: #92400e; }
+    .tag-determ { background: #dcfce7; color: #166534; }
+    .tag-embed { background: #dbeafe; color: #1e40af; }
+
+    .layer-banner {
+      background: linear-gradient(135deg, #1a1a1a, #404040);
+      color: #fff;
+      border-radius: 10px;
+      padding: 0.7rem 1.1rem;
+      margin: 2.4rem 0 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 15 of ?</p>
+    <h1>Enterprise RAG Eval — Beyond the Basics</h1>
+    <p class="tagline">L14 taught you the foundation. This lesson covers the metrics enterprise teams actually track when RAG goes to production: per-query depth, safety, operations, and system-level health.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <a href="0008-chunking.html"><span class="pill pill-done">L8 ✓</span></a>
+      <a href="0009-build-rag.html"><span class="pill pill-done">L9 ✓</span></a>
+      <a href="0010-vector-db.html"><span class="pill pill-done">L10 ✓</span></a>
+      <a href="0011-contextual-retrieval.html"><span class="pill pill-done">L11 ✓</span></a>
+      <a href="0012-hybrid-search.html"><span class="pill pill-done">L12 ✓</span></a>
+      <a href="0013-advanced-retrieval-patterns.html"><span class="pill pill-done">L13 ✓</span></a>
+      <a href="0014-rag-evaluation.html"><span class="pill pill-done">L14 ✓</span></a>
+      <span class="pill pill-now">L15 — Enterprise Eval</span>
+      <span class="pill pill-next">L16 — Improving Metrics</span>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Why this lesson</h2>
+  <p>
+    Lesson 14 gave you per-query metrics — Hit@K, Precision@K, Recall@K, MRR — and a generation-side judge. Those are <strong>necessary but not sufficient</strong> for production.
+  </p>
+  <p>Enterprise teams track three additional layers:</p>
+
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>The question it answers</th><th>Examples</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Per-query depth</strong></td>
+        <td>How well did this answer perform across <em>multiple</em> quality dimensions?</td>
+        <td>Context Precision, Context Recall, Groundedness, Citation Accuracy</td>
+      </tr>
+      <tr>
+        <td><strong>Safety &amp; compliance</strong></td>
+        <td>Are we exposing the org to hallucination, toxic output, or PII leakage?</td>
+        <td>Hallucination Rate, Toxicity, PII Leakage</td>
+      </tr>
+      <tr>
+        <td><strong>Operations</strong></td>
+        <td>Can we afford to run it? Is it fast enough?</td>
+        <td>Latency p50/p95/p99, Cost/query, Coverage</td>
+      </tr>
+      <tr>
+        <td><strong>System health</strong></td>
+        <td>Is the system stable and improving over time?</td>
+        <td>Drift, Robustness, Refusal Correctness, Failure Clustering</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Each layer answers a different stakeholder. Per-query is for engineers. Safety is for legal/compliance. Operations is for finance. System health is for SREs and product managers. <strong>Production means satisfying all four.</strong></p>
+
+  <p style="font-size:0.92rem; color:#666">
+    Tag legend used below:
+    <span class="metric-tag tag-determ">DETERMINISTIC</span> = pure math, no LLM.
+    <span class="metric-tag tag-judge">LLM-JUDGE</span> = uses an LLM to grade.
+    <span class="metric-tag tag-embed">EMBEDDING</span> = uses an embedding-cosine, no LLM-judge.
+  </p>
+
+  <!-- ──────────────────────────────────────────────────────────── -->
+  <div class="layer-banner">Layer 1 — Per-query depth metrics</div>
+
+  <!-- Context Precision -->
+  <div class="metric-card">
+    <h4>Context Precision <span class="metric-tag tag-judge">LLM-JUDGE</span></h4>
+    <p>
+      Like Precision@K from L14, but <strong>position-aware</strong>. A relevant chunk at rank 1 scores higher than the same chunk at rank 5 — because LLMs weight earlier context more heavily.
+    </p>
+    <div class="formula">CP = Σ (Precision@k × relevance_k) / total_relevant</div>
+    <p>RAGAS uses an LLM judge to decide each chunk's relevance, then weights by position. The intuition: <em>"reward retrievers that rank good stuff higher."</em></p>
+    <p>You'd reach for this when you've already optimised Precision@K and are now tuning <em>where</em> good chunks land in the list — typical right before adding a reranker.</p>
+  </div>
+
+  <!-- Context Recall -->
+  <div class="metric-card">
+    <h4>Context Recall <span class="metric-tag tag-judge">LLM-JUDGE</span></h4>
+    <p>
+      L14's Recall@K asks <em>"did we get the chunk IDs marked relevant?"</em> — but the chunk IDs were labelled by you, by hand. <strong>Context Recall is different</strong> — it asks an LLM:
+    </p>
+    <p style="font-style:italic; padding:0.4rem 0.8rem; border-left:3px solid #cbd5e1">"Given the expected answer, can each claim in it be traced back to one of the retrieved chunks?"</p>
+    <p>So it doesn't depend on having labelled chunk IDs — only on having a ground-truth answer. Useful when annotating chunks is expensive but writing target answers isn't.</p>
+
+<pre><code>CONTEXT_RECALL_PROMPT <span class="op">=</span> <span class="str">"""</span>
+<span class="str">Given the EXPECTED ANSWER and the RETRIEVED CONTEXT, identify which</span>
+<span class="str">sentences in the answer are supported by the context.</span>
+
+<span class="str">EXPECTED ANSWER: {answer}</span>
+<span class="str">CONTEXT: {context}</span>
+
+<span class="str">Respond with JSON: {{"supported_count": N, "total_sentences": M}}</span>
+<span class="str">"""</span>
+
+<span class="kw">def</span> <span class="fn">context_recall</span>(retrieved_chunks, expected_answer):
+    response <span class="op">=</span> client.models.generate_content(
+        model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>,
+        contents<span class="op">=</span>CONTEXT_RECALL_PROMPT.format(
+            answer<span class="op">=</span>expected_answer,
+            context<span class="op">=</span><span class="str">"\n\n"</span>.join(retrieved_chunks),
+        ),
+    )
+    parsed <span class="op">=</span> json.loads(response.text)
+    <span class="kw">return</span> parsed[<span class="str">"supported_count"</span>] <span class="op">/</span> <span class="fn">max</span>(parsed[<span class="str">"total_sentences"</span>], <span class="num">1</span>)</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: <code>max(x, 1)</code> guard</div>
+      <code>parsed["total_sentences"] / max(parsed["total_sentences"], 1)</code> protects against divide-by-zero. <code>max(x, 1)</code> returns <code>x</code> if it's at least 1, otherwise 1. Common defensive idiom for ratios. Cleaner than an explicit <code>if</code> branch.
+    </div>
+  </div>
+
+  <!-- Context Entities Recall -->
+  <div class="metric-card">
+    <h4>Context Entities Recall <span class="metric-tag tag-judge">LLM-JUDGE</span></h4>
+    <p>
+      Of the named entities (companies, error codes, ticket IDs, version strings) in the expected answer, how many appear verbatim in retrieved chunks?
+    </p>
+    <div class="formula">CER = |entities in retrieved ∩ entities in expected| / |entities in expected|</div>
+    <p>This is the metric that explicitly catches hybrid-search wins. If your eval shows CER jumped after adding BM25 (Lesson 12), you've proven the upgrade fixed the exact-ID weakness — not just hand-waved it.</p>
+    <p>Implementation: ask an LLM to extract entities from both, then set-intersect.</p>
+  </div>
+
+  <!-- Groundedness -->
+  <div class="metric-card">
+    <h4>Groundedness <span class="metric-tag tag-judge">LLM-JUDGE</span></h4>
+    <p>
+      Stricter cousin of Faithfulness from L14. Faithfulness asks "is the answer broadly supported?" Groundedness asks <em>"is every individual sentence supported, with a citation?"</em>
+    </p>
+<pre><code><span class="kw">def</span> <span class="fn">groundedness</span>(answer, context):
+    sentences <span class="op">=</span> re.split(<span class="str">r"(?&lt;=[.!?])\s+"</span>, answer.strip())
+    supported <span class="op">=</span> <span class="num">0</span>
+    <span class="kw">for</span> sentence <span class="kw">in</span> sentences:
+        prompt <span class="op">=</span> <span class="str">f"""</span>
+<span class="str">Is the SENTENCE supported by the CONTEXT? Answer JSON only.</span>
+<span class="str">CONTEXT: {context}</span>
+<span class="str">SENTENCE: {sentence}</span>
+<span class="str">Respond: {{"supported": true|false}}</span>
+<span class="str">"""</span>
+        result <span class="op">=</span> client.models.generate_content(
+            model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>, contents<span class="op">=</span>prompt
+        )
+        <span class="kw">if</span> json.loads(result.text)[<span class="str">"supported"</span>]:
+            supported <span class="op">+=</span> <span class="num">1</span>
+    <span class="kw">return</span> supported <span class="op">/</span> <span class="fn">max</span>(<span class="fn">len</span>(sentences), <span class="num">1</span>)</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: regex with lookbehind <code>(?&lt;=...)</code></div>
+      <code>r"(?&lt;=[.!?])\s+"</code> splits on whitespace, but only when preceded by <code>.</code>, <code>!</code>, or <code>?</code>. The <code>(?&lt;=...)</code> is a <em>lookbehind assertion</em> — it requires a pattern to be there but doesn't consume it, so the punctuation stays attached to the previous sentence. Standard trick for sentence splitting in English.
+    </div>
+
+    <p>Vertex AI's eval API ships a managed Groundedness metric with citations baked in — useful if you don't want to roll your own.</p>
+  </div>
+
+  <!-- Citation accuracy -->
+  <div class="metric-card">
+    <h4>Citation Accuracy <span class="metric-tag tag-determ">DETERMINISTIC</span> + <span class="metric-tag tag-judge">LLM-JUDGE</span></h4>
+    <p>Your RAG (from L9 onward) instructs Gemini to cite chunks with <code>[1] [3]</code>. Citation accuracy verifies the citations are correct:</p>
+    <ol>
+      <li><strong>Parse</strong> the answer for citation markers like <code>[3]</code> (deterministic regex)</li>
+      <li>For each cited chunk, <strong>ask the LLM</strong>: "Does this sentence's claim actually come from chunk N?"</li>
+      <li>Score = correctly cited / total citations</li>
+    </ol>
+    <p>Critical for any user-facing system that shows citations — fake citations destroy trust faster than no citations.</p>
+  </div>
+
+  <!-- Answer Semantic Similarity -->
+  <div class="metric-card">
+    <h4>Answer Semantic Similarity <span class="metric-tag tag-embed">EMBEDDING</span></h4>
+    <p>
+      Cosine similarity between the embedding of the produced answer and the embedding of the expected answer. <strong>No LLM judge needed</strong> — pure math, fast, cheap.
+    </p>
+<pre><code><span class="kw">def</span> <span class="fn">answer_similarity</span>(produced, expected):
+    p_vec <span class="op">=</span> embed(produced, <span class="str">"SEMANTIC_SIMILARITY"</span>)
+    e_vec <span class="op">=</span> embed(expected, <span class="str">"SEMANTIC_SIMILARITY"</span>)
+    <span class="kw">return</span> cosine(p_vec, e_vec)   <span class="cm"># your cosine helper from L9</span></code></pre>
+
+    <div class="callout callout-tip">
+      <div class="callout-label">Note the new task_type</div>
+      For comparing two pieces of <em>output</em> text (not query↔doc retrieval), use <code>task_type="SEMANTIC_SIMILARITY"</code>. Gemini's embedding API has a separate optimisation path for this case. <a href="https://ai.google.dev/gemini-api/docs/embeddings#task-types">Reference</a>
+    </div>
+    <p><strong>Pros:</strong> deterministic, free of LLM-judge bias, runs in milliseconds. <strong>Cons:</strong> can't catch subtle factual errors — two factually different answers can still be semantically similar.</p>
+  </div>
+
+  <!-- Refusal correctness -->
+  <div class="metric-card">
+    <h4>Refusal Correctness <span class="metric-tag tag-determ">DETERMINISTIC</span></h4>
+    <p>
+      For eval entries where the right answer is <em>"I don't have that information"</em>, did the system actually refuse? Or did it confidently hallucinate?
+    </p>
+<pre><code><span class="kw">def</span> <span class="fn">refusal_correct</span>(produced_answer, expected_is_refusal):
+    refusal_phrases <span class="op">=</span> [
+        <span class="str">"i don't have"</span>, <span class="str">"i don't know"</span>,
+        <span class="str">"not in the provided"</span>, <span class="str">"no information"</span>,
+    ]
+    refused <span class="op">=</span> <span class="fn">any</span>(p <span class="kw">in</span> produced_answer.lower() <span class="kw">for</span> p <span class="kw">in</span> refusal_phrases)
+    <span class="kw">return</span> <span class="num">1.0</span> <span class="kw">if</span> refused <span class="op">==</span> expected_is_refusal <span class="kw">else</span> <span class="num">0.0</span></code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: <code>any(...)</code> with a generator</div>
+      <code>any(p in answer for p in phrases)</code> returns <code>True</code> as soon as <em>any</em> phrase is found. <code>any()</code> short-circuits — it stops as soon as it finds a hit. Cousin: <code>all(...)</code> returns <code>True</code> only when every element is true.
+    </div>
+    <p>This is the #1 metric regulators care about. A confidently-wrong answer to "is this drug safe?" is far worse than "I don't know." Refusal Correctness measures the system's <em>epistemic humility</em>.</p>
+  </div>
+
+  <!-- The deprecated NLP overlap metrics -->
+  <div class="metric-card" style="background:#f8fafc; border-color:#cbd5e1">
+    <h4>BLEU / ROUGE / BERTScore — mostly deprecated for RAG <span class="metric-tag tag-determ">DETERMINISTIC</span></h4>
+    <p style="font-size:0.92rem">
+      Classic NLP metrics that score surface-level word overlap between produced and expected text. Why they're falling out of favour for RAG: a correct paraphrase scores low (different words), and a wrong-but-similar-words answer scores high. Answer Semantic Similarity does the same job better.
+    </p>
+    <p style="font-size:0.92rem">
+      <strong>You'll still see them</strong> in compliance reports (regulators trust standardised, deterministic numbers) and academic IR papers. Recognise them; don't optimise for them.
+    </p>
+  </div>
+
+  <!-- MAP -->
+  <div class="metric-card" style="background:#f8fafc; border-color:#cbd5e1">
+    <h4>MAP — Mean Average Precision <span class="metric-tag tag-determ">DETERMINISTIC</span></h4>
+    <p style="font-size:0.92rem">
+      Average of Precision@K computed at each <em>position where a relevant chunk is found</em>, averaged across the eval set. Standard in academic IR (TREC papers, BEIR benchmark). For most RAG work, MRR + Recall@K is enough — but MAP is what you'll see in research papers.
+    </p>
+  </div>
+
+  <!-- ──────────────────────────────────────────────────────────── -->
+  <div class="layer-banner">Layer 2 — Safety &amp; compliance metrics</div>
+
+  <p>If your RAG handles regulated content (financial advice, medical info, customer PII, internal HR data), the next four metrics are not optional.</p>
+
+  <!-- Hallucination rate -->
+  <div class="metric-card">
+    <h4>Hallucination Rate <span class="metric-tag tag-judge">LLM-JUDGE</span></h4>
+    <p>The headline number for compliance and trust teams. Inverse of Faithfulness, but tracked separately because it's the metric executives ask about.</p>
+    <div class="formula">Hallucination Rate = % of answers containing claims not supported by retrieved context</div>
+    <p>You compute it the same way as Faithfulness from L14, but report it as <em>"X% of answers had at least one unsupported claim."</em> A 1% hallucination rate sounds different from a 99% faithfulness rate — even though they're identical.</p>
+  </div>
+
+  <!-- Toxicity -->
+  <div class="metric-card">
+    <h4>Toxicity / Safety <span class="metric-tag tag-judge">LLM-JUDGE</span></h4>
+    <p>Did the answer contain harmful, biased, or policy-violating content? Three standard tools:</p>
+    <ul>
+      <li><strong><a href="https://www.perspectiveapi.com/">Perspective API</a></strong> (Google) — scores toxicity, threat, insult, profanity. Free up to 1 QPS.</li>
+      <li><strong>OpenAI Moderation API</strong> — categories include hate, harassment, self-harm, sexual, violence. Free.</li>
+      <li><strong>Internal policy classifier</strong> — for org-specific rules ("don't recommend competitor products", "don't mention deprecated APIs").</li>
+    </ul>
+    <p>Pattern: every produced answer goes through a moderation check. Failures get flagged for review and don't ship to users.</p>
+  </div>
+
+  <!-- PII Leakage -->
+  <div class="metric-card">
+    <h4>PII Leakage Detection <span class="metric-tag tag-determ">DETERMINISTIC</span></h4>
+    <p>Did personally-identifiable information from the retrieved chunks end up in the answer when it shouldn't? Tools:</p>
+    <ul>
+      <li><strong>Microsoft Presidio</strong> — open-source PII detection (names, emails, SSNs, credit cards). Mature.</li>
+      <li><strong>Google DLP API</strong> — managed equivalent.</li>
+      <li><strong>spaCy NER + custom rules</strong> — for domain-specific identifiers (case numbers, employee IDs).</li>
+    </ul>
+    <p>The pattern: detect PII in the answer, compare to the user's authorisation level, redact or refuse if mismatch. Critical when the retrieval corpus contains documents users aren't supposed to see directly.</p>
+  </div>
+
+  <!-- Bias / fairness -->
+  <div class="metric-card">
+    <h4>Bias &amp; Fairness <span class="metric-tag tag-judge">LLM-JUDGE</span></h4>
+    <p>Does the system answer differently for protected attributes (gender, race, location) when the question is otherwise identical? Sample technique:</p>
+    <ol>
+      <li>Take a query like <em>"Is this candidate qualified?"</em> with a chunk about candidate Alex.</li>
+      <li>Run the same query 5x with the candidate's name varied across demographics.</li>
+      <li>Score the answers for consistency (Answer Semantic Similarity across runs).</li>
+    </ol>
+    <p>Low similarity = the system is biased on the swap variable. This is the technique used in published LLM bias evaluations (e.g. <a href="https://arxiv.org/abs/2306.05685">MT-Bench style</a>).</p>
+  </div>
+
+  <!-- ──────────────────────────────────────────────────────────── -->
+  <div class="layer-banner">Layer 3 — Operational metrics</div>
+
+  <p>This is the layer most tutorials skip. Real production cares as much about <em>cost</em> and <em>speed</em> as about quality.</p>
+
+  <!-- Latency -->
+  <div class="metric-card">
+    <h4>Latency — p50 / p95 / p99 <span class="metric-tag tag-determ">DETERMINISTIC</span></h4>
+    <p>
+      Average latency lies. A pipeline with mean = 800ms but p99 = 12s is unusable — 1 in 100 users waits 12 seconds.
+    </p>
+    <ul>
+      <li><strong>p50</strong> = median. Half of users wait less than this.</li>
+      <li><strong>p95</strong> = 95th percentile. The "typical bad day" experience.</li>
+      <li><strong>p99</strong> = 99th percentile. Tail latency — what your worst-case users get.</li>
+    </ul>
+    <p>Track latency <em>broken down by stage</em>: embed, retrieve, generate. The bottleneck is rarely where you think.</p>
+
+<pre><code><span class="kw">import</span> time
+<span class="kw">from</span> functools <span class="kw">import</span> wraps
+
+<span class="kw">def</span> <span class="fn">measure</span>(stage_name):
+    <span class="cm"># A decorator that records latency for the wrapped function.</span>
+    <span class="kw">def</span> <span class="fn">decorator</span>(func):
+        <span class="attr">@wraps</span>(func)
+        <span class="kw">def</span> <span class="fn">wrapper</span>(<span class="op">*</span>args, <span class="op">**</span>kwargs):
+            start <span class="op">=</span> time.perf_counter()
+            result <span class="op">=</span> func(<span class="op">*</span>args, <span class="op">**</span>kwargs)
+            elapsed_ms <span class="op">=</span> (time.perf_counter() <span class="op">-</span> start) <span class="op">*</span> <span class="num">1000</span>
+            METRICS[stage_name].append(elapsed_ms)
+            <span class="kw">return</span> result
+        <span class="kw">return</span> wrapper
+    <span class="kw">return</span> decorator
+
+METRICS <span class="op">=</span> {<span class="str">"embed"</span>: [], <span class="str">"retrieve"</span>: [], <span class="str">"generate"</span>: []}
+
+<span class="attr">@measure</span>(<span class="str">"embed"</span>)
+<span class="kw">def</span> <span class="fn">embed</span>(text, task_type): <span class="op">...</span>
+
+<span class="attr">@measure</span>(<span class="str">"retrieve"</span>)
+<span class="kw">def</span> <span class="fn">hybrid_search</span>(<span class="op">...</span>): <span class="op">...</span>
+
+<span class="attr">@measure</span>(<span class="str">"generate"</span>)
+<span class="kw">def</span> <span class="fn">ask</span>(<span class="op">...</span>): <span class="op">...</span></code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: decorators (<code>@measure(...)</code>)</div>
+      A decorator is a function that <em>wraps</em> another function, transparently adding behaviour. Reading the example top-down:
+      <ul style="margin-top:0.4rem">
+        <li><code>@measure("embed")</code> on top of <code>def embed(...)</code> means: "before defining <code>embed</code>, pass it through <code>measure("embed")</code>."</li>
+        <li><code>measure(stage_name)</code> returns a <code>decorator</code> function.</li>
+        <li><code>decorator(func)</code> returns a <code>wrapper</code> that times the call and records it.</li>
+        <li>From the rest of your code, <code>embed(...)</code> still <em>looks</em> like a normal function — it just secretly logs latency.</li>
+      </ul>
+      The <code>@wraps(func)</code> from <code>functools</code> preserves the original function's name and docstring (otherwise <code>embed.__name__</code> becomes <code>"wrapper"</code>).
+    </div>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: <code>*args, **kwargs</code></div>
+      <code>*args</code> = "accept any number of positional arguments as a tuple." <code>**kwargs</code> = "accept any number of keyword arguments as a dict." Together: "accept whatever arguments the wrapped function accepts, without needing to know in advance." Standard pattern in decorators.
+    </div>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: <code>time.perf_counter()</code></div>
+      The right way to measure elapsed time in Python. Use it instead of <code>time.time()</code> — <code>perf_counter</code> uses the highest-resolution monotonic clock available, which is what you want for timing code. <code>time.time()</code> can jump backwards if the system clock is adjusted.
+    </div>
+
+    <p>Then computing percentiles:</p>
+<pre><code><span class="kw">from</span> statistics <span class="kw">import</span> quantiles
+
+<span class="kw">def</span> <span class="fn">latency_summary</span>():
+    <span class="kw">for</span> stage, samples <span class="kw">in</span> METRICS.items():
+        <span class="kw">if</span> <span class="kw">not</span> samples: <span class="kw">continue</span>
+        q <span class="op">=</span> quantiles(samples, n<span class="op">=</span><span class="num">100</span>)
+        <span class="fn">print</span>(<span class="str">f"{stage:&lt;10} p50={q[49]:.0f}ms  p95={q[94]:.0f}ms  p99={q[98]:.0f}ms"</span>)</code></pre>
+    <p><code>statistics.quantiles(samples, n=100)</code> returns the 99 cut points for percentiles 1, 2, ..., 99. Index <code>[49]</code> is p50, <code>[94]</code> is p95, <code>[98]</code> is p99.</p>
+  </div>
+
+  <!-- Cost per query -->
+  <div class="metric-card">
+    <h4>Cost Per Query <span class="metric-tag tag-determ">DETERMINISTIC</span></h4>
+    <p>Break it down by stage. Real RAG cost typically lives in three buckets:</p>
+    <table>
+      <thead>
+        <tr><th>Bucket</th><th>What drives it</th><th>How to reduce</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Embedding (query)</td><td>1 call per query</td><td>Cheaper embedding model; batching</td></tr>
+        <tr><td>Embedding (indexing)</td><td>1 call per chunk</td><td>Incremental sync (L10), prompt caching for context generation (L11)</td></tr>
+        <tr><td>Generation</td><td>K chunks × prompt overhead × output tokens</td><td>Lower K (eval-tuned!), prompt caching, smaller chat model when possible</td></tr>
+      </tbody>
+    </table>
+
+<pre><code><span class="cm"># Capture token counts from each Gemini response</span>
+COST_LOG <span class="op">=</span> []
+
+<span class="kw">def</span> <span class="fn">log_cost</span>(stage, response):
+    usage <span class="op">=</span> response.usage_metadata
+    COST_LOG.append({
+        <span class="str">"stage"</span>: stage,
+        <span class="str">"input_tokens"</span>: usage.prompt_token_count,
+        <span class="str">"output_tokens"</span>: usage.candidates_token_count,
+        <span class="str">"cached_tokens"</span>: <span class="fn">getattr</span>(usage, <span class="str">"cached_content_token_count"</span>, <span class="num">0</span>),
+    })</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: <code>getattr(obj, "name", default)</code></div>
+      Like <code>obj.name</code> but with a fallback if the attribute doesn't exist. Useful here because <code>cached_content_token_count</code> only appears when prompt caching was used. Saves you from <code>AttributeError</code> branches.
+    </div>
+
+    <p>Then multiply by current per-token prices to get $/query. Track this as a metric over time — sudden cost spikes often signal regressions before quality metrics do.</p>
+  </div>
+
+  <!-- Coverage -->
+  <div class="metric-card">
+    <h4>Eval Set Coverage <span class="metric-tag tag-embed">EMBEDDING</span></h4>
+    <p>
+      How representative is your eval set of the queries real users actually send? If your eval has 20 questions about authentication but real users mostly ask about deployment, your scores are misleading.
+    </p>
+    <p>The technique:</p>
+    <ol>
+      <li>Embed every real user query (or a sample) from production logs</li>
+      <li>Embed every eval question</li>
+      <li>For each user query, compute distance to the <em>nearest</em> eval question</li>
+      <li>If the distance is large → that query is uncovered</li>
+    </ol>
+    <p>Report % of user queries within a similarity threshold of <em>some</em> eval question. Low coverage = your eval is misleading; expand it. <strong>Most teams discover their eval set is severely under-representative the first time they measure this.</strong></p>
+  </div>
+
+  <!-- ──────────────────────────────────────────────────────────── -->
+  <div class="layer-banner">Layer 4 — System health metrics</div>
+
+  <!-- Drift -->
+  <div class="metric-card">
+    <h4>Drift Detection</h4>
+    <p>
+      Are eval scores degrading over time? Causes:
+    </p>
+    <ul>
+      <li><strong>Corpus drift</strong> — docs change, chunks shift, new content unindexed</li>
+      <li><strong>Model drift</strong> — vendor updates the chat or embedding model under the hood</li>
+      <li><strong>Query drift</strong> — users start asking new categories of questions</li>
+    </ul>
+    <p>The pattern: run the full eval suite on a schedule (nightly), store scores in a time-series DB, alert on regressions &gt; X%. Treat eval scores like any other SLO.</p>
+  </div>
+
+  <!-- A/B feedback signals -->
+  <div class="metric-card">
+    <h4>A/B Traffic-Split &amp; Live Feedback</h4>
+    <p>Your offline eval is a sample. Live signals from production are the real test:</p>
+    <table>
+      <thead>
+        <tr><th>Signal</th><th>What it captures</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>👍 / 👎 thumbs</td><td>Explicit user satisfaction</td></tr>
+        <tr><td>Click-through on cited chunks</td><td>Did the answer + citations help users find the source?</td></tr>
+        <tr><td>Follow-up question rate</td><td>High rate = answers are incomplete</td></tr>
+        <tr><td>Escalation to human</td><td>The "I gave up on the bot" signal</td></tr>
+        <tr><td>Edit distance on retry</td><td>If users heavily reword to retry, retrieval is missing</td></tr>
+      </tbody>
+    </table>
+    <p>A/B test new pipeline versions on traffic splits, watch these signals, ship the winner.</p>
+  </div>
+
+  <!-- Robustness -->
+  <div class="metric-card">
+    <h4>Robustness <span class="metric-tag tag-embed">EMBEDDING</span></h4>
+    <p>
+      Same question, slightly reworded — does the answer change?
+    </p>
+<pre><code>variants <span class="op">=</span> [
+    <span class="str">"How do I rotate a Connected App secret?"</span>,
+    <span class="str">"What's the procedure for rotating Connected App credentials?"</span>,
+    <span class="str">"Can you walk me through Connected App secret rotation?"</span>,
+]
+answers <span class="op">=</span> [ask(v) <span class="kw">for</span> v <span class="kw">in</span> variants]
+similarities <span class="op">=</span> [answer_similarity(answers[<span class="num">0</span>], a) <span class="kw">for</span> a <span class="kw">in</span> answers[<span class="num">1</span>:]]
+robustness_score <span class="op">=</span> mean(similarities)</code></pre>
+    <p>Production teams generate paraphrase variants automatically (prompt an LLM to rewrite each eval question 3 ways) and track the average similarity. A drop in robustness flags pipelines that are overfit to specific phrasing.</p>
+  </div>
+
+  <!-- Failure clustering -->
+  <div class="metric-card">
+    <h4>Failure Clustering <span class="metric-tag tag-embed">EMBEDDING</span></h4>
+    <p>
+      When the system fails, what patterns emerge? The technique:
+    </p>
+    <ol>
+      <li>Embed every failing query (low score, thumbs-down, escalation)</li>
+      <li>Run K-means or HDBSCAN clustering on the embeddings</li>
+      <li>Sample a few queries from each cluster to label the pattern by hand</li>
+    </ol>
+    <p>Typical clusters that emerge:</p>
+    <ul>
+      <li>"Misspelled product names" — fix with fuzzy matching at ingestion</li>
+      <li>"Multi-step questions" — fix with query decomposition (a future lesson)</li>
+      <li>"Time-sensitive queries" — fix by adding date metadata to chunks</li>
+      <li>"Out-of-corpus questions" — eval coverage is too narrow</li>
+    </ul>
+    <p>Each cluster suggests a specific upgrade. Without clustering, you'd be guessing.</p>
+  </div>
+
+  <!-- Human review sampling -->
+  <div class="metric-card">
+    <h4>Human Review Sampling</h4>
+    <p>
+      Cheap insurance for high-stakes domains. Pattern:
+    </p>
+    <ul>
+      <li>For every answer, compute a confidence proxy (e.g. retrieval score of top chunk × generation logprobs if available)</li>
+      <li>Bottom 1–5% by confidence get sent to a human reviewer queue before reaching the user (or for post-hoc audit)</li>
+      <li>Reviewer feedback feeds back into the eval set as new ground truth</li>
+    </ul>
+    <p>This is how compliance-heavy systems (medical, legal, financial advice) get to ship.</p>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Putting it together — an enterprise eval report</h2>
+  <p>What a real team's weekly eval-run report looks like (sample numbers):</p>
+
+<pre><code>=== Pipeline: production-v3.2 ===  Date: 2026-06-15
+
+LAYER 1 — RETRIEVAL QUALITY (n=200)
+  Hit@5             0.92    (+0.03 vs last week)
+  Precision@5       0.46
+  Recall@5          0.88
+  MRR               0.71
+  Context Recall    0.83
+
+LAYER 2 — GENERATION QUALITY
+  Faithfulness      0.94
+  Groundedness      0.88
+  Citation Accuracy 0.91
+  Answer Similarity 0.79
+
+LAYER 3 — SAFETY
+  Hallucination Rate    1.5%
+  Toxicity flags        0/200
+  PII leak incidents    0/200
+  Refusal Correctness   0.96  ⚠ regressed from 0.99
+
+LAYER 4 — OPERATIONS
+  embed     p50=  45ms   p95= 120ms   p99= 380ms
+  retrieve  p50=  18ms   p95=  62ms   p99= 140ms
+  generate  p50=1200ms   p95=3400ms   p99=7100ms
+  Cost/query  $0.0042 avg  ($0.0019 indexing-amortised + $0.0023 query)
+  Eval coverage  68%  ⚠ 32% of real queries far from any eval question
+
+LAYER 5 — SYSTEM HEALTH
+  Drift (vs 30d ago):  Hit@5 stable, Faithfulness -2pp
+  Live thumbs:         👍 87%   👎 8%   no-rating 5%
+  Robustness:          0.81
+  Top failure clusters:
+    - "asks about deprecated v1 API"  (24 queries, no chunks indexed)
+    - "Spanish queries"                (12 queries, language detection misroute)</code></pre>
+
+  <p>Two warnings flagged automatically: a refusal regression and an eval-coverage gap. Each gets a ticket; engineers investigate before next week's report.</p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Tools landscape (revised for enterprise)</h2>
+
+  <table>
+    <thead>
+      <tr><th>Tool</th><th>Strongest for</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>RAGAS</strong></td>
+        <td>Per-query depth metrics (Context Precision/Recall, Faithfulness, Answer Relevance)</td>
+        <td>The de-facto standard. Open-source, integrates with LangChain &amp; LlamaIndex.</td>
+      </tr>
+      <tr>
+        <td><strong>TruLens</strong></td>
+        <td>Feedback functions + dashboards over time</td>
+        <td>Strong on observability and longitudinal tracking.</td>
+      </tr>
+      <tr>
+        <td><strong>Phoenix / Arize</strong></td>
+        <td>Production traces, drift, A/B comparison</td>
+        <td>Best of breed for ops + system-health layer. Open-source core; managed tier.</td>
+      </tr>
+      <tr>
+        <td><strong>DeepEval</strong></td>
+        <td>Pytest-style RAG unit tests in CI</td>
+        <td>Best fit when eval should run inside your existing test suite.</td>
+      </tr>
+      <tr>
+        <td><strong>Vertex AI Evaluation</strong></td>
+        <td>Managed, Gemini-native eval (Groundedness, Safety, Quality)</td>
+        <td>Tight fit if you're already on Google Cloud. Includes managed citation eval.</td>
+      </tr>
+      <tr>
+        <td><strong>Microsoft Presidio</strong></td>
+        <td>PII detection</td>
+        <td>Open-source, mature. Drop-in for the safety layer.</td>
+      </tr>
+      <tr>
+        <td><strong>Perspective API</strong></td>
+        <td>Toxicity scoring</td>
+        <td>Free, well-tuned, fast.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>No single tool covers all four layers. Production teams typically combine 2–3: one for per-query quality (RAGAS), one for ops/observability (Phoenix or Arize), one for safety (Presidio + Perspective).</p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> Why report Hallucination Rate separately from Faithfulness?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">They measure different things mathematically</li>
+        <li data-i="1">Faithfulness can't be computed automatically</li>
+        <li data-i="2">They are mathematical inverses, but Hallucination Rate is the framing executives, regulators, and trust teams actually ask about</li>
+        <li data-i="3">RAGAS doesn't support Faithfulness</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Your average latency is 800ms but p99 is 12 seconds. What does this tell you?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">The system is fast enough for production</li>
+        <li data-i="1">800ms is the only number that matters</li>
+        <li data-i="2">p99 isn't a real metric</li>
+        <li data-i="3">1 in 100 users waits 12 seconds — average lies; track tail latency</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> What does Context Recall measure that Recall@K from L14 doesn't?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Latency</li>
+        <li data-i="1">Whether the retrieved chunks cover the information needed for the expected answer — judged by an LLM, doesn't require pre-labelled chunk IDs</li>
+        <li data-i="2">The cosine similarity between answer and context</li>
+        <li data-i="3">The position of relevant chunks</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> Why is Refusal Correctness considered a top-priority metric for regulated domains?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">A confidently-wrong answer to a high-stakes question is worse than "I don't know"</li>
+        <li data-i="1">It's the cheapest metric to compute</li>
+        <li data-i="2">RAGAS scores it highest</li>
+        <li data-i="3">It's required by GDPR</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> Eval Set Coverage measures…</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">How many chunks are in your corpus</li>
+        <li data-i="1">How fast retrieval runs</li>
+        <li data-i="2">How representative your eval questions are of the queries real users actually send</li>
+        <li data-i="3">The percentage of correct answers</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+
+    <div class="quiz-question" id="q5">
+      <p><strong>Q6.</strong> Which metric explicitly catches the value of adding BM25 / hybrid search?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">Hit@K alone</li>
+        <li data-i="1">Latency p50</li>
+        <li data-i="2">Cost per query</li>
+        <li data-i="3">Context Entities Recall — measures whether named entities (IDs, codes, version strings) made it into retrieved chunks</li>
+      </ul>
+      <p class="feedback" id="fb5"></p>
+    </div>
+
+    <div class="quiz-question" id="q6">
+      <p><strong>Q7.</strong> Failure clustering helps you find…</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">The fastest way to embed</li>
+        <li data-i="1">Patterns in failed queries (e.g. "Spanish queries", "deprecated API references") so you know which fix to prioritise</li>
+        <li data-i="2">The cheapest model</li>
+        <li data-i="3">Bias in the eval set</li>
+      </ul>
+      <p class="feedback" id="fb6"></p>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>What's next</h2>
+  <ul>
+    <li><strong>Lesson 16</strong> — Improving each metric: a playbook for moving the numbers cheapest-first, with the trade-offs spelled out.</li>
+    <li><strong>Future</strong> — Reranking with a cross-encoder. Once your eval shows precision is the bottleneck, a reranker often gives the next big jump.</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Direct MuleSoft application</div>
+    These four metric layers map cleanly onto MuleSoft observability practice. Per-query depth = correctness tests. Safety = governance/compliance policies on Anypoint. Operations = CloudHub metrics dashboards. System health = ops alerting. The same separation of concerns; different probes.
+  </div>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Show me how to wire RAGAS into the existing eval.py"</li>
+      <li>"Walk me through Microsoft Presidio for PII detection"</li>
+      <li>"How do I build a paraphrase generator for the robustness metric?"</li>
+      <li>"What's a sensible drift-alert threshold for these metrics?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0014-rag-evaluation.html">← Lesson 14 — Evaluating RAG</a>
+      <a href="0016-improving-rag-metrics.html">Lesson 16 — Improving Metrics →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! 'Faithfulness 99%' and 'Hallucination 1%' are mathematically equivalent, but the second framing is what risk and trust teams ask about. Report both.", err: "Not quite. They're mathematical inverses. The point is framing — 'hallucination rate' is the question executives, regulators, and trust teams actually ask." },
+    1: { ok: "Correct! Tail latency matters as much as median. Track p50, p95, p99, and break down by stage to find the bottleneck.", err: "Not quite. The average hides the tail. p99 = 12s means 1% of users have a terrible experience. In production you measure tails, not just averages." },
+    2: { ok: "Correct! L14's Recall@K compared chunk IDs you labelled by hand. Context Recall asks an LLM whether the retrieved text covers the expected answer's claims — no chunk-ID labels needed.", err: "Not quite. The key difference is that Context Recall doesn't need pre-labelled chunk IDs — it uses an LLM judge against the expected answer. Useful when labelling chunks is expensive but writing target answers isn't." },
+    3: { ok: "Correct! Hallucinated answers in regulated domains can cause real harm. Refusal Correctness measures the system's epistemic humility — its willingness to say 'I don't know'.", err: "Not quite. The stakes are the reason: a wrong answer about safety, finance, or medicine is far worse than 'I don't know'. Refusal Correctness measures the system's willingness to refuse when it should." },
+    4: { ok: "Correct! If your eval is full of auth questions but real users ask about deployment, your metrics are misleading. Coverage tells you whether you're measuring the right things.", err: "Not quite. Coverage is about the gap between eval questions and real-user questions. Most teams discover their eval is much narrower than their real traffic." },
+    5: { ok: "Correct! Named entities (IDs, error codes, version strings) are exactly where vectors fail and BM25 wins. CER is the metric that proves the upgrade worked.", err: "Not quite. CER specifically tracks whether named entities (the things vectors smear together) ended up in retrieval. It's the most direct measure of hybrid-search benefit." },
+    6: { ok: "Correct! Clustering failures by embedding similarity surfaces the failure modes you didn't know to look for — and tells you which upgrade is worth prioritising.", err: "Not quite. The point of failure clustering is to find patterns in your failures (language, domain, query type) so you know which targeted fix to invest in next." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

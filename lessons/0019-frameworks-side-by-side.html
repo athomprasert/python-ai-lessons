@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 19 — The Same Agent in Five Frameworks</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .framework {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1.3rem 1.5rem;
+      margin: 1.6rem 0 2rem;
+    }
+    .fw-title { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.2rem; }
+    .fw-num { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; color: #6b7280; }
+    .fw-name { font-size: 1.3rem; font-weight: 800; }
+    .fw-vendor { font-size: 0.8rem; color: #6b7280; font-weight: 500; }
+    .fw-tagline { color: #555; margin: 0.2rem 0 0.8rem; font-size: 0.93rem; }
+
+    .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.8rem; }
+    .pros-cons > div { background: #fafafa; border-radius: 8px; padding: 0.7rem 0.9rem; }
+    .pros-cons h5 { font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 800; margin-bottom: 0.3rem; }
+    .pros h5 { color: #15803d; }
+    .cons h5 { color: #b91c1c; }
+    .pros-cons ul { margin: 0; padding-left: 1.1rem; font-size: 0.88rem; }
+    .pros-cons li { margin-bottom: 0.15rem; }
+    @media (max-width: 700px) { .pros-cons { grid-template-columns: 1fr; } }
+
+    .verdict {
+      background: #fffbeb;
+      border-left: 3px solid #f59e0b;
+      padding: 0.55rem 0.8rem;
+      margin-top: 0.7rem;
+      font-size: 0.9rem;
+      border-radius: 0 6px 6px 0;
+    }
+    .verdict strong { color: #92400e; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 19 of ?</p>
+    <h1>The Same Agent in Five Frameworks</h1>
+    <p class="tagline">You built it raw in L18. Now see what frameworks <em>actually</em> buy you — the same agent, five times, on equal footing.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <a href="0008-chunking.html"><span class="pill pill-done">L8 ✓</span></a>
+      <a href="0009-build-rag.html"><span class="pill pill-done">L9 ✓</span></a>
+      <a href="0010-vector-db.html"><span class="pill pill-done">L10 ✓</span></a>
+      <a href="0011-contextual-retrieval.html"><span class="pill pill-done">L11 ✓</span></a>
+      <a href="0012-hybrid-search.html"><span class="pill pill-done">L12 ✓</span></a>
+      <a href="0013-advanced-retrieval-patterns.html"><span class="pill pill-done">L13 ✓</span></a>
+      <a href="0014-rag-evaluation.html"><span class="pill pill-done">L14 ✓</span></a>
+      <a href="0015-enterprise-rag-eval.html"><span class="pill pill-done">L15 ✓</span></a>
+      <a href="0016-improving-rag-metrics.html"><span class="pill pill-done">L16 ✓</span></a>
+      <a href="0017-agent-framework-landscape.html"><span class="pill pill-done">L17 ✓</span></a>
+      <a href="0018-native-sdk-agent.html"><span class="pill pill-done">L18 ✓</span></a>
+      <span class="pill pill-now">L19 — Five Frameworks</span>
+      <span class="pill pill-next">L20 — Deep Dive (your pick)</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    <a href="../MISSION.md">MISSION.md</a> says: <em>build AI agents that interact with integration systems</em>. In <a href="0018-native-sdk-agent.html">L18</a> you built one — bare native loop, no framework. It works. So why would you ever use a framework?
+  </p>
+  <p>
+    This lesson is the <em>fair comparison</em>. Five frameworks. Same agent. Same two tools. Same system instruction. You'll see exactly which boilerplate each one removes — and exactly which constraints it adds in return.
+  </p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty</div>
+    The code blocks below are <strong>realistic shapes</strong> based on each framework's official quickstarts, not a working repo I've personally run end-to-end for this lesson. The mental model is what to take away. Before adopting any of these in production, verify against the current docs — agent frameworks move fast and APIs shift between minor versions.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ground rules — the agent you'll see five times</h2>
+  <p>For an apples-to-apples comparison, every block builds the <strong>same agent from L18</strong>:</p>
+
+  <table>
+    <thead><tr><th>Element</th><th>Same across all five</th></tr></thead>
+    <tbody>
+      <tr><td>Tool 1</td><td><code>search_docs(query: str) -&gt; str</code> — wraps your RAG <code>ask()</code> from L9</td></tr>
+      <tr><td>Tool 2</td><td><code>get_anypoint_org_status(org_id: str) -&gt; dict</code> — mocked Anypoint API</td></tr>
+      <tr><td>Model</td><td><code>gemini-2.0-flash</code></td></tr>
+      <tr><td>System instruction</td><td>"You are a MuleSoft platform assistant. Use search_docs for product questions and get_anypoint_org_status for live status. Reject unrelated questions briefly."</td></tr>
+      <tr><td>Test queries</td><td>RAG question · status question · math question</td></tr>
+    </tbody>
+  </table>
+
+  <p>Every code block ends at the same equivalent point: <em>"send a message, get the agent's final reply."</em></p>
+
+  <!-- ───────────────────────────── -->
+  <h2>Quick reminder — what L18 looks like</h2>
+  <p>Your baseline (~30 lines for the loop, plus 2 tool functions):</p>
+
+<pre><code><span class="cm"># L18 native — no framework</span>
+<span class="kw">from</span> google <span class="kw">import</span> genai
+<span class="kw">from</span> google.genai <span class="kw">import</span> types
+
+<span class="kw">def</span> <span class="fn">search_docs</span>(query: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">str</span>: <span class="cm"># wraps rag_chroma.ask()</span> ...
+<span class="kw">def</span> <span class="fn">get_anypoint_org_status</span>(org_id: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">dict</span>: ...
+
+TOOLS <span class="op">=</span> [search_docs, get_anypoint_org_status]
+client <span class="op">=</span> genai.Client()
+chat <span class="op">=</span> client.chats.create(
+    model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>,
+    config<span class="op">=</span>types.GenerateContentConfig(
+        system_instruction<span class="op">=</span>SYSTEM,
+        tools<span class="op">=</span>TOOLS,
+    ),
+)
+
+<span class="kw">def</span> <span class="fn">run_agent</span>(msg, max_steps<span class="op">=</span><span class="num">10</span>):
+    tool_map <span class="op">=</span> {t.__name__: t <span class="kw">for</span> t <span class="kw">in</span> TOOLS}
+    response <span class="op">=</span> chat.send_message(msg)
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(max_steps):
+        <span class="kw">if</span> <span class="kw">not</span> response.function_calls:
+            <span class="kw">return</span> response.text
+        results <span class="op">=</span> [
+            types.Part.from_function_response(
+                name<span class="op">=</span>c.name,
+                response<span class="op">=</span>{<span class="str">"result"</span>: tool_map[c.name](<span class="op">**</span><span class="fn">dict</span>(c.args))},
+            )
+            <span class="kw">for</span> c <span class="kw">in</span> response.function_calls
+        ]
+        response <span class="op">=</span> chat.send_message(results)
+    <span class="kw">return</span> <span class="str">"max_steps reached"</span>
+</code></pre>
+
+  <p>Keep this in mind. Every framework below collapses <em>some</em> of these 30 lines into "magic" — and surfaces them again somewhere else as configuration.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The five contenders, in order of "distance from L18"</h2>
+  <ol>
+    <li><strong>Google ADK</strong> — same SDK, more sugar. Smallest jump.</li>
+    <li><strong>LangChain + LangGraph</strong> — graph-based, explicit state machine.</li>
+    <li><strong>CrewAI</strong> — role/task/crew abstraction. Biggest reframing.</li>
+    <li><strong>LlamaIndex</strong> — retrieval-native; the agent is a special index.</li>
+    <li><strong>Haystack</strong> — pipeline-based; agent is a component in a flow.</li>
+  </ol>
+
+  <!-- ─────────── FRAMEWORK 1 — GOOGLE ADK ─────────── -->
+  <div class="framework">
+    <div class="fw-title">
+      <span class="fw-num">FRAMEWORK 1</span>
+      <span class="fw-name">Google ADK</span>
+      <span class="fw-vendor">Agent Development Kit · by Google</span>
+    </div>
+    <p class="fw-tagline">First-party Gemini agent kit. Looks like L18 with the loop hidden and sessions/eval/deploy bolted on.</p>
+
+<pre><code><span class="cm"># pip install google-adk</span>
+<span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
+<span class="kw">from</span> google.adk.runners <span class="kw">import</span> Runner
+<span class="kw">from</span> google.adk.sessions <span class="kw">import</span> InMemorySessionService
+
+<span class="kw">def</span> <span class="fn">search_docs</span>(query: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">dict</span>:
+    <span class="str">"""Search MuleSoft docs and return an answer with citations."""</span>
+    <span class="kw">return</span> {<span class="str">"answer"</span>: rag_chroma.ask(query)}
+
+<span class="kw">def</span> <span class="fn">get_anypoint_org_status</span>(org_id: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">dict</span>:
+    <span class="str">"""Live Anypoint org status."""</span>
+    <span class="kw">return</span> {<span class="str">"org_id"</span>: org_id, <span class="str">"status"</span>: <span class="str">"healthy"</span>, <span class="str">"apps"</span>: <span class="num">42</span>}
+
+agent <span class="op">=</span> Agent(
+    name<span class="op">=</span><span class="str">"mulesoft_helper"</span>,
+    model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>,
+    instruction<span class="op">=</span>SYSTEM,
+    tools<span class="op">=</span>[search_docs, get_anypoint_org_status],
+)
+runner <span class="op">=</span> Runner(agent<span class="op">=</span>agent, session_service<span class="op">=</span>InMemorySessionService())
+
+<span class="kw">async for</span> event <span class="kw">in</span> runner.run_async(
+    user_id<span class="op">=</span><span class="str">"att"</span>, session_id<span class="op">=</span><span class="str">"s1"</span>,
+    new_message<span class="op">=</span><span class="str">"How do I rotate a Connected App secret?"</span>,
+):
+    <span class="kw">if</span> event.is_final_response():
+        <span class="fn">print</span>(event.content.parts[<span class="num">0</span>].text)
+</code></pre>
+
+    <div class="pros-cons">
+      <div class="pros">
+        <h5>What it removes</h5>
+        <ul>
+          <li>The manual <code>for step in range(max_steps)</code> loop</li>
+          <li>Session lifecycle (history, user, multi-session — pluggable storage)</li>
+          <li>Built-in evals + tracing + Vertex Agent Engine deploy path</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h5>What it costs</h5>
+        <ul>
+          <li>Async-first API — <code>async for</code> isn't optional</li>
+          <li>Tied to Google ecosystem (best with Vertex AI / Gemini)</li>
+          <li>Newer (2024) — smaller community than LangChain/LlamaIndex</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict">
+      <strong>Verdict:</strong> Pick this if you're already all-in on Gemini/Vertex and want the loop hidden without leaving Google's runtime. Best "smallest jump from L18."
+    </div>
+  </div>
+
+  <!-- ─────────── FRAMEWORK 2 — LANGCHAIN + LANGGRAPH ─────────── -->
+  <div class="framework">
+    <div class="fw-title">
+      <span class="fw-num">FRAMEWORK 2</span>
+      <span class="fw-name">LangChain + LangGraph</span>
+      <span class="fw-vendor">by LangChain Inc.</span>
+    </div>
+    <p class="fw-tagline">Two sibling projects from the same team. LangChain = components library (models, retrievers, prompts). LangGraph = the modern agent runtime (graph-based state machine).</p>
+
+    <div class="callout callout-warn" style="margin-top:0">
+      <div class="callout-label">Read this first</div>
+      <strong>LangChain's own agent classes (<code>AgentExecutor</code>, <code>create_react_agent</code>) are deprecated</strong> in favour of LangGraph. The LangChain docs themselves redirect users to LangGraph for new agents. We show LangGraph as the apples-to-apples comparison; the LangChain legacy shape is below for reading old code.
+    </div>
+
+<pre><code><span class="cm"># pip install langgraph langchain-google-genai</span>
+<span class="kw">from</span> langchain_core.tools <span class="kw">import</span> tool
+<span class="kw">from</span> langchain_google_genai <span class="kw">import</span> ChatGoogleGenerativeAI
+<span class="kw">from</span> langgraph.prebuilt <span class="kw">import</span> create_react_agent
+
+<span class="attr">@tool</span>
+<span class="kw">def</span> <span class="fn">search_docs</span>(query: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">str</span>:
+    <span class="str">"""Search MuleSoft docs and return an answer."""</span>
+    <span class="kw">return</span> rag_chroma.ask(query)
+
+<span class="attr">@tool</span>
+<span class="kw">def</span> <span class="fn">get_anypoint_org_status</span>(org_id: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">dict</span>:
+    <span class="str">"""Live Anypoint org status."""</span>
+    <span class="kw">return</span> {<span class="str">"org_id"</span>: org_id, <span class="str">"status"</span>: <span class="str">"healthy"</span>}
+
+llm <span class="op">=</span> ChatGoogleGenerativeAI(model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>)
+agent <span class="op">=</span> create_react_agent(
+    llm,
+    tools<span class="op">=</span>[search_docs, get_anypoint_org_status],
+    state_modifier<span class="op">=</span>SYSTEM,
+)
+
+result <span class="op">=</span> agent.invoke({<span class="str">"messages"</span>: [(<span class="str">"user"</span>,
+    <span class="str">"How do I rotate a Connected App secret?"</span>)]})
+<span class="fn">print</span>(result[<span class="str">"messages"</span>][<span class="op">-</span><span class="num">1</span>].content)
+</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax · @tool decorator</div>
+      <code>@tool</code> is a decorator (we covered <code>@decorator</code> in <a href="0015-enterprise-rag-eval.html">L15</a>) that turns a plain Python function into a LangChain <code>Tool</code> object. The decorator reads the function's name, docstring, and type hints to build the schema — exactly what Gemini's native SDK does for you automatically. The difference: LangChain makes it explicit and portable across all the LLM providers LangChain supports.
+    </div>
+
+    <p><strong>If you want to write the graph yourself</strong> (for branching/loops/checkpointing):</p>
+<pre><code><span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, START, END
+<span class="kw">from</span> langgraph.prebuilt <span class="kw">import</span> ToolNode, tools_condition
+
+graph <span class="op">=</span> StateGraph(MessagesState)
+graph.add_node(<span class="str">"llm"</span>, <span class="kw">lambda</span> s: {<span class="str">"messages"</span>: [llm_with_tools.invoke(s[<span class="str">"messages"</span>])]})
+graph.add_node(<span class="str">"tools"</span>, ToolNode([search_docs, get_anypoint_org_status]))
+graph.add_edge(START, <span class="str">"llm"</span>)
+graph.add_conditional_edges(<span class="str">"llm"</span>, tools_condition)  <span class="cm"># llm → tools or END</span>
+graph.add_edge(<span class="str">"tools"</span>, <span class="str">"llm"</span>)
+agent <span class="op">=</span> graph.compile(checkpointer<span class="op">=</span>MemorySaver())
+</code></pre>
+
+    <p><strong>Legacy LangChain shape (deprecated, for reading old code only):</strong></p>
+<pre><code><span class="kw">from</span> langchain.agents <span class="kw">import</span> AgentExecutor, create_tool_calling_agent
+agent <span class="op">=</span> create_tool_calling_agent(llm, tools, prompt)
+executor <span class="op">=</span> AgentExecutor(agent<span class="op">=</span>agent, tools<span class="op">=</span>tools)
+executor.invoke({<span class="str">"input"</span>: <span class="str">"..."</span>})  <span class="cm"># works but on the way out</span>
+</code></pre>
+
+    <div class="pros-cons">
+      <div class="pros">
+        <h5>What it removes</h5>
+        <ul>
+          <li>Provider lock-in — same code talks to OpenAI, Anthropic, etc.</li>
+          <li>Checkpointing / persistence (<code>MemorySaver</code>, Postgres, Redis)</li>
+          <li>Massive integration library (200+ retrievers, vector stores, loaders)</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h5>What it costs</h5>
+        <ul>
+          <li>Two-library mental model (LangChain ⊕ LangGraph) — easy to mix up</li>
+          <li>Frequent breaking changes; tutorials go stale quickly</li>
+          <li>Stack traces deep into LangChain internals when things go wrong</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict">
+      <strong>Verdict:</strong> Pick this if you need provider portability or want production-grade persistence/checkpointing baked in. Use <strong>LangGraph</strong> for any new agent — not the deprecated <code>AgentExecutor</code>.
+    </div>
+  </div>
+
+  <!-- ─────────── FRAMEWORK 3 — CREWAI ─────────── -->
+  <div class="framework">
+    <div class="fw-title">
+      <span class="fw-num">FRAMEWORK 3</span>
+      <span class="fw-name">CrewAI</span>
+      <span class="fw-vendor">by CrewAI Inc.</span>
+    </div>
+    <p class="fw-tagline">Models the world as <em>roles</em> doing <em>tasks</em>, organised into a <em>crew</em>. Best when you genuinely have multiple agents collaborating.</p>
+
+<pre><code><span class="cm"># pip install crewai</span>
+<span class="kw">from</span> crewai <span class="kw">import</span> Agent, Task, Crew
+<span class="kw">from</span> crewai.tools <span class="kw">import</span> tool
+
+<span class="attr">@tool</span>(<span class="str">"search_docs"</span>)
+<span class="kw">def</span> <span class="fn">search_docs</span>(query: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">str</span>:
+    <span class="str">"""Search MuleSoft docs and return an answer."""</span>
+    <span class="kw">return</span> rag_chroma.ask(query)
+
+<span class="attr">@tool</span>(<span class="str">"get_anypoint_org_status"</span>)
+<span class="kw">def</span> <span class="fn">get_anypoint_org_status</span>(org_id: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">dict</span>:
+    <span class="str">"""Live Anypoint org status."""</span>
+    <span class="kw">return</span> {<span class="str">"org_id"</span>: org_id, <span class="str">"status"</span>: <span class="str">"healthy"</span>}
+
+helper <span class="op">=</span> Agent(
+    role<span class="op">=</span><span class="str">"MuleSoft platform assistant"</span>,
+    goal<span class="op">=</span><span class="str">"Answer customer questions about MuleSoft accurately"</span>,
+    backstory<span class="op">=</span><span class="str">"Senior MuleSoft architect with deep product knowledge."</span>,
+    tools<span class="op">=</span>[search_docs, get_anypoint_org_status],
+    llm<span class="op">=</span><span class="str">"gemini/gemini-2.0-flash"</span>,
+)
+
+task <span class="op">=</span> Task(
+    description<span class="op">=</span><span class="str">"Answer: How do I rotate a Connected App secret?"</span>,
+    expected_output<span class="op">=</span><span class="str">"A clear step-by-step answer with a doc link."</span>,
+    agent<span class="op">=</span>helper,
+)
+
+crew <span class="op">=</span> Crew(agents<span class="op">=</span>[helper], tasks<span class="op">=</span>[task])
+result <span class="op">=</span> crew.kickoff()
+<span class="fn">print</span>(result.raw)
+</code></pre>
+
+    <div class="callout callout-warn" style="margin-top:0">
+      <div class="callout-label">Notice the prompt is split</div>
+      In L18 you wrote one <code>system_instruction</code>. In CrewAI it's distributed across <code>role</code>, <code>goal</code>, <code>backstory</code>, and the task's <code>description</code> + <code>expected_output</code>. This is great for multi-agent crews where each agent has a distinct persona — and overkill for a single helper bot. See <a href="../reference/crewai-production-notes.html">CrewAI production notes</a> for the gotchas.
+    </div>
+
+    <div class="pros-cons">
+      <div class="pros">
+        <h5>What it removes</h5>
+        <ul>
+          <li>Multi-agent orchestration boilerplate (sequential, hierarchical, parallel)</li>
+          <li>Role-based prompting structure — nudges you to think about who does what</li>
+          <li>Built-in delegation between agents</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h5>What it costs</h5>
+        <ul>
+          <li>The "role/task/crew" frame is heavy for a single agent</li>
+          <li>Less control over the loop — harder to inject custom retry/fallback logic</li>
+          <li>Production maturity still catching up to LangGraph (see ref doc)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict">
+      <strong>Verdict:</strong> Pick this when you genuinely have <em>multiple specialised agents</em> collaborating (researcher + writer + reviewer). Overkill for a single helper. <a href="../reference/crewai-production-notes.html">CrewAI production notes →</a>
+    </div>
+  </div>
+
+  <!-- ─────────── FRAMEWORK 4 — LLAMAINDEX ─────────── -->
+  <div class="framework">
+    <div class="fw-title">
+      <span class="fw-num">FRAMEWORK 4</span>
+      <span class="fw-name">LlamaIndex</span>
+      <span class="fw-vendor">by LlamaIndex Inc.</span>
+    </div>
+    <p class="fw-tagline">Retrieval-native. Built around the idea that agents query indexes. Best when your agent's primary job is querying lots of data.</p>
+
+<pre><code><span class="cm"># pip install llama-index llama-index-llms-google-genai</span>
+<span class="kw">from</span> llama_index.core.agent.workflow <span class="kw">import</span> FunctionAgent
+<span class="kw">from</span> llama_index.core.tools <span class="kw">import</span> FunctionTool
+<span class="kw">from</span> llama_index.llms.google_genai <span class="kw">import</span> GoogleGenAI
+
+<span class="kw">def</span> <span class="fn">search_docs</span>(query: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">str</span>:
+    <span class="str">"""Search MuleSoft docs and return an answer."""</span>
+    <span class="kw">return</span> rag_chroma.ask(query)
+
+<span class="kw">def</span> <span class="fn">get_anypoint_org_status</span>(org_id: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">dict</span>:
+    <span class="str">"""Live Anypoint org status."""</span>
+    <span class="kw">return</span> {<span class="str">"org_id"</span>: org_id, <span class="str">"status"</span>: <span class="str">"healthy"</span>}
+
+tools <span class="op">=</span> [
+    FunctionTool.from_defaults(fn<span class="op">=</span>search_docs),
+    FunctionTool.from_defaults(fn<span class="op">=</span>get_anypoint_org_status),
+]
+
+agent <span class="op">=</span> FunctionAgent(
+    tools<span class="op">=</span>tools,
+    llm<span class="op">=</span>GoogleGenAI(model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>),
+    system_prompt<span class="op">=</span>SYSTEM,
+)
+
+response <span class="op">=</span> <span class="kw">await</span> agent.run(
+    user_msg<span class="op">=</span><span class="str">"How do I rotate a Connected App secret?"</span>
+)
+<span class="fn">print</span>(<span class="fn">str</span>(response))
+</code></pre>
+
+    <div class="pros-cons">
+      <div class="pros">
+        <h5>What it removes</h5>
+        <ul>
+          <li>Best-in-class RAG primitives (your <code>search_docs</code> can be replaced by a native LlamaIndex query engine)</li>
+          <li>Advanced retrieval patterns (sub-question, recursive, auto-merging) — see <a href="0013-advanced-retrieval-patterns.html">L13</a></li>
+          <li>Async-by-default and built-in workflow visualisation</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h5>What it costs</h5>
+        <ul>
+          <li>"<code>llama-index-core</code>" vs satellite packages — dependency tree is sprawling</li>
+          <li>If your agent isn't retrieval-heavy, you're paying for unused machinery</li>
+          <li>Two agent APIs (legacy <code>ReActAgent</code> + new <code>FunctionAgent</code>) — pick the new one</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict">
+      <strong>Verdict:</strong> Pick this if your agent's main job is <em>querying lots of documents/indexes</em> and you want their retrieval research baked in. <a href="../reference/llamaindex-production-notes.html">LlamaIndex production notes →</a>
+    </div>
+  </div>
+
+  <!-- ─────────── FRAMEWORK 5 — HAYSTACK ─────────── -->
+  <div class="framework">
+    <div class="fw-title">
+      <span class="fw-num">FRAMEWORK 5</span>
+      <span class="fw-name">Haystack</span>
+      <span class="fw-vendor">by deepset</span>
+    </div>
+    <p class="fw-tagline">Everything is a <em>pipeline</em> of <em>components</em>. Agent is one component you plug into a flow with retrievers, rankers, validators.</p>
+
+<pre><code><span class="cm"># pip install haystack-ai google-genai-haystack</span>
+<span class="kw">from</span> haystack.components.agents <span class="kw">import</span> Agent
+<span class="kw">from</span> haystack.tools <span class="kw">import</span> tool
+<span class="kw">from</span> haystack_integrations.components.generators.google_genai <span class="kw">import</span> GoogleGenAIChatGenerator
+<span class="kw">from</span> haystack.dataclasses <span class="kw">import</span> ChatMessage
+
+<span class="attr">@tool</span>
+<span class="kw">def</span> <span class="fn">search_docs</span>(query: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">str</span>:
+    <span class="str">"""Search MuleSoft docs and return an answer."""</span>
+    <span class="kw">return</span> rag_chroma.ask(query)
+
+<span class="attr">@tool</span>
+<span class="kw">def</span> <span class="fn">get_anypoint_org_status</span>(org_id: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">dict</span>:
+    <span class="str">"""Live Anypoint org status."""</span>
+    <span class="kw">return</span> {<span class="str">"org_id"</span>: org_id, <span class="str">"status"</span>: <span class="str">"healthy"</span>}
+
+agent <span class="op">=</span> Agent(
+    chat_generator<span class="op">=</span>GoogleGenAIChatGenerator(model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>),
+    tools<span class="op">=</span>[search_docs, get_anypoint_org_status],
+    system_prompt<span class="op">=</span>SYSTEM,
+)
+agent.warm_up()
+
+result <span class="op">=</span> agent.run(messages<span class="op">=</span>[
+    ChatMessage.from_user(<span class="str">"How do I rotate a Connected App secret?"</span>),
+])
+<span class="fn">print</span>(result[<span class="str">"messages"</span>][<span class="op">-</span><span class="num">1</span>].text)
+</code></pre>
+
+    <p>In real Haystack code, the <code>Agent</code> rarely stands alone — you wrap it in a <code>Pipeline</code> next to a retriever, ranker, and validator:</p>
+<pre><code><span class="kw">from</span> haystack <span class="kw">import</span> Pipeline
+pipe <span class="op">=</span> Pipeline()
+pipe.add_component(<span class="str">"retriever"</span>, ChromaEmbeddingRetriever(...))
+pipe.add_component(<span class="str">"agent"</span>, agent)
+pipe.connect(<span class="str">"retriever.documents"</span>, <span class="str">"agent.documents"</span>)
+</code></pre>
+
+    <div class="pros-cons">
+      <div class="pros">
+        <h5>What it removes</h5>
+        <ul>
+          <li>Composing search → rerank → agent → validate as one declarative pipeline</li>
+          <li>Strong typing on component inputs/outputs — surfaces wiring errors early</li>
+          <li>Mature on document workflows (deepset's heritage is enterprise search)</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h5>What it costs</h5>
+        <ul>
+          <li>Pipeline-first thinking is heavy if you're not also doing search/rerank</li>
+          <li>Smaller agent-specific community than LangGraph / LlamaIndex</li>
+          <li>Component-input wiring (<code>pipe.connect(...)</code>) has a learning curve</li>
+        </ul>
+      </div>
+    </div>
+    <div class="verdict">
+      <strong>Verdict:</strong> Pick this if you're building an <em>enterprise document workflow</em> — searches, rankers, agents, validators all wired as one production pipeline. Less compelling for "just an agent".
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Decision matrix — which to pick</h2>
+  <p>A one-page summary. Read down for your scenario, across for the recommendation.</p>
+
+  <table>
+    <thead>
+      <tr><th>If your priority is…</th><th>Pick</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Smallest leap from native Gemini, same runtime</td><td>Google ADK</td><td>You stay inside Google's SDK, just with the loop hidden and sessions/eval added.</td></tr>
+      <tr><td>Production-grade persistence + checkpointing</td><td>LangGraph</td><td><code>MemorySaver</code> / Postgres / Redis checkpointers; resume mid-conversation; the most operationally mature.</td></tr>
+      <tr><td>Provider portability (Gemini ↔ OpenAI ↔ Anthropic)</td><td>LangGraph</td><td>Largest model adapter library; swap LLM with a one-line change.</td></tr>
+      <tr><td>Multi-agent collaboration (researcher + writer + reviewer)</td><td>CrewAI</td><td>Role/task/crew is the right frame for this — overkill for a single helper.</td></tr>
+      <tr><td>Agent whose primary job is querying lots of indexes</td><td>LlamaIndex</td><td>Retrieval is first-class; advanced patterns from <a href="0013-advanced-retrieval-patterns.html">L13</a> are native.</td></tr>
+      <tr><td>End-to-end document pipeline (search → rank → agent → validate)</td><td>Haystack</td><td>Pipeline DAG is the unit of work; strong typing on component wiring.</td></tr>
+      <tr><td>Lowest dependency footprint, total control</td><td>Native L18</td><td>Don't adopt a framework yet. See "when to stay native" below.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The MuleSoft-integration angle</h3>
+  <div class="callout callout-mule">
+    <div class="callout-label">For your day job</div>
+    <ul style="margin:0">
+      <li><strong>Customer demo / Salesforce stack alignment</strong> — Google ADK fits because Salesforce+MuleSoft is increasingly Gemini-aligned via Agentforce. One Google story.</li>
+      <li><strong>Internal "ask MuleSoft docs" assistant</strong> — LangGraph or LlamaIndex. Both have battle-tested retrieval. LangGraph wins on persistence.</li>
+      <li><strong>Multi-step integration ops bot</strong> (look up org → check apps → propose fix → ask approval) — LangGraph for graph control, or CrewAI if the steps map to distinct personas.</li>
+      <li><strong>Document-extraction-style enterprise pipeline</strong> (like the IDP frontend you're building) — Haystack is genuinely the strongest fit here.</li>
+    </ul>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The honest answer — when to stay native (no framework)</h2>
+  <p>None of these frameworks is automatically the right choice. Stay on the L18 native loop when:</p>
+  <ul>
+    <li><strong>You're one developer, single agent, &lt; 100 lines today.</strong> The framework lift will outweigh the boilerplate it removes.</li>
+    <li><strong>You only ever target Gemini.</strong> Provider portability is the #1 framework win; if you don't need it, you don't need most of LangChain.</li>
+    <li><strong>You're still figuring out the right shape.</strong> Frameworks shape your design. Lock-in too early and you'll fight the framework when the design needs to change.</li>
+    <li><strong>Debugging matters more than features.</strong> A 30-line loop you wrote is easier to step through than a framework's call stack.</li>
+    <li><strong>You're learning.</strong> The L18 loop teaches you what every framework is doing under the hood. Frameworks hide what's still worth knowing.</li>
+  </ul>
+
+  <div class="callout callout-tip">
+    <strong>The trigger to switch:</strong> when you find yourself <em>building one of the framework features by hand</em> — persistence, checkpointing, retries, multi-agent handoff, schema validation, eval harness — that's the moment. Not before.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The framework value proposition — one chart</h2>
+  <p>What each one "buys" you, expressed as boilerplate-removed (✓) or constraint-added (·):</p>
+
+  <table>
+    <thead>
+      <tr><th>Feature</th><th>L18 native</th><th>ADK</th><th>LangGraph</th><th>CrewAI</th><th>LlamaIndex</th><th>Haystack</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Agent loop hidden</td><td>·</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><td>Auto-schema from Python fn</td><td>✓</td><td>✓</td><td>✓ (@tool)</td><td>✓ (@tool)</td><td>✓ (FunctionTool)</td><td>✓ (@tool)</td></tr>
+      <tr><td>Multi-provider LLM swap</td><td>·</td><td>·</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><td>Sessions / persistent state</td><td>·</td><td>✓</td><td>✓</td><td>·</td><td>✓</td><td>·</td></tr>
+      <tr><td>Checkpointing (resume mid-run)</td><td>·</td><td>·</td><td>✓</td><td>·</td><td>·</td><td>·</td></tr>
+      <tr><td>Built-in eval harness</td><td>·</td><td>✓</td><td>(LangSmith)</td><td>·</td><td>·</td><td>·</td></tr>
+      <tr><td>Multi-agent orchestration</td><td>·</td><td>✓</td><td>✓</td><td>✓ (primary)</td><td>(workflows)</td><td>·</td></tr>
+      <tr><td>Retrieval primitives</td><td>·</td><td>·</td><td>(adapters)</td><td>·</td><td>✓ (primary)</td><td>✓ (primary)</td></tr>
+      <tr><td>Pipeline DAG</td><td>·</td><td>·</td><td>✓ (graph)</td><td>·</td><td>·</td><td>✓ (primary)</td></tr>
+      <tr><td>OTel-style tracing</td><td>·</td><td>✓</td><td>(LangSmith)</td><td>(AgentOps)</td><td>(Phoenix)</td><td>(Langfuse)</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:0.85rem; color:#6b7280">
+    "(name)" means "supported via a paired observability product, not the framework itself." See <a href="0017-agent-framework-landscape.html">L17</a> for the observability ecosystem.
+  </p>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn — pick a shortlist</h2>
+  <p>L20 will be a hands-on deep dive into the framework you choose. Before moving on, narrow to one (or two):</p>
+
+  <ol>
+    <li><strong>What's your honest use case for the next 3 months?</strong> A demo? A side project? A production internal tool?</li>
+    <li><strong>Which constraint hurts most today?</strong> Boilerplate (any framework helps), provider portability (LangGraph), persistence (LangGraph/ADK), multiple specialised agents (CrewAI), retrieval depth (LlamaIndex), pipeline shape (Haystack)?</li>
+    <li><strong>Are you optimising for "learn it deeply" or "ship it fast"?</strong> Learn-deeply favours LangGraph (largest mental surface area, most transferable). Ship-fast favours ADK (smallest jump from what you already know).</li>
+  </ol>
+
+  <div class="callout callout-tip">
+    <strong>Tell me your pick and L20 begins.</strong> Reply with the framework name. I'll build the actual working agent end-to-end with your RAG from L9, the mocked Anypoint tool, real tracing, and persistence — whichever framework you chose.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> Which framework is the smallest jump from L18's native Gemini SDK agent?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">LangChain (deprecated <code>AgentExecutor</code>)</li>
+        <li data-i="1">LangGraph</li>
+        <li data-i="2">Google ADK</li>
+        <li data-i="3">Haystack</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Why does LangChain's own documentation now redirect users to LangGraph for new agents?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">LangChain was bought by a competitor and is being shut down</li>
+        <li data-i="1">LangChain's classic agent classes (<code>AgentExecutor</code>) are deprecated in favour of LangGraph's graph-based runtime, where the LangChain team now invests new features (checkpointing, persistence, multi-agent)</li>
+        <li data-i="2">LangGraph is faster at inference</li>
+        <li data-i="3">LangChain doesn't support Gemini</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> You need a single agent that answers MuleSoft questions using your RAG. Which framework is <em>overkill</em>?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">CrewAI — its role/task/crew abstraction is designed for multiple collaborating agents</li>
+        <li data-i="1">Google ADK — too lightweight</li>
+        <li data-i="2">LangGraph — too simple</li>
+        <li data-i="3">All five are perfectly suited for a single agent</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> What's the <em>signal</em> that you should switch from the L18 native loop to a framework?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">When you reach 100 lines of code</li>
+        <li data-i="1">When you ship to production</li>
+        <li data-i="2">When you add your second tool</li>
+        <li data-i="3">When you find yourself rebuilding a framework feature by hand — persistence, checkpointing, retries, schema validation, eval harness, multi-agent handoff</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> Your agent's main job is querying many indexed documents and you want sub-question decomposition and recursive retrieval baked in. Best fit?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">CrewAI</li>
+        <li data-i="1">Google ADK</li>
+        <li data-i="2">LlamaIndex — built around retrieval, with advanced patterns from L13 as first-class primitives</li>
+        <li data-i="3">Haystack</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Anything in those five blocks unclear — install steps, the difference between <code>FunctionAgent</code> and <code>ReActAgent</code> in LlamaIndex, why CrewAI splits the prompt across four fields, how LangGraph's <code>ToolNode</code> dispatches calls — just ask. I'm your teacher.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0018-native-sdk-agent.html">← L18 — Native SDK Agent</a>
+      <a href="0017-agent-framework-landscape.html">L17 — Framework landscape</a>
+      <a href="../reference/llm-sdk-comparison.html">SDK comparison</a>
+      <a href="../reference/openai-compatible-api.html">OpenAI-compatible API</a>
+      <a href="../reference/crewai-production-notes.html">CrewAI prod notes</a>
+      <a href="../reference/llamaindex-production-notes.html">LlamaIndex prod notes</a>
+      <a href="../MISSION.md">Mission</a>
+    </div>
+    <p style="margin-top:1rem">L20 (coming next) — Hands-on deep dive in your chosen framework: full working agent with your RAG, observability, and persistence.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q, idx) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

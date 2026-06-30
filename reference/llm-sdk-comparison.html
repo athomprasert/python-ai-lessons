@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — LLM SDK Comparison (Gemini · OpenAI · Anthropic)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 880px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.4rem 0 0.4rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.15rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      overflow-x: auto;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      margin: 0.4rem 0 0.7rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.35rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .threecol { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.6rem; margin: 0.5rem 0; }
+    .threecol > div { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.6rem 0.7rem; font-size: 0.82rem; }
+    .threecol h4 { font-size: 0.82rem; margin-bottom: 0.3rem; }
+    .threecol pre { font-size: 0.7rem; padding: 0.5rem 0.6rem; }
+    @media (max-width: 760px) { .threecol { grid-template-columns: 1fr; } }
+
+    .provider-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.1rem 0.45rem;
+      border-radius: 3px;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+    }
+    .tag-gemini { background: #e0f2fe; color: #075985; }
+    .tag-openai { background: #dcfce7; color: #166534; }
+    .tag-anthropic { background: #ffe4d4; color: #9a3412; }
+
+    .callout { border-radius: 6px; padding: 0.6rem 0.8rem; margin: 0.6rem 0; border-left: 3px solid; font-size: 0.85rem; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-info { background: #eff6ff; border-color: #3b82f6; }
+
+    .footer-links { margin-top: 1.4rem; padding-top: 0.8rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+
+    @media print {
+      body { padding: 0.5rem; }
+      .page { max-width: 100%; }
+      pre { font-size: 0.68rem; }
+      .threecol { grid-template-columns: 1fr 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Python for AI/ML</p>
+    <h1>LLM SDK Comparison</h1>
+    <p class="tagline">Gemini vs OpenAI vs Anthropic — same task in each SDK, so you can switch providers without re-learning the world.</p>
+  </header>
+
+  <h2>The one thing to remember</h2>
+  <p>
+    <strong>Gemini's <code>chat</code> is the only one of the three that auto-manages history for you.</strong>
+    OpenAI's core API and Anthropic's API are stateless — every call, you pass the full conversation as a <code>messages=[...]</code> list.
+    Everything else (tool use, streaming, structured output) follows similar shapes across all three, but with different field names.
+  </p>
+
+  <h2>Install &amp; init</h2>
+  <div class="threecol">
+    <div>
+      <h4><span class="provider-tag tag-gemini">Gemini</span></h4>
+<pre><code><span class="cm"># pip install google-genai</span>
+<span class="kw">from</span> google <span class="kw">import</span> genai
+
+client <span class="op">=</span> genai.Client(
+    api_key<span class="op">=</span>os.environ[<span class="str">"GEMINI_API_KEY"</span>]
+)</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-openai">OpenAI</span></h4>
+<pre><code><span class="cm"># pip install openai</span>
+<span class="kw">from</span> openai <span class="kw">import</span> OpenAI
+
+client <span class="op">=</span> OpenAI(
+    api_key<span class="op">=</span>os.environ[<span class="str">"OPENAI_API_KEY"</span>]
+)</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-anthropic">Anthropic</span></h4>
+<pre><code><span class="cm"># pip install anthropic</span>
+<span class="kw">from</span> anthropic <span class="kw">import</span> Anthropic
+
+client <span class="op">=</span> Anthropic(
+    api_key<span class="op">=</span>os.environ[<span class="str">"ANTHROPIC_API_KEY"</span>]
+)</code></pre>
+    </div>
+  </div>
+
+  <h2>Single-turn call</h2>
+  <div class="threecol">
+    <div>
+      <h4><span class="provider-tag tag-gemini">Gemini</span></h4>
+<pre><code>r <span class="op">=</span> client.models.generate_content(
+    model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>,
+    contents<span class="op">=</span><span class="str">"Hello"</span>,
+)
+<span class="fn">print</span>(r.text)</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-openai">OpenAI</span></h4>
+<pre><code>r <span class="op">=</span> client.chat.completions.create(
+    model<span class="op">=</span><span class="str">"gpt-4o-mini"</span>,
+    messages<span class="op">=</span>[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+                <span class="str">"content"</span>: <span class="str">"Hello"</span>}],
+)
+<span class="fn">print</span>(r.choices[<span class="num">0</span>].message.content)</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-anthropic">Anthropic</span></h4>
+<pre><code>r <span class="op">=</span> client.messages.create(
+    model<span class="op">=</span><span class="str">"claude-sonnet-4-5"</span>,
+    max_tokens<span class="op">=</span><span class="num">1024</span>,
+    messages<span class="op">=</span>[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+                <span class="str">"content"</span>: <span class="str">"Hello"</span>}],
+)
+<span class="fn">print</span>(r.content[<span class="num">0</span>].text)</code></pre>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Watch the differences.</strong>
+    OpenAI requires <code>messages=[...]</code> even for a one-liner. Anthropic requires an explicit <code>max_tokens</code> — there's no default cap. Gemini accepts a plain string for <code>contents</code>.
+  </div>
+
+  <h2>Multi-turn conversation (state)</h2>
+  <p>This is the biggest divergence. Three different mental models:</p>
+
+  <table>
+    <thead><tr><th>SDK</th><th>State helper</th><th>What you do</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="provider-tag tag-gemini">Gemini</span></td>
+        <td><code>client.chats.create()</code></td>
+        <td>SDK stores history in a Python object. Call <code>chat.send_message(text)</code> repeatedly — history auto-prepended.</td>
+      </tr>
+      <tr>
+        <td><span class="provider-tag tag-openai">OpenAI</span></td>
+        <td>Partial — see notes</td>
+        <td><strong>Chat Completions API:</strong> fully stateless, you maintain a <code>messages</code> list. <strong>Responses API (newer):</strong> pass <code>previous_response_id</code> for server-side state. <strong>Assistants API:</strong> <code>threads</code> hold history.</td>
+      </tr>
+      <tr>
+        <td><span class="provider-tag tag-anthropic">Anthropic</span></td>
+        <td>None</td>
+        <td>Always stateless. You append the assistant's reply to your <code>messages</code> list yourself before the next call.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="threecol">
+    <div>
+      <h4><span class="provider-tag tag-gemini">Gemini</span></h4>
+<pre><code>chat <span class="op">=</span> client.chats.create(
+    model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>,
+)
+r1 <span class="op">=</span> chat.send_message(<span class="str">"My name is Att."</span>)
+r2 <span class="op">=</span> chat.send_message(<span class="str">"What's my name?"</span>)
+<span class="cm"># Knows: "Att"</span></code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-openai">OpenAI</span></h4>
+<pre><code>msgs <span class="op">=</span> [{<span class="str">"role"</span>: <span class="str">"user"</span>,
+         <span class="str">"content"</span>: <span class="str">"My name is Att."</span>}]
+r1 <span class="op">=</span> client.chat.completions.create(
+    model<span class="op">=</span><span class="str">"gpt-4o-mini"</span>, messages<span class="op">=</span>msgs)
+
+msgs.append({<span class="str">"role"</span>: <span class="str">"assistant"</span>,
+   <span class="str">"content"</span>: r1.choices[<span class="num">0</span>].message.content})
+msgs.append({<span class="str">"role"</span>: <span class="str">"user"</span>,
+             <span class="str">"content"</span>: <span class="str">"What's my name?"</span>})
+r2 <span class="op">=</span> client.chat.completions.create(
+    model<span class="op">=</span><span class="str">"gpt-4o-mini"</span>, messages<span class="op">=</span>msgs)</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-anthropic">Anthropic</span></h4>
+<pre><code>msgs <span class="op">=</span> [{<span class="str">"role"</span>: <span class="str">"user"</span>,
+         <span class="str">"content"</span>: <span class="str">"My name is Att."</span>}]
+r1 <span class="op">=</span> client.messages.create(
+    model<span class="op">=</span><span class="str">"claude-sonnet-4-5"</span>,
+    max_tokens<span class="op">=</span><span class="num">1024</span>, messages<span class="op">=</span>msgs)
+
+msgs.append({<span class="str">"role"</span>: <span class="str">"assistant"</span>,
+             <span class="str">"content"</span>: r1.content[<span class="num">0</span>].text})
+msgs.append({<span class="str">"role"</span>: <span class="str">"user"</span>,
+             <span class="str">"content"</span>: <span class="str">"What's my name?"</span>})
+r2 <span class="op">=</span> client.messages.create(
+    model<span class="op">=</span><span class="str">"claude-sonnet-4-5"</span>,
+    max_tokens<span class="op">=</span><span class="num">1024</span>, messages<span class="op">=</span>msgs)</code></pre>
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>The sharp edge with Gemini's <code>chat</code>:</strong> history lives in the Python process only. Restart your script and it's gone. For multi-request servers, multi-user systems, or anything beyond a single CLI run, you need to persist history yourself (DB) or use a framework with built-in memory (LangGraph checkpointer, ADK sessions). See <a href="../lessons/0018-native-sdk-agent.html">L18</a> productionising checklist.
+  </div>
+
+  <h2>System prompt</h2>
+  <div class="threecol">
+    <div>
+      <h4><span class="provider-tag tag-gemini">Gemini</span></h4>
+<pre><code><span class="kw">from</span> google.genai <span class="kw">import</span> types
+
+cfg <span class="op">=</span> types.GenerateContentConfig(
+    system_instruction<span class="op">=</span><span class="str">"You are terse."</span>
+)
+r <span class="op">=</span> client.models.generate_content(
+    model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>,
+    contents<span class="op">=</span><span class="str">"Hello"</span>,
+    config<span class="op">=</span>cfg,
+)</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-openai">OpenAI</span></h4>
+<pre><code>r <span class="op">=</span> client.chat.completions.create(
+    model<span class="op">=</span><span class="str">"gpt-4o-mini"</span>,
+    messages<span class="op">=</span>[
+      {<span class="str">"role"</span>: <span class="str">"system"</span>,
+       <span class="str">"content"</span>: <span class="str">"You are terse."</span>},
+      {<span class="str">"role"</span>: <span class="str">"user"</span>,
+       <span class="str">"content"</span>: <span class="str">"Hello"</span>},
+    ],
+)</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-anthropic">Anthropic</span></h4>
+<pre><code>r <span class="op">=</span> client.messages.create(
+    model<span class="op">=</span><span class="str">"claude-sonnet-4-5"</span>,
+    max_tokens<span class="op">=</span><span class="num">1024</span>,
+    system<span class="op">=</span><span class="str">"You are terse."</span>,
+    messages<span class="op">=</span>[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+                <span class="str">"content"</span>: <span class="str">"Hello"</span>}],
+)</code></pre>
+    </div>
+  </div>
+
+  <p>
+    <strong>Three different shapes.</strong> Gemini puts it in a <code>config</code> object. OpenAI uses a <code>{"role": "system"}</code> message in the list. Anthropic has a dedicated top-level <code>system=</code> parameter (and refuses to mix it into <code>messages</code>).
+  </p>
+
+  <h2>Tool use (function calling)</h2>
+  <p>
+    All three share the same loop: LLM returns a tool call → your code runs the tool → you send the result back → LLM continues.
+    The field names and result-message shapes differ.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Concept</th><th>Gemini</th><th>OpenAI</th><th>Anthropic</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Pass tools</td>
+        <td><code>config=types.GenerateContentConfig(tools=[fn])</code> <br><em>(SDK auto-extracts schema from the Python function)</em></td>
+        <td><code>tools=[{"type":"function","function":{...}}]</code> <br><em>(explicit JSON schema)</em></td>
+        <td><code>tools=[{"name":..., "input_schema":{...}}]</code> <br><em>(explicit JSON schema)</em></td>
+      </tr>
+      <tr>
+        <td>Read tool call</td>
+        <td><code>response.function_calls</code></td>
+        <td><code>response.choices[0].message.tool_calls</code></td>
+        <td><code>response.content</code> blocks where <code>block.type == "tool_use"</code></td>
+      </tr>
+      <tr>
+        <td>Send tool result</td>
+        <td><code>types.Part.from_function_response(name, response={"result": ...})</code></td>
+        <td><code>{"role":"tool","tool_call_id":id,"content":...}</code></td>
+        <td><code>{"type":"tool_result","tool_use_id":id,"content":...}</code> inside user message</td>
+      </tr>
+      <tr>
+        <td>Stop reason</td>
+        <td>No <code>function_calls</code> → final answer</td>
+        <td><code>finish_reason == "stop"</code></td>
+        <td><code>stop_reason == "end_turn"</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-tip">
+    <strong>Gemini's biggest ergonomic win:</strong> you can pass a plain Python function to <code>tools=[my_fn]</code> and the SDK reads the docstring and type hints to generate the schema. With OpenAI and Anthropic, you write the JSON schema by hand (or use a helper like <code>pydantic</code> or <code>instructor</code>). This is the win L18 leans on.
+  </div>
+
+  <h2>Streaming</h2>
+  <div class="threecol">
+    <div>
+      <h4><span class="provider-tag tag-gemini">Gemini</span></h4>
+<pre><code><span class="kw">for</span> chunk <span class="kw">in</span> client.models.generate_content_stream(
+    model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>,
+    contents<span class="op">=</span><span class="str">"Write a haiku"</span>,
+):
+    <span class="fn">print</span>(chunk.text, end<span class="op">=</span><span class="str">""</span>)</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-openai">OpenAI</span></h4>
+<pre><code>stream <span class="op">=</span> client.chat.completions.create(
+    model<span class="op">=</span><span class="str">"gpt-4o-mini"</span>,
+    messages<span class="op">=</span>[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+        <span class="str">"content"</span>: <span class="str">"Write a haiku"</span>}],
+    stream<span class="op">=</span><span class="kw">True</span>,
+)
+<span class="kw">for</span> chunk <span class="kw">in</span> stream:
+    delta <span class="op">=</span> chunk.choices[<span class="num">0</span>].delta.content
+    <span class="kw">if</span> delta: <span class="fn">print</span>(delta, end<span class="op">=</span><span class="str">""</span>)</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-anthropic">Anthropic</span></h4>
+<pre><code><span class="kw">with</span> client.messages.stream(
+    model<span class="op">=</span><span class="str">"claude-sonnet-4-5"</span>,
+    max_tokens<span class="op">=</span><span class="num">1024</span>,
+    messages<span class="op">=</span>[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+        <span class="str">"content"</span>: <span class="str">"Write a haiku"</span>}],
+) <span class="kw">as</span> stream:
+    <span class="kw">for</span> text <span class="kw">in</span> stream.text_stream:
+        <span class="fn">print</span>(text, end<span class="op">=</span><span class="str">""</span>)</code></pre>
+    </div>
+  </div>
+
+  <h2>Structured output (JSON)</h2>
+  <p>
+    All three support enforcing a JSON schema on the response.
+    Gemini and OpenAI accept a Pydantic model directly; Anthropic uses a "tool" trick or explicit schema.
+  </p>
+
+  <div class="threecol">
+    <div>
+      <h4><span class="provider-tag tag-gemini">Gemini</span></h4>
+<pre><code><span class="kw">class</span> <span class="fn">Recipe</span>(BaseModel):
+    name: <span class="fn">str</span>
+    minutes: <span class="fn">int</span>
+
+r <span class="op">=</span> client.models.generate_content(
+    model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>,
+    contents<span class="op">=</span><span class="str">"Give me pasta"</span>,
+    config<span class="op">=</span>{
+      <span class="str">"response_mime_type"</span>: <span class="str">"application/json"</span>,
+      <span class="str">"response_schema"</span>: Recipe,
+    },
+)
+recipe: Recipe <span class="op">=</span> r.parsed</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-openai">OpenAI</span></h4>
+<pre><code><span class="kw">class</span> <span class="fn">Recipe</span>(BaseModel):
+    name: <span class="fn">str</span>
+    minutes: <span class="fn">int</span>
+
+r <span class="op">=</span> client.beta.chat.completions.parse(
+    model<span class="op">=</span><span class="str">"gpt-4o-mini"</span>,
+    messages<span class="op">=</span>[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+        <span class="str">"content"</span>: <span class="str">"Give me pasta"</span>}],
+    response_format<span class="op">=</span>Recipe,
+)
+recipe: Recipe <span class="op">=</span> r.choices[<span class="num">0</span>] \
+    .message.parsed</code></pre>
+    </div>
+    <div>
+      <h4><span class="provider-tag tag-anthropic">Anthropic</span></h4>
+<pre><code><span class="cm"># Use "tool use" as JSON forcing</span>
+schema_tool <span class="op">=</span> {
+    <span class="str">"name"</span>: <span class="str">"return_recipe"</span>,
+    <span class="str">"input_schema"</span>: Recipe.model_json_schema(),
+}
+r <span class="op">=</span> client.messages.create(
+    model<span class="op">=</span><span class="str">"claude-sonnet-4-5"</span>,
+    max_tokens<span class="op">=</span><span class="num">1024</span>,
+    tools<span class="op">=</span>[schema_tool],
+    tool_choice<span class="op">=</span>{<span class="str">"type"</span>: <span class="str">"tool"</span>,
+                 <span class="str">"name"</span>: <span class="str">"return_recipe"</span>},
+    messages<span class="op">=</span>[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+        <span class="str">"content"</span>: <span class="str">"Give me pasta"</span>}],
+)
+recipe <span class="op">=</span> Recipe(<span class="op">**</span>r.content[<span class="num">0</span>].input)</code></pre>
+    </div>
+  </div>
+
+  <h2>Async</h2>
+  <table>
+    <thead><tr><th>SDK</th><th>How</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="provider-tag tag-gemini">Gemini</span></td>
+        <td><code>client.aio.models.generate_content(...)</code> — same client, <code>.aio</code> namespace gives async equivalents.</td>
+      </tr>
+      <tr>
+        <td><span class="provider-tag tag-openai">OpenAI</span></td>
+        <td>Separate client class: <code>AsyncOpenAI()</code>. Same method names, all <code>await</code>-able.</td>
+      </tr>
+      <tr>
+        <td><span class="provider-tag tag-anthropic">Anthropic</span></td>
+        <td>Separate client class: <code>AsyncAnthropic()</code>. Same method names, all <code>await</code>-able.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Vision (image input)</h2>
+  <p>All three accept images; the input shapes are different.</p>
+  <table>
+    <thead><tr><th>SDK</th><th>How to pass an image</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="provider-tag tag-gemini">Gemini</span></td>
+        <td><code>contents=[PIL.Image.open("x.jpg"), "Describe this"]</code> or <code>types.Part.from_bytes(data=..., mime_type="image/jpeg")</code></td>
+      </tr>
+      <tr>
+        <td><span class="provider-tag tag-openai">OpenAI</span></td>
+        <td>In <code>content</code> array: <code>{"type":"image_url","image_url":{"url":"data:image/..."}}</code></td>
+      </tr>
+      <tr>
+        <td><span class="provider-tag tag-anthropic">Anthropic</span></td>
+        <td>In <code>content</code> array: <code>{"type":"image","source":{"type":"base64","media_type":"image/jpeg","data":...}}</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Feature parity at a glance</h2>
+  <table>
+    <thead>
+      <tr><th>Feature</th><th>Gemini</th><th>OpenAI</th><th>Anthropic</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Stateless single call</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>Auto-managed chat state</td><td>✅ <code>chats.create()</code></td><td>⚠️ Responses API / Assistants only</td><td>❌ Manual</td></tr>
+      <tr><td>System prompt</td><td>✅ <code>config.system_instruction</code></td><td>✅ <code>role:"system"</code> msg</td><td>✅ Top-level <code>system=</code></td></tr>
+      <tr><td>Tool / function calling</td><td>✅ + auto-schema from Python fn</td><td>✅ (manual schema)</td><td>✅ (manual schema)</td></tr>
+      <tr><td>Parallel tool calls</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>Streaming</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>Structured output / JSON mode</td><td>✅ Pydantic-native</td><td>✅ Pydantic-native (<code>.parse</code>)</td><td>⚠️ Via tool-use trick</td></tr>
+      <tr><td>Vision</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td>Audio input</td><td>✅</td><td>✅ (Whisper / Realtime)</td><td>❌ (text + vision only)</td></tr>
+      <tr><td>Video input</td><td>✅</td><td>❌</td><td>❌</td></tr>
+      <tr><td>Async client</td><td>✅ <code>.aio</code></td><td>✅ <code>AsyncOpenAI</code></td><td>✅ <code>AsyncAnthropic</code></td></tr>
+      <tr><td>Built-in retries</td><td>⚠️ Manual</td><td>✅ <code>max_retries</code></td><td>✅ <code>max_retries</code></td></tr>
+      <tr><td>Prompt caching</td><td>✅ (explicit cache objects)</td><td>✅ (automatic)</td><td>✅ (explicit <code>cache_control</code>)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Common surprises when switching</h2>
+  <div class="callout callout-warn">
+    <ul style="margin:0">
+      <li><strong>Anthropic requires <code>max_tokens</code> on every call.</strong> No default. Easy to forget when porting from OpenAI/Gemini.</li>
+      <li><strong>OpenAI's "tool" role is a real role.</strong> Don't put tool results under <code>"role": "user"</code> — Anthropic does the opposite.</li>
+      <li><strong>Gemini <code>chat</code> won't survive a process restart.</strong> It is not persistent storage.</li>
+      <li><strong>Model names are wildly different.</strong> <code>gemini-2.0-flash</code>, <code>gpt-4o-mini</code>, <code>claude-sonnet-4-5</code>. Centralise the string.</li>
+      <li><strong>Anthropic "structured output" via tool-use means the result lives in <code>content[0].input</code></strong>, not in a normal text field. Different parsing path.</li>
+      <li><strong>OpenAI has three APIs that all do "chat":</strong> Chat Completions (the classic, stateless), Responses (newer, supports server-side state), Assistants (threads, runs, files). Don't conflate them.</li>
+    </ul>
+  </div>
+
+  <h2>Picking one for an agent</h2>
+  <table>
+    <thead><tr><th>Need</th><th>Best fit</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Smallest code for tool use</td><td>Gemini</td><td>Auto-schema from Python fn — no JSON to write.</td></tr>
+      <tr><td>Auto chat state out of the box</td><td>Gemini (<code>chats</code>) or OpenAI Responses</td><td>Anthropic forces you to manage history.</td></tr>
+      <tr><td>Multimodal (audio / video)</td><td>Gemini</td><td>Native audio + video; others are partial.</td></tr>
+      <tr><td>Most mature ecosystem</td><td>OpenAI</td><td>Largest pool of tutorials, integrations, eval tooling.</td></tr>
+      <tr><td>Strongest tool-use reasoning</td><td>Anthropic</td><td>Generally cited as best at multi-step tool plans.</td></tr>
+      <tr><td>Lowest cost / token (small-model tier)</td><td>Gemini Flash</td><td>Currently cheapest of the three at the small-model tier.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>If you must support more than one provider</h2>
+  <p>Don't roll your own abstraction layer. Use one of:</p>
+  <ul>
+    <li><a href="https://docs.litellm.ai/">LiteLLM</a> — drop-in wrapper that exposes an OpenAI-compatible API for ~100 providers including Gemini and Anthropic.</li>
+    <li><a href="https://python.langchain.com/docs/integrations/chat/">LangChain chat models</a> — common <code>ChatModel</code> interface across providers (heavier dependency).</li>
+    <li><a href="https://github.com/andrewyng/aisuite">aisuite</a> — minimal OpenAI-shaped wrapper across providers.</li>
+  </ul>
+  <p>
+    Note: for tool use, even with these wrappers you'll often still hit provider-specific edges (especially Anthropic's <code>tool_result</code> shape). Test each provider end-to-end before trusting the abstraction.
+  </p>
+
+  <h2>Mental models</h2>
+  <div class="callout callout-tip">
+    <strong>Gemini = "framework-lite".</strong> The SDK does a lot for you (chat state, schema from functions). Less code, more magic.
+  </div>
+  <div class="callout callout-tip">
+    <strong>OpenAI = "the de facto shape".</strong> Most third-party tools speak OpenAI's <code>messages</code> + <code>tool_calls</code> format. If you only know one, know this one.
+  </div>
+  <div class="callout callout-tip">
+    <strong>Anthropic = "explicit, no magic".</strong> Stateless, forces <code>max_tokens</code>, makes tool-result shapes structural. More verbose, fewer surprises.
+  </div>
+
+  <h2>Lessons that touch this</h2>
+  <ul>
+    <li><a href="../lessons/0004-calling-gemini.html">L4 — Calling Gemini</a> — first introduction to the Gemini SDK</li>
+    <li><a href="../lessons/0018-native-sdk-agent.html">L18 — Native SDK Agent</a> — uses <code>chats.create()</code> and auto-schema tool use; this doc is the "what if I leave Gemini?" companion</li>
+    <li><a href="../lessons/0019-frameworks-side-by-side.html">L19 — Frameworks survey</a> — frameworks abstract away these differences</li>
+  </ul>
+
+  <h2>Going deeper</h2>
+  <ul>
+    <li><a href="https://ai.google.dev/gemini-api/docs">Gemini API docs</a></li>
+    <li><a href="https://platform.openai.com/docs/api-reference">OpenAI API reference</a></li>
+    <li><a href="https://docs.anthropic.com/en/api/getting-started">Anthropic API reference</a></li>
+    <li><a href="https://platform.openai.com/docs/guides/responses">OpenAI Responses API</a> — the newer server-stateful one</li>
+  </ul>
+
+  <div class="footer-links">
+    <a href="../lessons/0018-native-sdk-agent.html">← Back to L18 — Native SDK Agent</a>
+    &nbsp; · &nbsp;
+    <a href="../RESOURCES.md">All resources</a>
+  </div>
+
+</div>
+</body>
+</html>

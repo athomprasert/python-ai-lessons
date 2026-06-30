@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 13 — Advanced Retrieval Patterns</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .pattern-card {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin: 0.9rem 0;
+    }
+    .pattern-card h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+    .pattern-card .pattern-meta { font-size: 0.78rem; color: #6b7280; margin-bottom: 0.5rem; }
+    .pattern-card .impl { font-size: 0.85rem; background: #f8fafc; border-radius: 6px; padding: 0.5rem 0.7rem; margin-top: 0.5rem; }
+    .pattern-card .impl code { background: transparent; color: #4338ca; }
+    .pattern-card pre { font-size: 0.78rem; }
+
+    .when-table th, .when-table td { font-size: 0.88rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 13 of ?</p>
+    <h1>Advanced Retrieval Patterns</h1>
+    <p class="tagline">Nine architectural patterns that build on chunking + embeddings + hybrid search. Recognise them in any framework; reach for the right one when your eval points at a specific gap.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <a href="0008-chunking.html"><span class="pill pill-done">L8 ✓</span></a>
+      <a href="0009-build-rag.html"><span class="pill pill-done">L9 ✓</span></a>
+      <a href="0010-vector-db.html"><span class="pill pill-done">L10 ✓</span></a>
+      <a href="0011-contextual-retrieval.html"><span class="pill pill-done">L11 ✓</span></a>
+      <a href="0012-hybrid-search.html"><span class="pill pill-done">L12 ✓</span></a>
+      <span class="pill pill-now">L13 — Advanced Retrieval</span>
+      <span class="pill pill-next">L14 — Evaluating RAG</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>Why this lesson</h2>
+  <p>
+    L8–L12 covered <strong>foundation</strong> retrieval: chunking, embedding, vector storage, contextual blurbs, hybrid (vector + BM25). Those answer the question <em>"how do I find the right chunks?"</em>
+  </p>
+  <p>
+    This lesson covers the <strong>architectural patterns built on top</strong> — orchestration designs that combine retrieval steps in smarter ways. Sub-question decomposition, recursive retrieval, auto-merging, knowledge-graph RAG, and so on.
+  </p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Architectural pattern, not a library</div>
+    Each pattern below is a <em>design</em> you could hand-code in any framework. <a href="0017-agent-framework-landscape.html">LlamaIndex</a> packages most of them as ready-made classes — that's its main value-add. LangChain has its own equivalents. The patterns themselves are framework-agnostic.
+  </div>
+
+  <p>You don't need all nine. <strong>The eval (L14) tells you which one to add</strong> — each fixes a specific failure mode. This lesson is the menu; future eval results pick the dish.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The nine patterns at a glance</h2>
+
+  <table class="when-table">
+    <thead>
+      <tr><th>Pattern</th><th>Fixes this failure mode</th><th>Cost</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Sub-question decomposition</td><td>Multi-part / comparison questions return only one half</td><td>+1 LLM call per query, +N retrieval calls</td></tr>
+      <tr><td>Recursive retrieval</td><td>Flat chunking loses document context in large corpora</td><td>+1 retrieval hop</td></tr>
+      <tr><td>Multi-document agents</td><td>50+ heterogeneous docs flatten poorly</td><td>+1 LLM routing call</td></tr>
+      <tr><td>Hybrid search (already L12)</td><td>Vector misses exact identifiers</td><td>+BM25 index</td></tr>
+      <tr><td>Query rewriting / HyDE</td><td>Vague or short queries; recall ceiling</td><td>+1 LLM call per query</td></tr>
+      <tr><td>Auto-merging retrieval</td><td>Small chunks under-context the LLM</td><td>One-time chunking change</td></tr>
+      <tr><td>Sentence-window retrieval</td><td>Need fine-grained match + surrounding context</td><td>One-time chunking change</td></tr>
+      <tr><td>Knowledge graph RAG</td><td>Relational data; "show everything connected to X"</td><td>Expensive — graph build at index time</td></tr>
+      <tr><td>Router query engine</td><td>Mixed sources need different retrieval per question</td><td>+1 LLM routing call</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ─────────────────────────────  PATTERN 1 -->
+  <h2>1. Sub-question decomposition</h2>
+
+  <div class="pattern-card">
+    <h3>The pattern</h3>
+    <p class="pattern-meta">Break a complex question into smaller sub-questions, retrieve and answer each separately, then combine.</p>
+
+<pre><code>"Compare the auth model between MuleSoft and Salesforce"
+                          │
+                          ▼
+                  [decomposition LLM]
+                  │              │
+                  ▼              ▼
+   "What is MuleSoft auth?"   "What is Salesforce auth?"
+                  │              │
+                  ▼              ▼
+            [retrieve]      [retrieve]
+                  │              │
+                  └──── combine ─┘
+                          │
+                          ▼
+                  Final answer</code></pre>
+
+    <p><strong>When to reach for it:</strong> users ask comparison or multi-faceted questions and you see <em>"answer covers half the question"</em> in your eval failures.</p>
+
+    <div class="impl">
+      <strong>LlamaIndex implementation:</strong> <code>SubQuestionQueryEngine</code> — wires up the decomposition LLM, the per-sub-question retrieval, and the final combine step.
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────  PATTERN 2 -->
+  <h2>2. Recursive retrieval</h2>
+
+  <div class="pattern-card">
+    <h3>The pattern</h3>
+    <p class="pattern-meta">Indexes can reference other indexes. A retrieved node can be a <em>summary</em> that points to a deeper sub-index of the actual content.</p>
+
+<pre><code>Top-level index — one node per document (summaries only)
+       │
+       │ retrieved: "MuleSoft auth doc summary"
+       ▼
+Sub-index of THAT document — chunks of the auth doc
+       │
+       ▼
+Specific chunks → LLM</code></pre>
+
+    <p>The summary layer routes retrieval to the <em>right document</em> first, then drills into chunks. Solves the "100 docs of 50 chunks each = 5000 chunks competing on cosine" problem.</p>
+    <p><strong>When to reach for it:</strong> large multi-document corpora where the right document is obvious but flat chunking buries it under noise from 99 other docs.</p>
+
+    <div class="impl">
+      <strong>LlamaIndex:</strong> <code>RecursiveRetriever</code> + <code>IndexNode</code>. Each <code>IndexNode</code> in the top-level index references a sub-retriever that knows its parent doc's chunks.
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────  PATTERN 3 -->
+  <h2>3. Multi-document agents</h2>
+
+  <div class="pattern-card">
+    <h3>The pattern</h3>
+    <p class="pattern-meta">Each document gets its own <em>agent</em> with its own tools (typically a vector tool + a summary tool). A top-level agent routes queries to the right document-agent.</p>
+
+<pre><code>Top-level routing agent
+        │
+        │ "user is asking about MuleSoft auth specifically"
+        ▼
+   MuleSoft-doc agent ──→ [vector tool] [summary tool]
+        │
+        ▼
+   Response</code></pre>
+
+    <p>Step beyond recursive retrieval: each document gets its own <em>retrieval policy</em>, not just its own chunks. Useful when different documents need different strategies (one is structured, one is prose, one is tabular).</p>
+    <p><strong>When to reach for it:</strong> 50+ heterogeneous documents where each warrants its own retrieval strategy.</p>
+
+    <div class="impl">
+      <strong>LlamaIndex:</strong> part of <code>AgentWorkflow</code> + multi-agent patterns. <code>FunctionAgent</code> per doc, top-level <code>FunctionAgent</code> for routing.
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────  PATTERN 4 -->
+  <h2>4. Hybrid search — RECAP from L12</h2>
+  <div class="pattern-card">
+    <h3>The pattern</h3>
+    <p class="pattern-meta">Vector search + BM25 keyword search, fused with Reciprocal Rank Fusion.</p>
+    <p>You built this by hand in <a href="0012-hybrid-search.html">L12</a>. Restated here because it sits at the same level as the other patterns — and so the menu is complete.</p>
+
+    <div class="impl">
+      <strong>LlamaIndex:</strong> <code>QueryFusionRetriever</code> with <code>mode="reciprocal_rerank"</code>. Same algorithm as your L12 implementation, packaged.
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────  PATTERN 5 -->
+  <h2>5. Query rewriting and HyDE</h2>
+
+  <div class="pattern-card">
+    <h3>The pattern</h3>
+    <p class="pattern-meta">Transform the query <em>before</em> retrieval to improve recall. Two flavours:</p>
+    <ul>
+      <li><strong>Query rewriting</strong> — LLM cleans up a vague/short query before embedding</li>
+      <li><strong>HyDE</strong> — LLM writes a fake answer to the question, embed THAT, retrieve docs near it (covered as a force-multiplier in L16)</li>
+    </ul>
+
+<pre><code>Query rewriting:
+   "rotate secrets?"
+        ↓ [LLM]
+   "How do I rotate Connected App OAuth client secrets?"
+        ↓ [embed + retrieve]
+
+HyDE:
+   "How do I rotate secrets?"
+        ↓ [LLM writes a hypothetical answer]
+   "To rotate Connected App secrets, navigate to..."
+        ↓ [embed THIS, retrieve real chunks near it]</code></pre>
+
+    <p><strong>When to reach for it:</strong> short or ambiguous user queries; eval shows recall climbs when you manually rewrite queries.</p>
+
+    <div class="impl">
+      <strong>LlamaIndex:</strong> <code>HyDEQueryTransform</code>, <code>MultiStepQueryEngine</code>.
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────  PATTERN 6 -->
+  <h2>6. Auto-merging retrieval</h2>
+
+  <div class="pattern-card">
+    <h3>The pattern</h3>
+    <p class="pattern-meta">Retrieve small chunks. If multiple small chunks come from the same parent paragraph, "merge up" and return the parent paragraph instead of the fragments.</p>
+
+<pre><code>Retrieved:  chunk_A (subsection 1)
+            chunk_B (subsection 1)
+            chunk_C (subsection 1)   ← 3 of the same parent
+                            ▼
+                    Return: subsection 1 (parent)   ← merged up</code></pre>
+
+    <p>Why it works: small chunks give precision in matching, but the LLM needs a paragraph or section's worth of context to compose a real answer. Auto-merging gives you both.</p>
+    <p><strong>When to reach for it:</strong> chunks are small enough that you often retrieve several siblings from the same section. Eval shows answers feel "thin" or "ungrounded".</p>
+
+    <div class="impl">
+      <strong>LlamaIndex:</strong> <code>AutoMergingRetriever</code> + <code>HierarchicalNodeParser</code> at indexing time.
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────  PATTERN 7 -->
+  <h2>7. Sentence-window retrieval</h2>
+
+  <div class="pattern-card">
+    <h3>The pattern</h3>
+    <p class="pattern-meta">Embed individual sentences for precision. At retrieval time, return a <em>window</em> of surrounding sentences for context.</p>
+
+<pre><code>Indexing:
+   doc → split into sentences → embed each individually
+
+   sentence 12: "Rotate the Connected App secret quarterly."
+                          │
+                          ▼ embedding (precise)
+
+Retrieval:
+   query embedding matches sentence 12
+                          │
+                          ▼
+   Return sentences 9–15  ← window around the match
+                          │
+                          ▼
+   LLM has both the matched line AND its surrounding context</code></pre>
+
+    <p>This is the inverse of auto-merging — small embedding granularity, big retrieval granularity.</p>
+    <p><strong>When to reach for it:</strong> precision-recall trade-off on chunk size feels stuck. You want sentence-level matching without losing paragraph-level context.</p>
+
+    <div class="impl">
+      <strong>LlamaIndex:</strong> <code>SentenceWindowNodeParser</code> at indexing + <code>MetadataReplacementPostProcessor</code> at retrieval time.
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────  PATTERN 8 -->
+  <h2>8. Knowledge graph RAG</h2>
+
+  <div class="pattern-card">
+    <h3>The pattern</h3>
+    <p class="pattern-meta">Build an entity-relationship graph from the corpus at indexing time. Retrieve via graph traversal, alongside (or instead of) vector similarity.</p>
+
+<pre><code>Build phase (one-time, expensive):
+   docs → [LLM extraction] → entities &amp; relations →
+
+   (Connected App) ──[expires in]──→ (90 days)
+        │
+        [authenticated by]
+        ▼
+   (OAuth client) ──[contains]──→ (client secret)
+
+
+Query phase:
+   "What expires after 90 days?"
+        ↓
+   Graph traversal: nodes connected to "90 days" via "expires in"
+        ↓
+   Returns: Connected App  (relational answer, not similarity-based)</code></pre>
+
+    <p><strong>When to reach for it:</strong> heavily relational corpora — corporate org charts, biomedical entities, product hierarchies. Questions that contain "show me everything connected to X" or "what's the relationship between A and B".</p>
+
+    <div class="impl">
+      <strong>LlamaIndex:</strong> <code>KnowledgeGraphIndex</code> (older), <code>PropertyGraphIndex</code> (newer, recommended).<br>
+      <strong>Note:</strong> graph build is the most expensive of any pattern here — 1 LLM extraction call per chunk minimum. Worth it only when relational queries dominate.
+    </div>
+
+    <div class="callout callout-warn" style="margin-top:0.6rem">
+      <div class="callout-label">Don't reach here first</div>
+      Knowledge graph RAG is the most expensive and most niche pattern. Try hybrid search and contextual retrieval before graphs. The cost-to-benefit only justifies when "show all entities connected to X" is the primary query shape.
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────  PATTERN 9 -->
+  <h2>9. Router query engine</h2>
+
+  <div class="pattern-card">
+    <h3>The pattern</h3>
+    <p class="pattern-meta">A "selector" decides at query time which query engine to use — vector, summary, SQL, web search, graph — based on the question.</p>
+
+<pre><code>"How many customers do we have?"
+            ↓ [selector LLM]
+       SQL query engine
+
+"What does the auth doc say?"
+            ↓ [selector LLM]
+       Vector query engine
+
+"Show me everything connected to OAuth"
+            ↓ [selector LLM]
+       Graph query engine</code></pre>
+
+    <p><strong>When to reach for it:</strong> mixed corpora — structured database + prose docs + graph data — where different question shapes need different retrieval engines. The router answers the meta-question "which engine?"</p>
+
+    <div class="impl">
+      <strong>LlamaIndex:</strong> <code>RouterQueryEngine</code> + <code>LLMSingleSelector</code> or <code>PydanticSingleSelector</code>.
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Architectural pattern vs library — clarified</h2>
+  <p>
+    Every pattern above is a <strong>design pattern</strong>. You could hand-code each one in plain Python, in LangChain, in your <code>rag_chroma.py</code>, or in any framework. They're recipes, not products.
+  </p>
+  <p>
+    <strong>LlamaIndex's value</strong> is that it ships ready-made classes for all of them: <code>SubQuestionQueryEngine</code>, <code>RecursiveRetriever</code>, <code>AutoMergingRetriever</code>, etc. You import and use; you don't reimplement.
+  </p>
+  <p>LangChain has equivalents (often less mature for retrieval-specific patterns). Haystack has its own (pipeline-DAG-shaped). Native SDK has none — you write everything yourself. <strong>The pattern is portable; the implementation isn't.</strong></p>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Why this matters for L17 (framework choice)</div>
+    LlamaIndex's "advanced RAG patterns out of the box" claim is real — and these are the patterns. If your eval reveals you need three of them, that's a strong signal toward LlamaIndex. If you need none of them, the simpler frameworks (Pydantic AI, native SDK) are fine.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Don't reach for patterns speculatively</h2>
+  <p>
+    The cardinal rule: <strong>let the eval pick the pattern</strong>. Adding sub-question decomposition because it sounds clever, before you've shown your eval set has comparison-question failures, just adds cost and latency for no gain.
+  </p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">The diagnostic loop</div>
+<pre style="margin-top:0.4rem"><code>Run eval (L14) → identify failure mode → match to pattern below → apply ONE → re-run eval
+
+   Failure mode                       Pattern to try
+   ──────────────────                 ──────────────
+   "missed half the question"      →  Sub-question decomposition
+   "right doc, wrong chunks"       →  Recursive retrieval
+   "exact ID misses"               →  Hybrid search (you have it)
+   "vague queries miss"            →  Query rewriting / HyDE
+   "answers feel under-context'd"  →  Auto-merging or sentence-window
+   "show everything connected"     →  Knowledge graph
+   "mixed source types"            →  Router query engine</code></pre>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>What to use for your MuleSoft RAG bot</h2>
+
+  <p>Given the corpus (Anypoint docs, RAML specs, runbooks, ticket archives) and likely query shape:</p>
+
+  <ul>
+    <li><strong>Sub-question decomposition</strong> — for "compare connector A vs B" or "what's the difference between OAuth and basic auth". Likely worthwhile.</li>
+    <li><strong>Auto-merging retrieval</strong> — if your eval shows answers feel under-context'd. One chunking-time change.</li>
+    <li><strong>Router query engine</strong> — when you eventually have multiple corpora (Anypoint docs + RAML + runbooks + ticket history) needing different retrieval strategies.</li>
+  </ul>
+
+  <p>The rest are useful elsewhere but probably overkill for your shape. Eval-driven, as always.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> "Advanced RAG patterns" in this lesson are…</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Native libraries provided only by LlamaIndex</li>
+        <li data-i="1">A new replacement for chunking</li>
+        <li data-i="2">Architectural patterns — designs you could hand-code in any framework; LlamaIndex packages most as ready-made classes</li>
+        <li data-i="3">Required by every production RAG</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Your eval shows comparison questions ("compare X vs Y") consistently get half-answered. Which pattern most directly fixes this?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Knowledge graph RAG</li>
+        <li data-i="1">Sub-question decomposition</li>
+        <li data-i="2">Auto-merging retrieval</li>
+        <li data-i="3">Sentence-window retrieval</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Auto-merging retrieval and sentence-window retrieval solve opposite-feeling problems. The relationship is…</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">Auto-merging is a typo for sentence-window</li>
+        <li data-i="1">They are identical</li>
+        <li data-i="2">Auto-merging is for graph data; sentence-window is for prose</li>
+        <li data-i="3">Both decouple embedding granularity from retrieval granularity — auto-merging escalates UP from small chunks to parents; sentence-window expands a small match to its surrounding window</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> Why is knowledge graph RAG flagged as "don't reach here first"?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Graph build at indexing time is the most expensive of any pattern (1+ LLM call per chunk), so the cost only justifies when relational queries dominate</li>
+        <li data-i="1">It doesn't work with Gemini</li>
+        <li data-i="2">It produces less accurate answers</li>
+        <li data-i="3">LlamaIndex deprecated it</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> The cardinal rule of when to add an advanced pattern is…</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Add as many as possible — quality compounds</li>
+        <li data-i="1">Add the newest pattern in the LlamaIndex blog</li>
+        <li data-i="2">Let the eval pick — match a measured failure mode to the pattern that addresses it; otherwise you're adding cost without benefit</li>
+        <li data-i="3">Ask a senior engineer</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>What's next</h2>
+  <ul>
+    <li><strong>Lesson 14</strong> — Evaluating RAG quality. The eval is what tells you which of the patterns above to actually add.</li>
+    <li><strong>Lesson 15</strong> — Enterprise RAG eval (per-query depth, safety, ops, system health).</li>
+    <li><strong>Lesson 16</strong> — Improving each metric: the playbook layer that connects eval failures to the patterns from this lesson.</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft analogue</div>
+    These are the <em>integration patterns</em> of RAG — like the Enterprise Integration Patterns book is for messaging. Recursive retrieval is "content-based router into a sub-flow." Sub-question decomposition is "splitter → aggregator." Router query engine is literally "content-based router." You already think in patterns; this is just the dialect.
+  </div>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Show me how to add sub-question decomposition to my <code>rag_chroma.py</code>"</li>
+      <li>"What does an AutoMergingRetriever look like end-to-end?"</li>
+      <li>"How do I decide between auto-merging and sentence-window for my corpus?"</li>
+      <li>"Walk me through building a small knowledge graph from a few docs"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0012-hybrid-search.html">← Lesson 12 — Hybrid Search</a>
+      <a href="0014-rag-evaluation.html">Lesson 14 — Evaluating RAG →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! These are designs — recipes for orchestrating retrieval. LlamaIndex packages most as ready-made classes; LangChain and Haystack have their own equivalents; the pattern is portable.", err: "Not quite. The patterns are framework-agnostic designs. LlamaIndex ships them as classes, but you could hand-code any of them in any framework." },
+    1: { ok: "Correct! Decomposition handles 'compare X vs Y' by retrieving once for X, once for Y, then combining. The other patterns address different failure shapes.", err: "Not quite. Comparison questions need decomposition — break into sub-questions, retrieve each, combine. Knowledge graphs help relational queries; auto-merging helps under-context'd answers; sentence-window helps precision-recall trade-offs." },
+    2: { ok: "Correct! Both decouple embedding granularity from retrieval granularity, but in opposite directions. Auto-merging climbs UP the hierarchy; sentence-window expands SIDEWAYS in a window.", err: "Not quite. Both decouple how you index from what you return. Auto-merging escalates up to parents when many siblings match; sentence-window keeps embeddings sentence-level but returns a surrounding window." },
+    3: { ok: "Correct! Graph build can cost 1+ LLM call per chunk. That's an order of magnitude more than indexing for vector search. Worth it only when 'show all entities connected to X' is the primary query shape.", err: "Not quite. The reason is cost — 1+ LLM call per chunk at indexing time, an order of magnitude more than vector indexing. Reach for it only when relational queries dominate." },
+    4: { ok: "Correct! The eval is the diagnostic. Add a pattern when you can show it fixes a measured failure mode; don't add speculatively.", err: "Not quite. The cardinal rule is eval-driven. Speculative patterns add cost and latency without measured benefit. Identify the failure mode first; pick the pattern that addresses it." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

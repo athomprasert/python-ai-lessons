@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L24 — Human-in-the-loop with interrupt()</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .series-banner {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      color: #4338ca;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .series-banner strong { color: #312e81; }
+
+    .lesson-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .lesson-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.3rem; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0.9rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .ty  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.6rem 0 1.1rem; font-size: 0.88rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.65rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+      border-left: 4px solid;
+      font-size: 0.9rem;
+    }
+    .callout strong { font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .callout-tip      { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn     { background: #fffbeb; border-color: #f59e0b; }
+    .callout-syntax   { background: #fdf4ff; border-color: #a855f7; }
+    .callout-pedagogy { background: #f1f5ff; border-color: #6366f1; }
+
+    .exercise-box {
+      border: 2px solid #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+      background: #fefefe;
+    }
+    .exercise-box h3 { margin-top: 0; }
+    .exercise-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    details {
+      margin: 0.5rem 0;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+    }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    details[open] summary { margin-bottom: 0.4rem; }
+
+    .quiz { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.7rem 0; }
+    .quiz-q { font-weight: 600; margin-bottom: 0.4rem; }
+
+    .ascii-diagram {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 6px;
+      margin: 0.7rem 0;
+    }
+
+    .footer-links { margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid #ddd; font-size: 0.82rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="series-banner">
+    <strong>LangGraph mini-series · bonus lesson</strong> · The mini-series ended at L23, but HITL is the killer enterprise pattern. You're learning by writing code, not reading it.
+    &nbsp;<a href="0023-streaming-observability.html">← L23: Streaming &amp; Observability</a>
+  </div>
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Lesson 24 · Python for AI/ML</p>
+    <h1>Human-in-the-loop with <code>interrupt()</code></h1>
+    <p class="tagline">Pause the graph mid-execution, ask a human, resume with their answer. The pattern that turns an autonomous agent into one enterprise will actually deploy.</p>
+  </header>
+
+  <div class="callout callout-pedagogy">
+    <strong>Pedagogy reminder.</strong> Same rules — TODO skeleton, you write, paste back, then canonical.
+  </div>
+
+  <h2>The problem this solves</h2>
+  <p>Your L22 agent will happily call any tool the LLM asks for. Fine for read-only tools like <code>search_docs</code>. <strong>Catastrophic</strong> for tools like these:</p>
+<pre><code><span class="op">@tool</span>
+<span class="kw">def</span> <span class="fn">deploy_to_cloudhub</span>(app_name: <span class="ty">str</span>, env: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">str</span>: ...
+
+<span class="op">@tool</span>
+<span class="kw">def</span> <span class="fn">delete_api_instance</span>(api_id: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">str</span>: ...
+
+<span class="op">@tool</span>
+<span class="kw">def</span> <span class="fn">rotate_secret</span>(connected_app_id: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">str</span>: ...</code></pre>
+  <p>You don't want an LLM autonomously deploying to production at 3 AM because it hallucinated a customer request. You want a human to <strong>see the tool call, approve it (or edit, or reject), then let the graph proceed</strong>.</p>
+  <p>That's <code>interrupt()</code> — and it's the feature your enterprise customers will ask about within five minutes of seeing your demo.</p>
+
+  <h2>The mental model — three things happen</h2>
+
+  <p><code>interrupt()</code> is a function you call <strong>inside a node</strong>. When the graph hits it:</p>
+  <ol>
+    <li><strong>The node pauses.</strong> Execution stops mid-way.</li>
+    <li><strong>The checkpointer saves state.</strong> This is why L22 was a prerequisite — <em>no checkpointer, no interrupts</em>.</li>
+    <li><strong>Control returns to the caller</strong> with a "paused" status. Your application then collects human input (CLI prompt, web form, Slack message — anything).</li>
+  </ol>
+
+  <p>You wake the graph back up by calling <code>app.invoke(Command(resume=&lt;value&gt;), config=config)</code>. The graph picks up exactly where it left off, and <code>interrupt(...)</code> inside the node <em>returns</em> the value the human supplied.</p>
+
+  <div class="ascii-diagram">  Run 1:  invoke(input) ──► graph runs ──► hits interrupt() ──► PAUSES
+                                                              │
+                                                       (state saved to checkpointer)
+                                                              │
+  Your code:                                            asks human, collects answer
+                                                              │
+                                                              ▼
+  Run 2:  invoke(Command(resume=answer)) ──► graph WAKES UP ──► interrupt() returns the answer
+                                                          │
+                                                          ▼
+                                                       graph continues</div>
+
+  <h2>The two flavours</h2>
+
+  <table>
+    <thead><tr><th></th><th>Static interrupts</th><th>Dynamic interrupts</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Defined where</strong></td><td>At <code>compile()</code> time</td><td>Inside a node, conditionally</td></tr>
+      <tr><td><strong>How</strong></td><td><code>interrupt_before=["tools"]</code></td><td><code>interrupt(payload)</code> call</td></tr>
+      <tr><td><strong>Granularity</strong></td><td>Always pause before a given node</td><td>Pause only when logic says so</td></tr>
+      <tr><td><strong>Can return data?</strong></td><td>No</td><td>Yes — returns the human's resume value</td></tr>
+      <tr><td><strong>Use case</strong></td><td>Blanket safety: "always confirm before tools"</td><td>Targeted: "only pause for destructive tools"</td></tr>
+    </tbody>
+  </table>
+
+  <p>Static is the older / simpler form. Dynamic (the <code>interrupt()</code> function) is the modern recommendation — same pattern preference as the L20 conditional vs unconditional edge distinction. <strong>We focus on dynamic.</strong></p>
+
+  <h2>The three things a human can do</h2>
+
+  <p>Resuming isn't just yes/no. The human can:</p>
+  <table>
+    <thead><tr><th>Action</th><th>What it does</th><th>Resume value example</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Approve</strong></td>
+        <td>Tool call proceeds as-is</td>
+        <td><code>"approve"</code></td>
+      </tr>
+      <tr>
+        <td><strong>Edit</strong></td>
+        <td>Human modifies the tool's args before it runs (agent wanted <code>env="production"</code>; human changes to <code>env="staging"</code>)</td>
+        <td><code>{"action": "edit", "args": {"env": "staging"}}</code></td>
+      </tr>
+      <tr>
+        <td><strong>Reject</strong></td>
+        <td>Tool call replaced with a message; agent decides what to do next</td>
+        <td><code>{"action": "reject", "reason": "wrong env"}</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Your interrupted node reads the resume value and branches accordingly.</p>
+
+  <h2>The smallest possible <code>interrupt()</code> — no LLM</h2>
+
+<pre><code><span class="kw">from</span> typing <span class="kw">import</span> TypedDict
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, START, END
+<span class="kw">from</span> langgraph.checkpoint.memory <span class="kw">import</span> InMemorySaver
+<span class="kw">from</span> langgraph.types <span class="kw">import</span> interrupt, Command
+
+<span class="kw">class</span> <span class="ty">State</span>(TypedDict):
+    proposed: <span class="ty">int</span>
+    approved: <span class="ty">int</span>
+
+<span class="kw">def</span> <span class="fn">propose</span>(state: State) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="kw">return</span> {<span class="str">"proposed"</span>: <span class="num">42</span>}
+
+<span class="kw">def</span> <span class="fn">human_approval</span>(state: State) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="cm"># PAUSE HERE — the value passed to interrupt() is what the human sees</span>
+    answer <span class="op">=</span> <span class="fn">interrupt</span>({<span class="str">"question"</span>: <span class="str">"approve?"</span>, <span class="str">"value"</span>: state[<span class="str">"proposed"</span>]})
+    <span class="cm"># After resume, `answer` holds the value passed via Command(resume=...)</span>
+    <span class="kw">return</span> {<span class="str">"approved"</span>: state[<span class="str">"proposed"</span>] <span class="kw">if</span> answer <span class="op">==</span> <span class="str">"yes"</span> <span class="kw">else</span> <span class="num">0</span>}
+
+graph <span class="op">=</span> StateGraph(State)
+graph.<span class="fn">add_node</span>(<span class="str">"propose"</span>, propose)
+graph.<span class="fn">add_node</span>(<span class="str">"human_approval"</span>, human_approval)
+graph.<span class="fn">add_edge</span>(START, <span class="str">"propose"</span>)
+graph.<span class="fn">add_edge</span>(<span class="str">"propose"</span>, <span class="str">"human_approval"</span>)
+graph.<span class="fn">add_edge</span>(<span class="str">"human_approval"</span>, END)
+
+memory <span class="op">=</span> <span class="fn">InMemorySaver</span>()
+app <span class="op">=</span> graph.<span class="fn">compile</span>(checkpointer<span class="op">=</span>memory)
+config <span class="op">=</span> {<span class="str">"configurable"</span>: {<span class="str">"thread_id"</span>: <span class="str">"demo-1"</span>}}
+
+<span class="cm"># RUN 1 — graph pauses at interrupt()</span>
+result <span class="op">=</span> app.<span class="fn">invoke</span>({<span class="str">"proposed"</span>: <span class="num">0</span>, <span class="str">"approved"</span>: <span class="num">0</span>}, config<span class="op">=</span>config)
+<span class="fn">print</span>(<span class="str">"After pause:"</span>, result)
+<span class="cm"># {"proposed": 42, "approved": 0, "__interrupt__": [Interrupt(value={"question": "approve?", "value": 42})]}</span>
+
+<span class="cm"># RUN 2 — resume with the human's answer</span>
+result <span class="op">=</span> app.<span class="fn">invoke</span>(<span class="fn">Command</span>(resume<span class="op">=</span><span class="str">"yes"</span>), config<span class="op">=</span>config)
+<span class="fn">print</span>(<span class="str">"After resume:"</span>, result)
+<span class="cm"># {"proposed": 42, "approved": 42}</span></code></pre>
+
+  <div class="callout callout-warn">
+    <strong>The "no checkpointer, no interrupts" rule.</strong> If you forget <code>compile(checkpointer=...)</code>, you'll get an error like <em>"Interrupts require a checkpointer."</em> The pause must be saved <em>somewhere</em>. This is why L22 was a hard prerequisite.
+  </div>
+
+  <h2>How to detect the pause from outside</h2>
+
+  <p>You won't always know if a graph paused. Inspect state to check:</p>
+<pre><code>state <span class="op">=</span> app.<span class="fn">get_state</span>(config)
+<span class="kw">if</span> state.next:
+    <span class="cm"># Graph is paused; state.next is the tuple of nodes that would run next</span>
+    <span class="cm"># state.tasks[0].interrupts gives the payload sent to interrupt()</span>
+    pending <span class="op">=</span> state.tasks[<span class="num">0</span>].interrupts[<span class="num">0</span>].value
+    <span class="fn">print</span>(<span class="str">"Waiting on:"</span>, pending)
+<span class="kw">else</span>:
+    <span class="fn">print</span>(<span class="str">"Done."</span>)</code></pre>
+  <p>This is how a web app's <code>POST /chat</code> handler would know to render an "approve this action?" UI vs. just returning the final answer.</p>
+
+  <h2 id="step-0">Step 0 — install</h2>
+<pre><code><span class="cm"># Nothing new — interrupt and Command ship with langgraph.</span>
+cd ~/ai/claude/projects/python/exercises/langgraph
+source .venv/bin/activate
+<span class="cm"># Already have langgraph, langgraph-checkpoint-sqlite. Good to go.</span></code></pre>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 1 · guided · no LLM yet</span>
+    <h3>Build a toy approval graph</h3>
+
+    <p>Goal: see the pause/resume mechanics in isolation, no LLM noise. Save as <code>l24_ex1_interrupt_toy.py</code>.</p>
+
+    <p>The graph proposes a number, asks a human to approve/reject, and stores the final result.</p>
+
+    <h4>Skeleton — fill in the TODOs</h4>
+<pre><code><span class="kw">from</span> typing <span class="kw">import</span> TypedDict
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, START, END
+<span class="kw">from</span> langgraph.checkpoint.memory <span class="kw">import</span> InMemorySaver
+<span class="kw">from</span> langgraph.types <span class="kw">import</span> interrupt, Command
+
+<span class="cm"># --- STATE ---</span>
+<span class="kw">class</span> <span class="ty">DeployState</span>(TypedDict):
+    app_name: <span class="ty">str</span>
+    env: <span class="ty">str</span>
+    deployed: <span class="ty">bool</span>
+    note: <span class="ty">str</span>
+
+<span class="cm"># --- NODES ---</span>
+<span class="kw">def</span> <span class="fn">plan</span>(state: DeployState) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="cm"># Agent decides what to deploy where</span>
+    <span class="kw">return</span> {<span class="str">"app_name"</span>: <span class="str">"customer-api"</span>, <span class="str">"env"</span>: <span class="str">"production"</span>}
+
+<span class="kw">def</span> <span class="fn">human_approve</span>(state: DeployState) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="cm"># TODO 1: pause and ask the human. Pass a payload dict containing</span>
+    <span class="cm"># the app_name and env so the human sees what's about to happen.</span>
+    decision <span class="op">=</span> <span class="fn">interrupt</span>(...)
+
+    <span class="cm"># TODO 2: based on decision, return one of three state updates:</span>
+    <span class="cm">#   - "approve"  -> {"deployed": True,  "note": "approved as-is"}</span>
+    <span class="cm">#   - "reject"   -> {"deployed": False, "note": "rejected by human"}</span>
+    <span class="cm">#   - dict with "env" key -> EDIT path: change env to the human's value,</span>
+    <span class="cm">#                            deployed=True, note="approved with edits"</span>
+    <span class="cm"># Hint: isinstance(decision, dict) is your branch test for "edit".</span>
+    ...
+
+<span class="kw">def</span> <span class="fn">execute</span>(state: DeployState) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="kw">if</span> state[<span class="str">"deployed"</span>]:
+        <span class="fn">print</span>(<span class="str">f"[FAKE DEPLOY] {state['app_name']} -> {state['env']}"</span>)
+    <span class="kw">else</span>:
+        <span class="fn">print</span>(<span class="str">f"[SKIPPED] reason: {state['note']}"</span>)
+    <span class="kw">return</span> {}
+
+<span class="cm"># --- GRAPH ---</span>
+<span class="cm"># TODO 3: build the graph: START -> plan -> human_approve -> execute -> END</span>
+graph <span class="op">=</span> ...
+
+<span class="cm"># TODO 4: compile WITH an InMemorySaver checkpointer</span>
+memory <span class="op">=</span> ...
+app <span class="op">=</span> ...
+
+<span class="cm"># --- DRIVER FUNCTION — try all 3 paths ---</span>
+<span class="kw">def</span> <span class="fn">run_scenario</span>(thread_id: <span class="ty">str</span>, human_decision):
+    config <span class="op">=</span> {<span class="str">"configurable"</span>: {<span class="str">"thread_id"</span>: thread_id}}
+    <span class="fn">print</span>(<span class="str">f"\n=== Scenario: thread={thread_id}, decision={human_decision} ==="</span>)
+
+    <span class="cm"># Run 1 — graph pauses</span>
+    result <span class="op">=</span> app.<span class="fn">invoke</span>({<span class="str">"app_name"</span>: <span class="str">""</span>, <span class="str">"env"</span>: <span class="str">""</span>, <span class="str">"deployed"</span>: <span class="kw">False</span>, <span class="str">"note"</span>: <span class="str">""</span>}, config<span class="op">=</span>config)
+
+    <span class="cm"># Confirm it paused</span>
+    state <span class="op">=</span> app.<span class="fn">get_state</span>(config)
+    <span class="kw">if</span> state.next:
+        pending <span class="op">=</span> state.tasks[<span class="num">0</span>].interrupts[<span class="num">0</span>].value
+        <span class="fn">print</span>(<span class="str">f"PAUSED. Human sees: {pending}"</span>)
+
+    <span class="cm"># Run 2 — resume with the human's answer</span>
+    <span class="cm"># TODO 5: call app.invoke with Command(resume=human_decision)</span>
+    result <span class="op">=</span> ...
+    <span class="fn">print</span>(<span class="str">f"FINAL state: {result}"</span>)
+
+<span class="cm"># Try all three resume modes — use different thread_ids so each starts fresh</span>
+<span class="fn">run_scenario</span>(<span class="str">"thread-approve"</span>, <span class="str">"approve"</span>)
+<span class="fn">run_scenario</span>(<span class="str">"thread-reject"</span>,  <span class="str">"reject"</span>)
+<span class="fn">run_scenario</span>(<span class="str">"thread-edit"</span>,    {<span class="str">"env"</span>: <span class="str">"staging"</span>})</code></pre>
+
+    <details>
+      <summary>Hint 1 — the interrupt payload</summary>
+<pre><code>decision <span class="op">=</span> <span class="fn">interrupt</span>({
+    <span class="str">"app_name"</span>: state[<span class="str">"app_name"</span>],
+    <span class="str">"env"</span>: state[<span class="str">"env"</span>],
+    <span class="str">"prompt"</span>: <span class="str">"approve / reject / {env: ...}"</span>,
+})</code></pre>
+      <p>The dict you pass to <code>interrupt(...)</code> is whatever your outer code wants to show the human. It's free-form.</p>
+    </details>
+
+    <details>
+      <summary>Hint 2 — the three-way branch on decision</summary>
+<pre><code><span class="kw">if</span> decision <span class="op">==</span> <span class="str">"approve"</span>:
+    <span class="kw">return</span> {<span class="str">"deployed"</span>: <span class="kw">True</span>, <span class="str">"note"</span>: <span class="str">"approved as-is"</span>}
+<span class="kw">if</span> decision <span class="op">==</span> <span class="str">"reject"</span>:
+    <span class="kw">return</span> {<span class="str">"deployed"</span>: <span class="kw">False</span>, <span class="str">"note"</span>: <span class="str">"rejected by human"</span>}
+<span class="kw">if</span> <span class="fn">isinstance</span>(decision, <span class="ty">dict</span>) <span class="kw">and</span> <span class="str">"env"</span> <span class="kw">in</span> decision:
+    <span class="kw">return</span> {<span class="str">"env"</span>: decision[<span class="str">"env"</span>], <span class="str">"deployed"</span>: <span class="kw">True</span>, <span class="str">"note"</span>: <span class="str">"approved with edits"</span>}
+<span class="kw">raise</span> <span class="ty">ValueError</span>(<span class="str">f"unknown decision: {decision}"</span>)</code></pre>
+      <p>The edit branch returns <code>env</code> too, so it overwrites what <code>plan</code> set. State merging at work.</p>
+    </details>
+
+    <details>
+      <summary>Hint 3 — graph wiring + the resume call</summary>
+<pre><code>graph <span class="op">=</span> StateGraph(DeployState)
+graph.<span class="fn">add_node</span>(<span class="str">"plan"</span>, plan)
+graph.<span class="fn">add_node</span>(<span class="str">"human_approve"</span>, human_approve)
+graph.<span class="fn">add_node</span>(<span class="str">"execute"</span>, execute)
+graph.<span class="fn">add_edge</span>(START, <span class="str">"plan"</span>)
+graph.<span class="fn">add_edge</span>(<span class="str">"plan"</span>, <span class="str">"human_approve"</span>)
+graph.<span class="fn">add_edge</span>(<span class="str">"human_approve"</span>, <span class="str">"execute"</span>)
+graph.<span class="fn">add_edge</span>(<span class="str">"execute"</span>, END)
+
+memory <span class="op">=</span> <span class="fn">InMemorySaver</span>()
+app <span class="op">=</span> graph.<span class="fn">compile</span>(checkpointer<span class="op">=</span>memory)
+
+<span class="cm"># Inside run_scenario:</span>
+result <span class="op">=</span> app.<span class="fn">invoke</span>(<span class="fn">Command</span>(resume<span class="op">=</span>human_decision), config<span class="op">=</span>config)</code></pre>
+    </details>
+
+    <h4>Verification</h4>
+    <p>You should see three scenarios print:</p>
+<pre><code>=== Scenario: thread-approve, decision=approve ===
+PAUSED. Human sees: {'app_name': 'customer-api', 'env': 'production', ...}
+[FAKE DEPLOY] customer-api -> production
+FINAL state: {..., 'deployed': True, 'note': 'approved as-is'}
+
+=== Scenario: thread-reject, decision=reject ===
+PAUSED. Human sees: {...}
+[SKIPPED] reason: rejected by human
+FINAL state: {..., 'deployed': False, 'note': 'rejected by human'}
+
+=== Scenario: thread-edit, decision={'env': 'staging'} ===
+PAUSED. Human sees: {..., 'env': 'production'}
+[FAKE DEPLOY] customer-api -> staging          ← note: edited to staging
+FINAL state: {..., 'env': 'staging', 'deployed': True, 'note': 'approved with edits'}</code></pre>
+
+    <div class="callout callout-tip" style="margin-top:0.5rem">
+      <strong>Checkpoint.</strong> Paste your code + the three scenario outputs. I'll review before showing canonical.
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 2 · stretch</span>
+    <h3>Gate a destructive tool in your L21/L22 agent</h3>
+
+    <p>No skeleton. Copy <code>l22_ex2_persistent_agent.py</code> to <code>l24_ex2_gated_agent.py</code> and add HITL gating.</p>
+
+    <h4>Goal</h4>
+    <p>Add a third tool that's "destructive":</p>
+<pre><code><span class="op">@tool</span>
+<span class="kw">def</span> <span class="fn">restart_anypoint_app</span>(app_name: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">str</span>:
+    <span class="str">"""Restart a MuleSoft Anypoint application. DESTRUCTIVE — causes downtime."""</span>
+    <span class="kw">return</span> <span class="str">f"[mock] Restarted {app_name}."</span></code></pre>
+
+    <p>Then insert a new node, <code>maybe_approve</code>, between <code>agent</code> and <code>tools</code>. It should:</p>
+    <ul>
+      <li>Look at the last AI message's <code>tool_calls</code></li>
+      <li>If <em>any</em> call targets <code>restart_anypoint_app</code> → call <code>interrupt(...)</code> with the tool args</li>
+      <li>If all calls are to safe tools (<code>search_docs</code>, <code>get_anypoint_org_status</code>) → return <code>{}</code> (pass through)</li>
+    </ul>
+
+    <h4>Wiring</h4>
+    <p>Replace:</p>
+<pre><code>graph.<span class="fn">add_conditional_edges</span>(<span class="str">"agent"</span>, tools_condition)</code></pre>
+    <p>with a sequence that goes through your new node first. (You'll need to think about what <code>tools_condition</code> does and where it should live now.)</p>
+
+    <h4>Test prompts</h4>
+    <ul>
+      <li><em>"Search docs for Connected App rotation"</em> — should run end-to-end with no pause</li>
+      <li><em>"Restart the customer-api app"</em> — should pause; on resume with <code>"approve"</code>, run the tool</li>
+      <li><em>"Restart customer-api"</em> — same as above; on resume with <code>"reject"</code>, the agent should reply explaining the restart was declined (you'll need to inject a rejection message into state)</li>
+    </ul>
+
+    <h4>Questions to chew on</h4>
+    <ol>
+      <li>If you gate <em>every</em> tool call instead of just destructive ones, what's the user-experience cost? When is "paranoid mode" worth it?</li>
+      <li>In a real web app, the human's decision arrives in a separate HTTP request, minutes or hours after the pause. What does that mean for the lifetime of your SQLite checkpointer? (Hint: SQLite is single-process, single-file.)</li>
+    </ol>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <p class="quiz-q">1. Why does <code>interrupt()</code> require a checkpointer?</p>
+    <details><summary>Answer</summary>
+      <p>The pause point must be saved somewhere so the graph can resume from it — possibly minutes, hours, or days later, possibly after a process restart. The checkpointer is that storage. Without one, "pause and resume" has nowhere to live.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">2. Static <code>interrupt_before=["tools"]</code> vs dynamic <code>interrupt(...)</code> inside a node — when is each right?</p>
+    <details><summary>Answer</summary>
+      <p>Static: blunt safety net during dev — "always confirm before any tool runs." Quick to add, useful for early prototypes.</p>
+      <p>Dynamic: production. You can gate only destructive tools, you can show a richer payload to the human (not just "approve this node"), and you can capture the human's reply as a typed value the node uses to branch.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">3. After an <code>interrupt()</code> pause, you call <code>app.invoke({"messages": [("user", "new question")]}, config=config)</code> instead of <code>Command(resume=...)</code>. What happens?</p>
+    <details><summary>Answer</summary>
+      <p>The graph treats this as <em>new input</em> rather than a resume. The original interrupt is still pending; you've added a user message but the paused node never gets unblocked. The graph state ends up in a confusing half-pending state.</p>
+      <p>Always use <code>Command(resume=...)</code> to wake a paused graph. Use plain dict input only to start fresh or add a turn on a non-paused thread.</p>
+    </details>
+  </div>
+
+  <h2>What you now know</h2>
+  <ul>
+    <li><code>interrupt(payload)</code> pauses inside a node; the checkpointer holds the pause</li>
+    <li><code>Command(resume=value)</code> wakes the graph; <code>interrupt()</code> returns that value</li>
+    <li>Three resume modes: approve, edit (change args), reject</li>
+    <li>Detect pauses externally with <code>app.get_state(config).next</code> and <code>state.tasks[0].interrupts</code></li>
+    <li>Static interrupts for dev safety; dynamic interrupts for production logic</li>
+    <li>The enterprise pattern: read-only tools auto-run, write tools gate through HITL</li>
+  </ul>
+
+  <h2>The MuleSoft angle — why this matters for you</h2>
+  <p>Your customers will not deploy an autonomous AI agent that can touch their integration runtime. They will deploy a <strong>supervised agent</strong>:</p>
+  <ul>
+    <li>Read-only operations (status, metrics, doc lookups) run autonomously</li>
+    <li>Destructive operations (deploys, restarts, secret rotations) <em>always</em> stop for human approval</li>
+    <li>Every approval/rejection captured to an audit log (for SOX, GDPR, SOC2)</li>
+    <li>The "edit" path lets a human downgrade <code>production → staging</code> on the fly</li>
+  </ul>
+  <p>This is the exact pattern a sales engineer at your level should be able to demo end-to-end. It's also the answer to the inevitable <em>"but what about hallucinations?"</em> objection. Hallucinations are unsafe only if the agent has authority — gate the authority, and the hallucination becomes a rejected suggestion.</p>
+
+  <h2>What's next</h2>
+  <p>You now have every primitive needed to ship a real LangGraph agent: state, nodes, edges, LLM-in-node, tools, checkpointing, streaming, observability, HITL. Possible next directions:</p>
+  <ul>
+    <li><strong>Multi-agent supervisor</strong> — one orchestrator agent delegates to specialist agents (researcher, planner, executor)</li>
+    <li><strong>Real MuleSoft tools</strong> — replace mocks with live Anypoint Platform API calls (CloudHub status, Exchange asset search, Connected App management)</li>
+    <li><strong>MCP server integration</strong> — expose your agent as an MCP server so Claude Code (or any MCP client) can call it as a tool</li>
+    <li><strong>Web UI</strong> — Streamlit / FastHTML / Next.js wrapping the agent; HITL via web forms instead of <code>input()</code></li>
+  </ul>
+  <p>Tell me which path you want when you've worked through L24.</p>
+
+  <div class="footer-links">
+    <a href="0023-streaming-observability.html">← L23 — Streaming &amp; Observability</a>
+    &nbsp; · &nbsp;
+    <a href="0022-checkpointing-time-travel.html">L22 — Checkpointing</a>
+    &nbsp; · &nbsp;
+    <a href="0021-llm-node-tools-graph.html">L21 — LLM Node + Tools</a>
+    &nbsp; · &nbsp;
+    <a href="0020-langgraph-state-nodes-edges.html">L20 — State, Nodes, Edges</a>
+    &nbsp; · &nbsp;
+    <a href="../MISSION.md">Mission</a>
+  </div>
+
+</div>
+</body>
+</html>

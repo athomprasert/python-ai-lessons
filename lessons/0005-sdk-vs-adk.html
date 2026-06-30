@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 5 — Gemini SDK vs Google ADK: Which to use?</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    /* ─── Side-by-side compare ─── */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.4rem 0;
+    }
+    .col {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+    }
+    .col-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid;
+    }
+    .col-sdk  { border-color: #3b82f6; }
+    .col-sdk .col-title { color: #1e40af; border-color: #3b82f6; }
+    .col-adk  { border-color: #16a34a; }
+    .col-adk .col-title { color: #15803d; border-color: #16a34a; }
+    .col ul { padding-left: 1.2rem; margin: 0; }
+    .col li { font-size: 0.92rem; }
+    .badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; }
+    .b-sdk { background: #dbeafe; color: #1e40af; }
+    .b-adk { background: #d1fae5; color: #15803d; }
+
+    @media (max-width: 700px) {
+      .compare { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Comparison table ─── */
+    .ct { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1.2rem; font-size: 0.9rem; }
+    .ct th { background: #1a1a1a; color: #fff; padding: 0.6rem 0.8rem; text-align: left; font-size: 0.78rem; letter-spacing: 0.05em; }
+    .ct td { padding: 0.7rem 0.8rem; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+    .ct tr:hover td { background: #fafaf8; }
+    .ct .row-label { font-weight: 700; background: #fafaf8; }
+
+    /* ─── Decision flowchart (CSS only) ─── */
+    .flow {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1.4rem;
+      margin: 1.2rem 0;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    /* ─── Quiz ─── */
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 5 of ?</p>
+    <h1>Gemini SDK vs Google ADK</h1>
+    <p class="tagline">Two ways to build with Gemini. When to pick which — and why it matters for your RAG and agent work.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">Lesson 1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">Lesson 2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">Lesson 3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">Lesson 4 ✓</span></a>
+      <span class="pill pill-now">Lesson 5 — SDK vs ADK</span>
+      <span class="pill pill-next">Lesson 6 — TBD</span>
+    </div>
+  </header>
+
+  <h2>The short answer</h2>
+  <p>You're choosing between <strong>two layers of abstraction</strong> on top of Gemini:</p>
+  <ul>
+    <li><span class="badge b-sdk">SDK</span> <code>google-genai</code> — a thin client to <em>call</em> the model. You manage everything else.</li>
+    <li><span class="badge b-adk">ADK</span> <code>google-adk</code> — a framework to <em>build agents</em>. It manages tools, memory, sessions, deployment.</li>
+  </ul>
+
+  <p><strong>Rule of thumb:</strong> SDK for a single LLM call inside your own code. ADK when you're building a <em>system</em> where the LLM repeatedly decides what to do next.</p>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft analogy</div>
+    The SDK is like calling an HTTP connector inside a flow you wrote yourself. ADK is like Anypoint Platform — it gives you the runtime, deployment, observability, and orchestration so you don't have to build them yourself.
+  </div>
+
+  <!-- ═══ The two side by side ═══ -->
+  <h2>What each one actually is</h2>
+
+  <div class="compare">
+    <div class="col col-sdk">
+      <div class="col-title"><span class="badge b-sdk">SDK</span> google-genai</div>
+      <ul>
+        <li>A Python client wrapping the Gemini REST API</li>
+        <li>You write the prompt, send it, read the response</li>
+        <li>Conversation memory? You build it (a list of messages)</li>
+        <li>Tool calls? You implement the loop yourself</li>
+        <li>Deployment? Whatever you want — script, Cloud Function, container</li>
+        <li>Switching to Claude? Switch SDKs</li>
+      </ul>
+    </div>
+    <div class="col col-adk">
+      <div class="col-title"><span class="badge b-adk">ADK</span> google-adk</div>
+      <ul>
+        <li>A full agent framework — open source, model-agnostic</li>
+        <li>You declare an agent + tools; the framework runs the loop</li>
+        <li>Built-in <strong>Sessions</strong>, <strong>Memory</strong>, <strong>Tools</strong>, <strong>Runners</strong></li>
+        <li>Supports MCP tools, OpenAPI tools, function tools</li>
+        <li>Deploys via container — GCP one-click, or any Docker/Podman host (AWS, Azure, on-prem)</li>
+        <li>Works with Gemini, Claude, Ollama, LiteLLM and more</li>
+      </ul>
+    </div>
+  </div>
+
+  <p><a href="https://adk.dev/" target="_blank">Source: adk.dev</a> — ADK is an open-source agent framework that "lets you build, debug, and deploy reliable AI agents at enterprise scale."</p>
+
+  <!-- ═══ Code comparison ═══ -->
+  <h2>Same task — both ways</h2>
+  <p>Suppose you want a model to answer a question, and to <strong>call a tool</strong> (e.g. look up a MuleSoft API in Anypoint Exchange) when needed.</p>
+
+  <h3><span class="badge b-sdk">SDK</span> The bare-metal version</h3>
+
+<pre><code><span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+<span class="kw">from</span> <span class="var">google</span><span class="op">.</span><span class="var">genai</span> <span class="kw">import</span> <span class="var">types</span>
+
+<span class="kw">def</span> <span class="fn">lookup_api</span>(<span class="var">name</span>)<span class="op">:</span>
+    <span class="cm"># your real implementation</span>
+    <span class="kw">return</span> <span class="op">{</span><span class="str">"name"</span><span class="op">:</span> <span class="var">name</span><span class="op">,</span> <span class="str">"version"</span><span class="op">:</span> <span class="str">"3.1"</span><span class="op">}</span>
+
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()
+
+<span class="cm"># 1. Describe the tool to the model</span>
+<span class="var">tool_decl</span> <span class="op">=</span> <span class="op">{</span> <span class="str">"name"</span><span class="op">:</span> <span class="str">"lookup_api"</span><span class="op">,</span> <span class="str">"parameters"</span><span class="op">:</span> <span class="op">{</span><span class="op">...</span><span class="op">}</span> <span class="op">}</span>
+
+<span class="cm"># 2. First call</span>
+<span class="var">response</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="str">"Look up orders-api"</span><span class="op">,</span>
+    <span class="var">config</span><span class="op">=</span><span class="var">types</span><span class="op">.</span><span class="fn">GenerateContentConfig</span>(<span class="var">tools</span><span class="op">=</span><span class="op">[</span><span class="var">tool_decl</span><span class="op">]</span>)
+<span class="op">)</span>
+
+<span class="cm"># 3. YOU inspect the response. Did model want the tool?</span>
+<span class="cm">#    YOU run the tool. YOU send the result back.</span>
+<span class="cm">#    YOU manage history if there's another turn.</span>
+<span class="cm">#    YOU loop until the model is done.</span>
+<span class="op">...</span></code></pre>
+
+  <p><em>Working — but you're writing the agent loop by hand.</em></p>
+
+  <h3><span class="badge b-adk">ADK</span> The framework version</h3>
+
+<pre><code><span class="kw">from</span> <span class="var">google</span><span class="op">.</span><span class="var">adk</span> <span class="kw">import</span> <span class="var">Agent</span>
+
+<span class="kw">def</span> <span class="fn">lookup_api</span>(<span class="var">name</span><span class="op">:</span> <span class="var">str</span>) <span class="op">-&gt;</span> <span class="var">dict</span><span class="op">:</span>
+    <span class="str">"""Look up a MuleSoft API by name."""</span>
+    <span class="kw">return</span> <span class="op">{</span><span class="str">"name"</span><span class="op">:</span> <span class="var">name</span><span class="op">,</span> <span class="str">"version"</span><span class="op">:</span> <span class="str">"3.1"</span><span class="op">}</span>
+
+<span class="var">agent</span> <span class="op">=</span> <span class="fn">Agent</span>(
+    <span class="var">name</span><span class="op">=</span><span class="str">"mule_lookup"</span><span class="op">,</span>
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-flash-latest"</span><span class="op">,</span>
+    <span class="var">instruction</span><span class="op">=</span><span class="str">"Help users look up MuleSoft APIs."</span><span class="op">,</span>
+    <span class="var">tools</span><span class="op">=</span><span class="op">[</span><span class="fn">lookup_api</span><span class="op">]</span>          <span class="cm"># pass the function directly</span>
+<span class="op">)</span>
+
+<span class="cm"># ADK runs the loop, manages session state, retries, etc.</span></code></pre>
+
+  <p><em>Same task, less boilerplate. ADK turns the function's docstring + type hints into the tool spec automatically.</em></p>
+
+  <!-- ═══ Decision table ═══ -->
+  <h2>How to choose: a decision table</h2>
+
+  <table class="ct">
+    <thead><tr><th style="width:30%">Your situation</th><th>Pick</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="row-label">A script that summarises a document</td>
+        <td><span class="badge b-sdk">SDK</span></td>
+        <td>One LLM call. No loop. ADK is overkill.</td>
+      </tr>
+      <tr>
+        <td class="row-label">A simple chatbot in a notebook</td>
+        <td><span class="badge b-sdk">SDK</span></td>
+        <td>You can manage a list-of-messages yourself. Stay light.</td>
+      </tr>
+      <tr>
+        <td class="row-label">First time learning LLMs</td>
+        <td><span class="badge b-sdk">SDK</span></td>
+        <td>Understand the raw call shape before adopting an opinionated framework.</td>
+      </tr>
+      <tr>
+        <td class="row-label">A RAG pipeline you control end-to-end</td>
+        <td><span class="badge b-sdk">SDK</span> + libs</td>
+        <td>RAG = retrieve → prompt → call. The "call" is one SDK line. You'll add a vector DB (Chroma / Vertex AI Search) yourself.</td>
+      </tr>
+      <tr>
+        <td class="row-label">Agent that uses many tools, multi-turn</td>
+        <td><span class="badge b-adk">ADK</span></td>
+        <td>The agent loop, tool routing, session memory are the hard parts. Don't build them.</td>
+      </tr>
+      <tr>
+        <td class="row-label">Multiple agents collaborating</td>
+        <td><span class="badge b-adk">ADK</span></td>
+        <td>Sequential / parallel / loop workflow agents are first-class.</td>
+      </tr>
+      <tr>
+        <td class="row-label">Need to deploy to GCP with traces, auth</td>
+        <td><span class="badge b-adk">ADK</span></td>
+        <td>One-command deploy + Cloud Trace + IAM is built in (smoothest path).</td>
+      </tr>
+      <tr>
+        <td class="row-label">Deploying to AWS / Azure / on-prem</td>
+        <td><span class="badge b-adk">ADK</span></td>
+        <td>Package as a Docker container and run anywhere containers run. You write the Dockerfile and wire up your own logging/auth.</td>
+      </tr>
+      <tr>
+        <td class="row-label">Calling tools through MCP / OpenAPI specs</td>
+        <td><span class="badge b-adk">ADK</span></td>
+        <td>First-class MCP tool and OpenAPI tool integrations.</td>
+      </tr>
+      <tr>
+        <td class="row-label">Need to switch models often (Gemini, Claude, local)</td>
+        <td><span class="badge b-adk">ADK</span></td>
+        <td>ADK is model-agnostic via LiteLLM and direct integrations.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══ Decision flow ═══ -->
+  <h2>One-minute decision flow</h2>
+
+  <div class="flow">                  ┌─────────────────────────────┐
+                  │  Are you BUILDING an AGENT? │
+                  │  (LLM picks tools in a loop)│
+                  └──────────────┬──────────────┘
+                                 │
+                ┌────────────────┴────────────────┐
+              No                                Yes
+                │                                  │
+                ▼                                  ▼
+   Use google-genai SDK              Use Google ADK
+   (one or many model calls)         (declare agent + tools)
+                │                                  │
+                ▼                                  ▼
+   Examples:                         Examples:
+   • summarise document              • multi-tool MuleSoft assistant
+   • classify text                   • multi-agent workflow
+   • RAG retrieval + 1 call          • production-deployed agent
+   • prompt experiments              • MCP / OpenAPI tool routing
+  </div>
+
+  <!-- ═══ RAG specifically ═══ -->
+  <h2>What about RAG specifically?</h2>
+  <p>RAG (Retrieval Augmented Generation) is three steps: <strong>retrieve</strong> documents → <strong>build a prompt</strong> with them → <strong>call the model</strong>. Neither tool gives you all three out of the box — you compose them.</p>
+
+  <table class="ct">
+    <thead><tr><th>Step</th><th>SDK approach</th><th>ADK approach</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="row-label">Retrieve</td>
+        <td>Use a vector DB lib (e.g. <code>chromadb</code>, Vertex AI Search SDK)</td>
+        <td>Wrap the retrieval as a Tool</td>
+      </tr>
+      <tr>
+        <td class="row-label">Build prompt</td>
+        <td>String formatting in Python</td>
+        <td>Agent <code>instruction</code> + tool result automatically injected</td>
+      </tr>
+      <tr>
+        <td class="row-label">Call model</td>
+        <td><code>client.models.generate_content(...)</code></td>
+        <td>Agent runner does it</td>
+      </tr>
+      <tr>
+        <td class="row-label">Best fit</td>
+        <td>Single retrieval, one shot answer</td>
+        <td>Agent decides whether to retrieve, then maybe again</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">My recommendation for your mission</div>
+    Build your <strong>first RAG</strong> with the SDK so you understand all three pieces. Then graduate to ADK when you want the agent itself to <em>decide</em> what to look up — or when you want to deploy it as a service.
+  </div>
+
+  <!-- ═══ Where ADK runs ═══ -->
+  <h2>Where ADK can actually run</h2>
+  <p>A common misconception: "ADK = Google Cloud only." Not true. ADK has <strong>four</strong> deployment paths according to the <a href="https://adk.dev/deploy/" target="_blank">official deploy docs</a>:</p>
+
+  <table class="ct">
+    <thead><tr><th>Target</th><th>What it gives you</th><th>GCP-only?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="row-label">Agent Runtime</td>
+        <td>Fully managed, auto-scaling service purpose-built for agents</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td class="row-label">Cloud Run</td>
+        <td>Container-based, serverless, scale to zero</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td class="row-label">GKE</td>
+        <td>Kubernetes — full control, can run open / self-hosted models</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td class="row-label">Any container host</td>
+        <td>Docker / Podman / ECS / AKS / on-prem K8s — anywhere containers run. Explicitly designed for "offline or disconnected" use.</td>
+        <td><strong>No</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Why this matters for your work</div>
+    Many Salesforce / MuleSoft customers run on AWS, Azure, or on-prem and can't (or won't) deploy to GCP. ADK's container path means you're not locked in — but you'll write your own <code>Dockerfile</code> and wire up logging/auth yourself.
+  </div>
+
+  <p><strong>The trade-off:</strong></p>
+  <ul>
+    <li><strong>On GCP</strong> — one command deploy, Cloud Trace observability, IAM auth all wired up.</li>
+    <li><strong>Off GCP</strong> — you get the same agent runtime, but you supply the surrounding plumbing (logging stack, secrets management, ingress, scaling).</li>
+  </ul>
+
+  <!-- ═══ Pitfalls ═══ -->
+  <h2>Common pitfalls</h2>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Pitfall 1 — adopting ADK too early</div>
+    Frameworks make easy things easier and hard things harder when you don't yet know which is which. Build something with the SDK first; you'll appreciate ADK for what it removes, not just what it adds.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Pitfall 2 — confusing ADK with the old "google-generativeai"</div>
+    The SDK landscape recently consolidated: <code>google-generativeai</code> (legacy) → <code>google-genai</code> (current SDK). ADK (<code>google-adk</code>) is a separate project on top of it. Older blog posts mix these freely — verify install commands against the official sites.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Pitfall 3 — assuming ADK locks you to Gemini</div>
+    It doesn't. ADK supports Claude, Ollama, LiteLLM, and others. The "Google" in the name refers to the maintainer, not the model lock-in.
+  </div>
+
+  <!-- ═══ Quiz ═══ -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q1.</strong> You want a one-off Python script that takes a PDF, extracts text, and asks Gemini to summarise it. Which is the right tool?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">SDK (<code>google-genai</code>) — single call, no agent loop needed</li>
+        <li data-i="1">ADK — easier to deploy</li>
+        <li data-i="2">Both — start with ADK, fall back to SDK</li>
+        <li data-i="3">Neither — use plain HTTP requests</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q2.</strong> You're building an assistant for your team that should be able to look up MuleSoft assets, fetch API specs, and run a few admin tools — calling each as needed. Which fits best?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">SDK — write the tool-calling loop by hand</li>
+        <li data-i="1">ADK — the agent loop and tool routing are exactly its job</li>
+        <li data-i="2">Both equally good</li>
+        <li data-i="3">Build it as a MuleSoft flow only — no Python needed</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q3.</strong> True or false: ADK only works with Gemini.</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">True</li>
+        <li data-i="1">False — it's model-agnostic; supports Gemini, Claude, Ollama, LiteLLM and more</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q4.</strong> What's the main risk of jumping straight into ADK without first learning the SDK?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">ADK is more expensive</li>
+        <li data-i="1">ADK requires GCP billing</li>
+        <li data-i="2">You learn the framework's abstractions before understanding the underlying call shape — debugging gets harder</li>
+        <li data-i="3">ADK is closed source</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ═══ Where to go ═══ -->
+  <h2>Where this leaves us</h2>
+  <p>For the rest of the SDK track, we'll keep using <code>google-genai</code> until you've built a tiny RAG end-to-end. Then we'll port that same RAG into ADK as a side-by-side comparison — that's the moment ADK's value will be obvious.</p>
+
+  <div class="callout callout-tip" style="margin-top:2rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"What's LangChain and how does it compare to ADK?"</li>
+      <li>"Show me a minimal ADK 'hello world' I can run today"</li>
+      <li>"What's MCP and why does ADK support it?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0004-calling-gemini.html">← Lesson 4 — Calling Gemini</a>
+      <a href="0006-system-and-env.html">Lesson 6 — System Instructions &amp; .env →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! One call, one shot. SDK is the right level — ADK would add machinery you don't need.", err: "Not quite. For a single-shot summarisation, the SDK's one-line call is exactly right. ADK is overkill." },
+    1: { ok: "Correct! Multi-tool, decide-and-call is exactly what an agent framework is for.", err: "Not quite. Hand-rolling the agent loop is fragile and tedious. ADK exists for this case." },
+    2: { ok: "Correct! ADK is model-agnostic — Google maintains it but it works with many providers.", err: "Not quite. The 'Google' in ADK refers to the maintainer, not model lock-in. It supports many providers." },
+    3: { ok: "Correct! Frameworks hide what's actually happening. Learn the call first, then appreciate the abstraction.", err: "Not quite. The big risk is debugging — when something goes wrong inside ADK, you'll need to know the underlying call shape to figure out why." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

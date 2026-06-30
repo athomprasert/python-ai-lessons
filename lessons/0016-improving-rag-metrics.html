@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 16 — Improving Each RAG Metric</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .layer-banner {
+      background: linear-gradient(135deg, #1a1a1a, #404040);
+      color: #fff;
+      border-radius: 10px;
+      padding: 0.7rem 1.1rem;
+      margin: 2.4rem 0 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+    }
+
+    .playbook {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin: 0.8rem 0;
+    }
+    .playbook h4 { margin: 0 0 0.4rem; font-size: 1rem; }
+    .playbook .symptom { font-style: italic; color: #555; font-size: 0.92rem; margin-bottom: 0.4rem; }
+    .playbook ol { padding-left: 1.4rem; margin: 0.4rem 0; }
+    .playbook li { margin-bottom: 0.25rem; }
+    .playbook .tradeoff { font-size: 0.85rem; color: #92400e; background: #fef3c7; padding: 0.4rem 0.7rem; border-radius: 6px; margin-top: 0.5rem; }
+    .playbook .tradeoff::before { content: "Trade-off: "; font-weight: 700; }
+
+    .force-card {
+      background: #fff;
+      border: 1.5px solid #c7d2fe;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin: 0.8rem 0;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.06);
+    }
+    .force-card h4 { margin: 0 0 0.4rem; font-size: 1rem; color: #4338ca; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 16 of ?</p>
+    <h1>Improving Each RAG Metric</h1>
+    <p class="tagline">L14–L15 taught you how to measure RAG. This lesson is the playbook for moving each number — cheapest fixes first, with trade-offs spelled out.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <a href="0008-chunking.html"><span class="pill pill-done">L8 ✓</span></a>
+      <a href="0009-build-rag.html"><span class="pill pill-done">L9 ✓</span></a>
+      <a href="0010-vector-db.html"><span class="pill pill-done">L10 ✓</span></a>
+      <a href="0011-contextual-retrieval.html"><span class="pill pill-done">L11 ✓</span></a>
+      <a href="0012-hybrid-search.html"><span class="pill pill-done">L12 ✓</span></a>
+      <a href="0013-advanced-retrieval-patterns.html"><span class="pill pill-done">L13 ✓</span></a>
+      <a href="0014-rag-evaluation.html"><span class="pill pill-done">L14 ✓</span></a>
+      <a href="0015-enterprise-rag-eval.html"><span class="pill pill-done">L15 ✓</span></a>
+      <span class="pill pill-now">L16 — Improving Metrics</span>
+      <span class="pill pill-next">L17 — Framework Survey</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The improvement playbook mindset</h2>
+  <p>
+    L15 left you with a dashboard of two-dozen numbers. <strong>The danger:</strong> you stare at them, panic, change six things at once, and never know which change helped. Use this lesson as a reference and follow three rules:
+  </p>
+  <ol>
+    <li><strong>Change one thing per eval cycle.</strong> Otherwise the eval can't tell you which fix actually moved the needle.</li>
+    <li><strong>Cheapest fixes first.</strong> Threshold tuning beats a new model. New model beats re-architecting. Re-architecting beats fine-tuning.</li>
+    <li><strong>Watch for trade-offs.</strong> Many metrics oppose each other — improving one often degrades another. The right choice depends on your application.</li>
+  </ol>
+
+  <div class="callout callout-why">
+    <div class="callout-label">The improvement loop</div>
+<pre style="margin-top:0.4rem"><code>Run eval → identify worst-scoring metric → pick cheapest fix from playbook
+       → apply ONE change → re-run eval → did it help?
+                                            │
+              ┌─── Yes ──→ keep, repeat ────┘
+              │
+              └─── No ───→ revert, try next fix</code></pre>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The trade-off map</h2>
+  <p>Some metrics genuinely oppose each other. Knowing which is half the battle.</p>
+
+<pre><code>Precision     ←→     Recall
+   "fewer, more relevant"     "more, possibly noisier"
+   ↑ smaller K                ↑ larger K
+   ↑ stricter threshold       ↑ multi-query, hybrid
+
+Latency       ←→     Quality
+   "faster"                   "better"
+   ↑ smaller models           ↑ bigger models, more chunks
+   ↑ caching, batching        ↑ reranker, multi-step pipelines
+
+Cost          ←→     Quality
+   "cheaper"                  "better"
+   ↑ smaller models           ↑ frontier models
+   ↑ prompt caching (L11)     ↑ more eval LLM-judges
+   ↑ lower K                  ↑ higher K + reranker
+
+Faithfulness  ←→     Helpfulness
+   "won't answer if uncertain" "tries harder to give an answer"
+   ↑ stricter refusal rules    ↑ more permissive prompts
+   ↑ higher confidence cutoff  ↑ extrapolate-from-context allowed</code></pre>
+
+  <p>None of these are pure wins or losses — they're <em>positions on a continuum</em> chosen by the application. A medical Q&amp;A bot lives on the Faithfulness end; a creative-writing assistant lives on the Helpfulness end.</p>
+
+  <!-- ───────────────────────────── -->
+  <h3>Why Precision and Recall oppose each other — a closer look</h3>
+  <p>The first row above is the most important and the most counter-intuitive. Let me build the intuition properly.</p>
+
+  <h4>The single math fact behind the trade-off</h4>
+  <p>Both formulas share a numerator and differ only in the denominator:</p>
+
+<pre><code>                    relevant chunks in top K
+   Precision@K  =   ────────────────────────
+                              K
+
+                    relevant chunks in top K
+   Recall@K     =   ────────────────────────
+                       total relevant chunks
+                       (FIXED for the question)</code></pre>
+
+  <p>
+    <strong>Recall's denominator is fixed.</strong> It doesn't grow when K grows.<br>
+    <strong>Precision's denominator IS K.</strong> It grows in lockstep with K.
+  </p>
+  <p>That asymmetry is the whole story.</p>
+
+  <h4>Concrete example — 10 chunks, 3 relevant</h4>
+  <p>Pretend your corpus has just 10 chunks. The user asks one question. Three chunks are relevant — chunks <strong>#2, #5, #8</strong>. Your retriever scores all 10 and returns them in this order (best score first):</p>
+
+<pre><code>Position 1:  #2   ✓ relevant
+Position 2:  #4   ✗
+Position 3:  #5   ✓ relevant
+Position 4:  #7   ✗
+Position 5:  #8   ✓ relevant
+Position 6:  #1   ✗
+Position 7:  #3   ✗
+Position 8:  #9   ✗
+Position 9:  #6   ✗
+Position 10: #10  ✗</code></pre>
+
+  <p>Watch what happens to Precision and Recall as we slide K from 1 to 10:</p>
+
+<pre><code>                            relevant   Precision@K       Recall@K
+                            in top K    = rel/K           = rel/3
+   ──────────────────────────────────────────────────────────────
+   K=1   [✓]                    1       1/1 = 1.00       1/3 = 0.33
+   K=3   [✓ ✗ ✓]                2       2/3 = 0.67       2/3 = 0.67
+   K=5   [✓ ✗ ✓ ✗ ✓]            3       3/5 = 0.60  ↓    3/3 = 1.00 ← CEILING
+   K=7   [✓ ✗ ✓ ✗ ✓ ✗ ✗]        3       3/7 = 0.43  ↓    3/3 = 1.00 (flat)
+   K=10  [✓ ✗ ✓ ✗ ✓ ✗ ✗ ✗ ✗ ✗]  3       3/10= 0.30  ↓    3/3 = 1.00 (flat)</code></pre>
+
+  <p>Plot those columns on a single axis as K grows:</p>
+
+<pre><code>   1.00 ┤●──────────●────●─────●─────────────────●  Recall
+        │      ╱
+   0.80 ┤    ╱    ╲
+        │  ╱        ●
+   0.60 ┤●            ╲
+        │               ╲
+   0.40 ┤                 ●
+        │                    ╲
+   0.20 ┤                       ●  Precision
+        │
+   0.00 ┼────┬────┬────┬────┬────┬────┬────┬────┬───
+        K=1  K=2  K=3  K=4  K=5  K=6  K=7  K=8  K=9  K=10</code></pre>
+
+  <p><strong>Recall climbs and then plateaus at 1.0</strong> once it's found all 3 relevant chunks. It can never go down — adding more chunks can only find more relevant ones, never lose them.</p>
+  <p><strong>Precision peaks early and decays.</strong> Each new position past the relevant chunks adds 1 to the denominator without adding to the numerator. Pure dilution.</p>
+
+  <h4>Why "oppose"?</h4>
+  <p>It's not that they're enemies. They measure <em>different sides of the same coin</em> with different denominators:</p>
+
+<pre><code>                                      Of the K we returned…  → Precision
+   You return K chunks.  ───→  Ask:
+                                      Of the total relevant…  → Recall</code></pre>
+
+  <p>When K grows:</p>
+  <ul>
+    <li><strong>Recall</strong> asks "did we find more of the limited relevant set?" → answer can only be <em>yes</em> or <em>same</em></li>
+    <li><strong>Precision</strong> asks "what fraction of what we returned was useful?" → answer falls every time you add an irrelevant chunk</li>
+  </ul>
+  <p>So they don't truly oppose — they answer different questions about the same retrieval. The "opposition" is just that <strong>K is the dial, and turning it moves them in opposite directions</strong>.</p>
+
+  <h4>Mental model — fishing nets</h4>
+
+<pre><code>   SMALL NET (low K = 3)             BIG NET (high K = 10)
+
+       ╭─────╮                       ╭─────────────────────╮
+       │ ✓ ✗ │                       │ ✓ ✗ ✓ ✗ ✓ ✗ ✗ ✗ ✗ ✗ │
+       │  ✓  │                       │                     │
+       ╰─────╯                       ╰─────────────────────╯
+
+   Caught: 2 fish, 1 stick           Caught: 3 fish, 7 sticks
+   Almost everything I caught        I got all the fish, but
+   was a fish (high precision)       look at all this junk
+   But I missed one (low recall)     (low precision, high recall)</code></pre>
+
+  <p>A <strong>small net</strong> is selective — you don't haul much, but most of what you do haul is what you wanted.<br>
+  A <strong>big net</strong> is comprehensive — you don't miss fish, but you also drag up sticks.</p>
+
+  <p>Neither net is "better." A grocery shopper wants precision (small net — only good fruit). A research biologist wants recall (big net — every specimen). RAG sits in between, and <strong>the eval tells you where</strong>.</p>
+
+  <h4>Direct vs indirect dials</h4>
+  <p>The trade-off table at the top lists <em>K</em> as the direct dial, plus indirect ones. They all push the curve the same way:</p>
+  <ul>
+    <li><strong>Stricter threshold</strong> = "drop chunks below score X" = effectively a smaller net = precision-favouring</li>
+    <li><strong>Multi-query / hybrid</strong> = "cast more nets in different ways" = bigger effective net = recall-favouring</li>
+  </ul>
+
+  <h4>When a fix improves <em>both</em> (the force multipliers)</h4>
+  <p>K-tuning is a slide along the existing curve. Some upgrades <strong>shift the whole curve up</strong>:</p>
+  <ul>
+    <li><strong>Better embedding model</strong> → relevant chunks score higher → both metrics improve</li>
+    <li><strong>Reranker</strong> → moves relevant chunks to earlier positions → Precision@K climbs without recall dropping</li>
+    <li><strong>Contextual retrieval</strong> → chunks the system understands better → both improve</li>
+  </ul>
+  <p>These are the "near-Pareto" wins from the force-multipliers section below. K-tuning is the cheap-but-zero-sum dial; force-multipliers are the upgrades that genuinely move the frontier.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="layer-banner">Layer 1 — Per-query depth metrics</div>
+
+  <!-- Hit@K -->
+  <div class="playbook">
+    <h4>Hit@K low</h4>
+    <p class="symptom">"Sometimes the right chunk doesn't appear in top-K at all."</p>
+    <ol>
+      <li><strong>Increase K</strong> — the cheapest fix. Often "we just needed K=10, not K=3."</li>
+      <li><strong>Switch to a stronger embedding model</strong> (e.g. <code>gemini-embedding-2</code>, or a domain-specific model) — moderate cost, often big gain.</li>
+      <li><strong>Add Contextual Retrieval</strong> (L11) — adds context blurbs so chunks know what document they live in.</li>
+      <li><strong>Add hybrid search</strong> (L12) — catches exact-ID queries the vector model smears together.</li>
+      <li><strong>Add a reranker</strong> on top of high-K retrieval — rerank top-50 down to top-5 with a cross-encoder.</li>
+    </ol>
+    <p class="tradeoff">Bigger K hurts Precision@K and increases generation cost (more tokens per prompt).</p>
+  </div>
+
+  <!-- Precision@K -->
+  <div class="playbook">
+    <h4>Precision@K low</h4>
+    <p class="symptom">"Half the chunks I return are irrelevant — wasting Gemini's context window."</p>
+    <ol>
+      <li><strong>Decrease K</strong> — if recall stays acceptable, this is free.</li>
+      <li><strong>Add a similarity threshold</strong> (you already have one in <code>rag_chroma.py</code> — try raising it from 0.5 → 0.6 or 0.7).</li>
+      <li><strong>Better chunking</strong> (L8) — recursive or document-structure-aware chunkers give cleaner, more focused chunks.</li>
+      <li><strong>Reranker</strong> — the precision champion. Cross-encoders directly score "does this chunk answer this query?"</li>
+    </ol>
+    <p class="tradeoff">Lower K and stricter thresholds hurt Recall@K. Reranking adds latency.</p>
+  </div>
+
+  <!-- Recall@K -->
+  <div class="playbook">
+    <h4>Recall@K low</h4>
+    <p class="symptom">"Multi-step questions miss because we only return some of the relevant chunks."</p>
+    <ol>
+      <li><strong>Increase K</strong>.</li>
+      <li><strong>Multi-query expansion</strong> — generate 3–5 paraphrased queries from the user's question, retrieve for each, union the results.</li>
+      <li><strong>Contextual Retrieval</strong> — fewer chunks get missed because of pronoun/reference problems.</li>
+      <li><strong>Semantic chunking</strong> — fewer "split mid-thought" chunks where the relevant info gets cut.</li>
+      <li><strong>Query decomposition</strong> — for complex questions, break into sub-queries and retrieve for each.</li>
+    </ol>
+    <p class="tradeoff">Multi-query expansion costs extra embedding calls. K↑ hurts precision.</p>
+  </div>
+
+  <!-- MRR -->
+  <div class="playbook">
+    <h4>MRR low</h4>
+    <p class="symptom">"Relevant chunks are in top-K, but rarely at rank 1."</p>
+    <ol>
+      <li><strong>Reranker</strong> (cross-encoder) — the single biggest MRR boost in production. Hands-on below.</li>
+      <li><strong>HyDE</strong> (Hypothetical Document Embeddings) — generate a fake "ideal answer" with an LLM, embed <em>that</em>, retrieve docs near the fake answer. The fake answer is closer to real chunks than the user's question is.</li>
+      <li><strong>Query rewriting</strong> — clean up vague user queries before retrieval.</li>
+    </ol>
+    <p class="tradeoff">Each adds an extra step → higher latency and cost.</p>
+  </div>
+
+  <!-- Context Precision -->
+  <div class="playbook">
+    <h4>Context Precision low</h4>
+    <p class="symptom">"Relevant chunks are in the list, but they're ranked behind irrelevant ones."</p>
+    <ol>
+      <li><strong>Reranker</strong> — exactly what it's designed for.</li>
+      <li><strong>Threshold filter</strong> — drops weak matches before they pollute the rank.</li>
+      <li><strong>Tune RRF weights</strong> if hybrid (L12) — give whichever ranker is more trusted slightly more weight.</li>
+    </ol>
+  </div>
+
+  <!-- Context Recall -->
+  <div class="playbook">
+    <h4>Context Recall low</h4>
+    <p class="symptom">"The chunks we return don't cover all the claims in the expected answer."</p>
+    <ol>
+      <li><strong>Increase K</strong>.</li>
+      <li><strong>Hybrid search</strong> for diversity.</li>
+      <li><strong>Query decomposition</strong> — multi-claim answers often need multi-claim retrieval.</li>
+      <li><strong>Better chunking</strong> — chunks that span concepts cover more claims per chunk.</li>
+    </ol>
+  </div>
+
+  <!-- Context Entities Recall -->
+  <div class="playbook">
+    <h4>Context Entities Recall low</h4>
+    <p class="symptom">"Identifiers, error codes, and version numbers in the expected answer don't end up in retrieved chunks."</p>
+    <ol>
+      <li><strong>Hybrid search (BM25)</strong> — the canonical fix. L12.</li>
+      <li><strong>Entity-aware chunking</strong> — keep IDs and their context in the same chunk.</li>
+      <li><strong>Metadata filtering</strong> — index entities as metadata so you can filter by them at query time.</li>
+    </ol>
+  </div>
+
+  <!-- Faithfulness -->
+  <div class="playbook">
+    <h4>Faithfulness low / Hallucination Rate high</h4>
+    <p class="symptom">"The LLM is making things up that aren't in the retrieved chunks."</p>
+    <ol>
+      <li><strong>Stricter system prompt</strong> — explicit "do not use outside knowledge" + a refusal phrase.</li>
+      <li><strong>Lower temperature</strong> (e.g. 0.0–0.2) — less creative, more grounded.</li>
+      <li><strong>Refusal threshold</strong> — refuse to answer when retrieval scores are low.</li>
+      <li><strong>Fact-check pass</strong> — second LLM call: "is every claim supported by context?" If not, regenerate or refuse.</li>
+      <li><strong>Larger / better-aligned chat model</strong> — frontier models hallucinate less.</li>
+    </ol>
+    <p class="tradeoff">More refusals — Helpfulness drops. Fact-check pass = 2× cost &amp; latency.</p>
+  </div>
+
+  <!-- Groundedness -->
+  <div class="playbook">
+    <h4>Groundedness low</h4>
+    <p class="symptom">"The answer is roughly faithful, but individual sentences aren't traceable to chunks."</p>
+    <ol>
+      <li><strong>Sentence-level citation prompt</strong> — "every sentence MUST end with [N]."</li>
+      <li><strong>Claim-decomposition pass</strong> — break the answer into atomic claims; check each against context.</li>
+      <li><strong>Structured output</strong> (JSON: <code>{claims: [{text, source_chunk}]}</code>) — the model is forced to attach citations.</li>
+    </ol>
+  </div>
+
+  <!-- Citation Accuracy -->
+  <div class="playbook">
+    <h4>Citation Accuracy low</h4>
+    <p class="symptom">"Citations exist but they're wrong — sentence cites chunk 3 but the claim is from chunk 5."</p>
+    <ol>
+      <li><strong>Per-sentence citation prompt</strong> with explicit chunk numbering — see L9's prompt.</li>
+      <li><strong>Cite-or-refuse rule</strong> — "if you can't cite, say I don't know."</li>
+      <li><strong>Post-hoc verification</strong> — for each citation, re-check with a small LLM call.</li>
+    </ol>
+    <p class="tradeoff">Verification adds N extra LLM calls per answer.</p>
+  </div>
+
+  <!-- Answer Semantic Similarity -->
+  <div class="playbook">
+    <h4>Answer Semantic Similarity low</h4>
+    <p class="symptom">"Answers are factually right but worded differently from the expected answer."</p>
+    <ol>
+      <li><strong>Few-shot examples</strong> in the prompt — show the LLM the desired phrasing.</li>
+      <li><strong>Style guide in system instruction</strong> (e.g. "respond in 2-3 sentences, formal tone").</li>
+      <li><strong>Larger model</strong> if the small one is rambling.</li>
+    </ol>
+    <p class="tradeoff">Don't optimise this too hard — semantic similarity ≠ correctness. Use it as a signal, not a target.</p>
+  </div>
+
+  <!-- Refusal Correctness -->
+  <div class="playbook">
+    <h4>Refusal Correctness low</h4>
+    <p class="symptom">"The system makes up answers when it should be saying 'I don't know'."</p>
+    <ol>
+      <li><strong>Explicit refusal threshold</strong> — if best retrieval score &lt; 0.5, refuse.</li>
+      <li><strong>Few-shot refusal examples</strong> in the prompt — show "I don't have that information" answers in the system instruction.</li>
+      <li><strong>Tool-use deferral</strong> — let the agent call a "search the web" tool when local retrieval fails (next lesson).</li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="layer-banner">Layer 2 — Safety</div>
+
+  <!-- Toxicity -->
+  <div class="playbook">
+    <h4>Toxicity flagged</h4>
+    <ol>
+      <li><strong>Moderation API gate</strong> — pre-filter user queries and post-filter generated answers (Perspective API, OpenAI Moderation).</li>
+      <li><strong>System prompt safety rules</strong> — explicit "do not produce harmful, biased, or policy-violating content."</li>
+      <li><strong>Regenerate-on-fail</strong> — if a moderation check trips, regenerate or refuse.</li>
+    </ol>
+  </div>
+
+  <!-- PII Leakage -->
+  <div class="playbook">
+    <h4>PII leakage</h4>
+    <ol>
+      <li><strong>Pre-filter the corpus</strong> with Microsoft Presidio at indexing time — strip or tag PII before chunks are embedded.</li>
+      <li><strong>Output scanning</strong> — run Presidio on the answer too, redact what shouldn't pass.</li>
+      <li><strong>Authorisation-aware retrieval</strong> — filter chunks by the user's permissions via metadata <code>where</code> clauses.</li>
+    </ol>
+  </div>
+
+  <!-- Bias -->
+  <div class="playbook">
+    <h4>Bias / fairness fail</h4>
+    <ol>
+      <li><strong>Demographic-aware system prompt</strong> — explicitly instruct neutrality on protected attributes.</li>
+      <li><strong>Audit the corpus</strong> — biased docs in → biased answers out.</li>
+      <li><strong>Demographic-swap eval</strong> in CI — fail the build if scores diverge across swaps.</li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="layer-banner">Layer 3 — Operations</div>
+
+  <!-- Latency -->
+  <div class="playbook">
+    <h4>Latency high (especially p95/p99)</h4>
+    <ol>
+      <li><strong>Prompt caching</strong> (L11) — biggest win for repeated prefixes.</li>
+      <li><strong>Streaming responses</strong> — perceived latency drops to "time-to-first-token", not total time.</li>
+      <li><strong>Smaller chat model</strong> — Flash instead of Pro; quality often acceptable.</li>
+      <li><strong>Parallel retrieval calls</strong> — if you need vector + BM25 + reranker, run them concurrently.</li>
+      <li><strong>Lower K</strong> — fewer chunks → smaller prompt → faster generation.</li>
+      <li><strong>Model distillation</strong> (advanced) — fine-tune a small model on the big model's outputs.</li>
+    </ol>
+    <p class="tradeoff">Smaller models hurt quality metrics. Lower K hurts recall.</p>
+  </div>
+
+  <!-- Cost -->
+  <div class="playbook">
+    <h4>Cost per query high</h4>
+    <ol>
+      <li><strong>Prompt caching</strong> (L11) — 5–10× reduction on contextualisation indexing.</li>
+      <li><strong>Smaller models for sub-tasks</strong> — Flash or Nano for context-blurb generation, judges, query rewriting.</li>
+      <li><strong>Embedding-based routing</strong> — cheap classifier decides if RAG is even needed for this query.</li>
+      <li><strong>Lower K</strong> — eval-tuned, not gut-tuned.</li>
+      <li><strong>Cache common answers</strong> — semantic cache (cosine match against past Q&amp;As) skips the whole pipeline.</li>
+    </ol>
+  </div>
+
+  <!-- Coverage -->
+  <div class="playbook">
+    <h4>Eval Set Coverage low</h4>
+    <ol>
+      <li><strong>Sample real queries from logs</strong> — add the most-uncovered ones to your eval.</li>
+      <li><strong>Cluster failed queries</strong> (L15 failure clustering) — each cluster suggests new eval categories.</li>
+      <li><strong>Aim for &gt;80% coverage</strong> — measure as % of real queries within similarity threshold of any eval question.</li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="layer-banner">Layer 4 — System health</div>
+
+  <!-- Drift -->
+  <div class="playbook">
+    <h4>Drift detected (eval scores degrading over time)</h4>
+    <ol>
+      <li><strong>Pin model versions</strong> (e.g. <code>gemini-3.5-flash-001</code> instead of <code>gemini-3.5-flash</code>) — vendor updates can silently change behaviour.</li>
+      <li><strong>Re-index on corpus change</strong> with content-hash IDs (L10).</li>
+      <li><strong>Schedule nightly eval runs</strong>; alert on regressions &gt; threshold.</li>
+    </ol>
+  </div>
+
+  <!-- Robustness -->
+  <div class="playbook">
+    <h4>Robustness low (paraphrases produce different answers)</h4>
+    <ol>
+      <li><strong>Query rewriting layer</strong> — normalise phrasing before retrieval.</li>
+      <li><strong>Paraphrase augmentation</strong> at indexing — generate 2–3 alternate phrasings of each chunk's first sentence and store in metadata.</li>
+      <li><strong>Multi-query expansion</strong> at query time — already mentioned for recall, also helps robustness.</li>
+    </ol>
+  </div>
+
+  <!-- Failure clusters -->
+  <div class="playbook">
+    <h4>Failure clusters identified (L15 technique)</h4>
+    <p class="symptom">Each cluster typically points to a specific fix:</p>
+    <table>
+      <thead><tr><th>Cluster pattern</th><th>Targeted fix</th></tr></thead>
+      <tbody>
+        <tr><td>"Spanish queries fail"</td><td>Multilingual model + chunker (L8 multilingual section)</td></tr>
+        <tr><td>"Asks about deprecated v1 API"</td><td>Add freshness metadata; sunset old chunks</td></tr>
+        <tr><td>"Multi-step questions"</td><td>Query decomposition</td></tr>
+        <tr><td>"Specific error codes miss"</td><td>Hybrid search + entity-aware chunking</td></tr>
+        <tr><td>"Time-sensitive queries"</td><td>Add date metadata; filter by recency</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The four force-multiplier upgrades</h2>
+  <p>
+    A handful of techniques move <em>multiple metrics at once</em>. If you only learn four upgrades beyond what you've already built, learn these.
+  </p>
+
+  <!-- Reranker -->
+  <div class="force-card">
+    <h4>1. Cross-encoder reranking</h4>
+    <p>Retrieve top-50 with vector / hybrid (cheap, recall-oriented), then have a <strong>cross-encoder</strong> directly score "does this chunk answer this query?" — and keep the top 5.</p>
+    <p>The trick: cross-encoders see the query and the chunk together (not as separate vectors), so they understand fine-grained relevance. Slower per-pair, but you only run them on 50 candidates, not the whole corpus.</p>
+    <p><strong>Boosts:</strong> Precision@K, MRR, Context Precision, often Faithfulness too (cleaner context = less hallucination).</p>
+<pre><code><span class="kw">from</span> sentence_transformers <span class="kw">import</span> CrossEncoder
+
+reranker <span class="op">=</span> CrossEncoder(<span class="str">"cross-encoder/ms-marco-MiniLM-L-12-v2"</span>)
+
+<span class="kw">def</span> <span class="fn">rerank</span>(question, candidate_chunks, top_n<span class="op">=</span><span class="num">5</span>):
+    <span class="cm"># Build (query, chunk) pairs and score them all in one batched call</span>
+    pairs <span class="op">=</span> [(question, c) <span class="kw">for</span> c <span class="kw">in</span> candidate_chunks]
+    scores <span class="op">=</span> reranker.predict(pairs)
+
+    <span class="cm"># Sort chunks by score, keep top_n</span>
+    ranked <span class="op">=</span> <span class="fn">sorted</span>(<span class="fn">zip</span>(scores, candidate_chunks), reverse<span class="op">=</span><span class="kw">True</span>)
+    <span class="kw">return</span> [(<span class="fn">float</span>(s), c) <span class="kw">for</span> s, c <span class="kw">in</span> ranked[:top_n]]</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New library: <code>sentence-transformers</code></div>
+      The standard Python package for embedding and reranking models that aren't behind an API. <code>CrossEncoder</code> wraps a Hugging Face model that scores (query, chunk) pairs. <code>ms-marco-MiniLM-L-12-v2</code> is a small, fast, well-tuned reranker — runs locally on CPU in ~10ms per pair. Install: <code>pip install sentence-transformers</code>. <a href="https://www.sbert.net/examples/applications/retrieve_rerank/README.html">Reference</a>
+    </div>
+
+    <p>Wire it into <code>hybrid_search</code> as a final stage:</p>
+<pre><code><span class="kw">def</span> <span class="fn">hybrid_with_rerank</span>(q, coll, bm25, chunk_ids, top_n<span class="op">=</span><span class="num">5</span>):
+    <span class="cm"># Retrieve a wide set first — recall-oriented</span>
+    candidates <span class="op">=</span> hybrid_search(q, coll, bm25, chunk_ids, k_each<span class="op">=</span><span class="num">25</span>, top_k<span class="op">=</span><span class="num">25</span>)
+    chunks <span class="op">=</span> [c <span class="kw">for</span> _, c <span class="kw">in</span> candidates]
+    <span class="cm"># Rerank → narrow to precise top_n</span>
+    <span class="kw">return</span> rerank(q, chunks, top_n<span class="op">=</span>top_n)</code></pre>
+  </div>
+
+  <!-- HyDE -->
+  <div class="force-card">
+    <h4>2. HyDE — Hypothetical Document Embeddings</h4>
+    <p>Ask the LLM to generate a <em>fake answer</em> to the question, then embed that fake answer and retrieve docs near it. Counter-intuitive but it works: the fake answer's vocabulary is closer to real chunks than the question's vocabulary is.</p>
+    <p><strong>Boosts:</strong> Recall@K, Hit@K, especially on short or vague queries.</p>
+<pre><code><span class="kw">def</span> <span class="fn">hyde_search</span>(question, collection):
+    fake_answer <span class="op">=</span> client.models.generate_content(
+        model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>,
+        contents<span class="op">=</span><span class="str">f"Write a short hypothetical answer (2 sentences) to this question. "</span>
+                 <span class="str">f"It does not need to be factually correct.\n\nQ: {question}"</span>,
+    ).text
+    q_vec <span class="op">=</span> embed(fake_answer, <span class="str">"RETRIEVAL_QUERY"</span>)
+    <span class="kw">return</span> collection.query(query_embeddings<span class="op">=</span>[q_vec], n_results<span class="op">=</span>TOP_K)</code></pre>
+    <p class="tradeoff" style="font-size:0.85rem; color:#92400e; background:#fef3c7; padding:0.4rem 0.7rem; border-radius:6px; margin-top:0.5rem"><strong>Trade-off:</strong> +1 LLM call per query → latency &amp; cost. Best for queries where retrieval recall is your biggest pain.</p>
+  </div>
+
+  <!-- Multi-query expansion -->
+  <div class="force-card">
+    <h4>3. Multi-query expansion</h4>
+    <p>Generate 3–5 paraphrased variants of the user's question, retrieve for each, union (or RRF-fuse) the results.</p>
+    <p><strong>Boosts:</strong> Recall@K, Context Recall, Robustness (same answer for differently-phrased questions).</p>
+<pre><code><span class="kw">def</span> <span class="fn">expand_query</span>(question, n<span class="op">=</span><span class="num">3</span>):
+    prompt <span class="op">=</span> <span class="str">f"""Generate {n} alternative phrasings of this question for retrieval.</span>
+<span class="str">Return ONLY a JSON list of strings, no explanation.</span>
+<span class="str">Question: {question}"""</span>
+    response <span class="op">=</span> client.models.generate_content(
+        model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>, contents<span class="op">=</span>prompt
+    )
+    <span class="kw">return</span> [question] <span class="op">+</span> json.loads(response.text)
+
+<span class="kw">def</span> <span class="fn">multi_query_search</span>(question, collection):
+    queries <span class="op">=</span> expand_query(question)
+    all_results <span class="op">=</span> []
+    <span class="kw">for</span> q <span class="kw">in</span> queries:
+        q_vec <span class="op">=</span> embed(q, <span class="str">"RETRIEVAL_QUERY"</span>)
+        r <span class="op">=</span> collection.query(query_embeddings<span class="op">=</span>[q_vec], n_results<span class="op">=</span>TOP_K)
+        all_results.append(r[<span class="str">"ids"</span>][<span class="num">0</span>])
+    <span class="cm"># Fuse the lists with RRF (you have rrf_fuse from L12)</span>
+    <span class="kw">return</span> rrf_fuse(<span class="op">*</span>all_results)</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: argument unpacking with <code>*</code></div>
+      <code>rrf_fuse(*all_results)</code> spreads the list into individual arguments. If <code>all_results = [list1, list2, list3]</code>, this becomes <code>rrf_fuse(list1, list2, list3)</code>. The opposite of <code>*args</code> on the receiving side (L15). Useful when your function accepts a variable number of inputs.
+    </div>
+  </div>
+
+  <!-- Hybrid -->
+  <div class="force-card">
+    <h4>4. Hybrid search (already in L12)</h4>
+    <p>Vector + BM25 + RRF — covers vector's blind spot on identifiers. <strong>Boosts:</strong> Hit@K, Context Entities Recall, often Precision too.</p>
+    <p>Already in your <code>rag_chroma.py</code> — but re-stated here because it's a force multiplier worth remembering when ordering fixes.</p>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Hands-on — apply two fixes end to end</h2>
+  <p>Two concrete improvement loops you can run today, with sample before/after eval numbers.</p>
+
+  <h3>Fix 1 — Tighten Precision@5 with a similarity threshold</h3>
+  <p>Lowest-effort improvement. You already have <code>THRESHOLD = 0.5</code>; raise it.</p>
+
+<pre><code><span class="cm"># Before</span>
+THRESHOLD <span class="op">=</span> <span class="num">0.5</span>     <span class="cm"># Precision@5: 0.42, Recall@5: 0.88</span>
+
+<span class="cm"># After</span>
+THRESHOLD <span class="op">=</span> <span class="num">0.65</span>    <span class="cm"># Precision@5: 0.61, Recall@5: 0.79</span></code></pre>
+
+  <p>You traded 9 percentage points of recall for 19 of precision. Worth it if your generation cost was being killed by junk chunks. Bad trade if your users care about exhaustive answers.</p>
+
+  <p><strong>The eval is what tells you which side of that trade you should land on.</strong></p>
+
+  <h3>Fix 2 — Add a cross-encoder reranker</h3>
+  <p>Higher-effort, multi-metric upgrade. Run the full <code>hybrid_with_rerank</code> snippet from above and re-run your eval.</p>
+
+  <table>
+    <thead><tr><th>Metric</th><th>Before</th><th>After (rerank)</th><th>Δ</th></tr></thead>
+    <tbody>
+      <tr><td>Hit@5</td><td>0.92</td><td>0.92</td><td>=</td></tr>
+      <tr><td>Precision@5</td><td>0.46</td><td>0.78</td><td><strong style="color:#15803d">+0.32 ✓</strong></td></tr>
+      <tr><td>Recall@5</td><td>0.88</td><td>0.91</td><td><strong style="color:#15803d">+0.03 ✓</strong></td></tr>
+      <tr><td>MRR</td><td>0.71</td><td>0.89</td><td><strong style="color:#15803d">+0.18 ✓</strong></td></tr>
+      <tr><td>Faithfulness</td><td>0.94</td><td>0.97</td><td><strong style="color:#15803d">+0.03 ✓</strong></td></tr>
+      <tr><td>Latency p95</td><td>3400ms</td><td>3650ms</td><td><strong style="color:#b91c1c">+250ms ✗</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p>Reranking is a near-Pareto upgrade — it improves four metrics at the cost of ~250ms latency. Sample numbers — yours will differ. The point: <strong>the eval lets you make this decision with data, not gut feel</strong>.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>Diagnosis cheat sheet</h2>
+  <p>The page you'll come back to. Symptom on the left → most likely fix on the right. Read it before you panic.</p>
+
+  <table>
+    <thead>
+      <tr><th>Symptom (the worst-scoring metric)</th><th>First fix to try</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Hit@K low</td><td>Increase K, then better embedding model</td></tr>
+      <tr><td>Precision@K low</td><td>Threshold filter or reranker</td></tr>
+      <tr><td>Recall@K low</td><td>Increase K, then multi-query expansion</td></tr>
+      <tr><td>MRR low</td><td>Reranker</td></tr>
+      <tr><td>Context Precision low</td><td>Reranker</td></tr>
+      <tr><td>Context Recall low</td><td>Increase K, then query decomposition</td></tr>
+      <tr><td>Context Entities Recall low</td><td>Hybrid search (BM25)</td></tr>
+      <tr><td>Faithfulness low / Hallucinations</td><td>Stricter prompt, lower temperature, refusal threshold</td></tr>
+      <tr><td>Groundedness low</td><td>Sentence-level citation prompt</td></tr>
+      <tr><td>Citation Accuracy low</td><td>Cite-or-refuse rule</td></tr>
+      <tr><td>Refusal Correctness low</td><td>Refusal threshold + few-shot examples</td></tr>
+      <tr><td>Toxicity flag</td><td>Moderation API gate</td></tr>
+      <tr><td>PII leakage</td><td>Microsoft Presidio pre-filter</td></tr>
+      <tr><td>Latency high</td><td>Prompt caching, then streaming, then smaller model</td></tr>
+      <tr><td>Cost high</td><td>Prompt caching, smaller models for sub-tasks</td></tr>
+      <tr><td>Coverage low</td><td>Sample real-user queries; expand eval set</td></tr>
+      <tr><td>Drift</td><td>Pin model versions, schedule nightly eval</td></tr>
+      <tr><td>Robustness low</td><td>Query rewriting layer</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>When to stop chasing metrics</h2>
+  <div class="callout callout-warn">
+    <div class="callout-label">Diminishing returns</div>
+    <p>Past a point, each improvement costs more than it returns:</p>
+    <ul>
+      <li>If the gap between your best metric run and human-expert performance is &lt;5%, your bottleneck is probably the eval set, not the system.</li>
+      <li>If a fix improves a metric by &lt;2 percentage points and adds latency or cost, don't ship it.</li>
+      <li>If two fixes contradict each other (e.g. "lower K for cost" vs "higher K for recall"), make the trade-off <em>per use case</em>, not per system.</li>
+    </ul>
+    <p>Production teams set <strong>SLO floors</strong> per metric — "Faithfulness must stay &gt; 0.90, latency p95 must stay &lt; 4s, then maximise recall" — and stop tuning when all floors are met.</p>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> Your eval shows Recall@5 = 0.55 (low) and Precision@5 = 0.85 (high). What's the cheapest first fix?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Increase K — you're being too restrictive; you can afford some precision loss for recall gain</li>
+        <li data-i="1">Add a reranker</li>
+        <li data-i="2">Switch embedding models</li>
+        <li data-i="3">Decrease K</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Why does cross-encoder reranking improve Precision@K and MRR more than swapping to a better bi-encoder?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Cross-encoders use more parameters</li>
+        <li data-i="1">Cross-encoders are open-source</li>
+        <li data-i="2">Cross-encoders see the query and chunk together — they can model fine-grained relevance that bi-encoders (which embed query and chunk separately) can't</li>
+        <li data-i="3">Cross-encoders have larger context windows</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> HyDE (Hypothetical Document Embeddings) helps because…</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">It's faster than regular vector search</li>
+        <li data-i="1">It eliminates the need for chunking</li>
+        <li data-i="2">It's required by the Gemini API</li>
+        <li data-i="3">A fake answer's vocabulary is closer to real chunks than the user's question is, so retrieval finds better matches</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> Faithfulness is 0.78 (you want &gt; 0.95). The cheapest first fix is…</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Switch to a larger chat model</li>
+        <li data-i="1">Add stricter system prompt rules + lower temperature</li>
+        <li data-i="2">Re-architect with a fact-check pass</li>
+        <li data-i="3">Migrate to a different vector DB</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> Why "change one thing per eval cycle"?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Larger changes break CI</li>
+        <li data-i="1">It's required by RAGAS</li>
+        <li data-i="2">If you change two things at once and scores move, you can't tell which change caused it — so the eval can't guide future decisions</li>
+        <li data-i="3">It's a Python convention</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+
+    <div class="quiz-question" id="q5">
+      <p><strong>Q6.</strong> Your eval shows reranking gives +0.18 MRR but adds 250ms p95 latency. When is this NOT worth shipping?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">When your latency SLO is already at its limit and 250ms would breach it</li>
+        <li data-i="1">Always — never ship reranking</li>
+        <li data-i="2">When your MRR is already 0.70</li>
+        <li data-i="3">Only on weekends</li>
+      </ul>
+      <p class="feedback" id="fb5"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>What's next</h2>
+  <ul>
+    <li><strong>Lesson 17</strong> — Survey the agent framework landscape: 9 frameworks (LangGraph, LlamaIndex, CrewAI, AutoGen, Pydantic AI, Haystack, ADK, Smolagents, native SDK) and how to pick.</li>
+    <li><strong>Future</strong> — Fine-tuning embedding models on your domain (a niche but powerful upgrade once everything else is squeezed).</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Direct MuleSoft application</div>
+    Treat the playbook like a runbook for an integration on-call. Symptoms (alerts) map to fixes (config tuning, retries, scaling). Diminishing returns are real here too — past a point, the next 2% of throughput costs more than it earns. The same engineering discipline applies.
+  </div>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Walk me through implementing query decomposition step by step"</li>
+      <li>"Show me how to tune RRF weights based on my eval results"</li>
+      <li>"What's a sensible SLO target for Faithfulness in a customer-facing bot?"</li>
+      <li>"How do I run a semantic cache to cut costs?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0015-enterprise-rag-eval.html">← Lesson 15 — Enterprise Eval</a>
+      <a href="0017-agent-framework-landscape.html">Lesson 17 — Framework Landscape →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! High precision + low recall = the system is being conservative. Bigger K (or a looser threshold) trades the precision you have for recall you need. Reranker would also help but is more expensive.", err: "Not quite. The pattern (Recall low, Precision high) signals you're being too restrictive. Bigger K is the cheapest fix. A reranker would also work but starts at 'higher effort, higher cost.'" },
+    1: { ok: "Correct! Cross-encoders process (query, chunk) jointly so attention layers can capture fine-grained relevance. Bi-encoders embed each side separately — much faster, but coarser.", err: "Not quite. The structural difference is joint processing. Cross-encoders run the query and chunk through the model together, which lets them model interactions; bi-encoders embed each side independently, which loses that signal." },
+    2: { ok: "Correct! Real chunks are written as answers; user questions are written as questions. Embedding a hypothetical answer puts the query in the same vocabulary 'shape' as the corpus.", err: "Not quite. The trick is that fake answers are written like real chunks, not like questions. So embedding the fake answer is a closer match to your indexed chunks than embedding the original question is." },
+    3: { ok: "Correct! Stricter prompt + temperature are config changes — minutes of work, no infrastructure. Always try the cheapest fix first.", err: "Not quite. The order is: prompt + temperature first (free), then refusal threshold, then larger model or fact-check pass (those cost more). Cheapest-first is the rule." },
+    4: { ok: "Correct! With one change you can attribute the score delta confidently. With two, you can't, and the eval stops being a useful guide.", err: "Not quite. The reason is attribution: if you change two things and scores move, you can't tell which one was responsible. The eval becomes useless for future decisions." },
+    5: { ok: "Correct! Quality gains aren't worth shipping if they breach a hard latency floor. Set SLOs per metric and stop tuning when floors are violated.", err: "Not quite. Reranking is usually a great upgrade — but if it would breach an existing latency SLO, the +0.18 MRR isn't worth a regression on the operations side. SLOs gate ships." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

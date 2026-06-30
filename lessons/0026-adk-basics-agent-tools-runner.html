@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L26 — Google ADK basics: Agent, Tools, Runner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .series-banner {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      color: #92400e;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .series-banner strong { color: #78350f; }
+
+    .lesson-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .lesson-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.3rem; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0.9rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .ty  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.6rem 0 1.1rem; font-size: 0.88rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.65rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+      border-left: 4px solid;
+      font-size: 0.9rem;
+    }
+    .callout strong { font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .callout-tip      { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn     { background: #fffbeb; border-color: #f59e0b; }
+    .callout-syntax   { background: #fdf4ff; border-color: #a855f7; }
+    .callout-pedagogy { background: #f1f5ff; border-color: #6366f1; }
+    .callout-compare  { background: #f0f9ff; border-color: #0ea5e9; }
+
+    .exercise-box {
+      border: 2px solid #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+      background: #fefefe;
+    }
+    .exercise-box h3 { margin-top: 0; }
+    .exercise-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    details {
+      margin: 0.5rem 0;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+    }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    details[open] summary { margin-bottom: 0.4rem; }
+
+    .quiz { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.7rem 0; }
+    .quiz-q { font-weight: 600; margin-bottom: 0.4rem; }
+
+    .ascii-diagram {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 6px;
+      margin: 0.7rem 0;
+    }
+
+    .footer-links { margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid #ddd; font-size: 0.82rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="series-banner">
+    <strong>Google ADK mini-series · part 1 of 6</strong> · Same pedagogy as your LangGraph series. You learn by writing, not by reading. Leaning into Google-Cloud-and-Vertex specifics — not framework-agnostic concepts.
+    &nbsp;<a href="0025-multi-agent-patterns.html">← L25 (end of LangGraph series)</a>
+  </div>
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Lesson 26 · Python for AI/ML</p>
+    <h1>Google ADK basics: <code>Agent</code>, tools, <code>adk run</code> / <code>adk web</code></h1>
+    <p class="tagline">Spin up a working ADK agent in under 30 lines of code and visualise it in Google's built-in dev UI. The fastest path from zero to "show this to a customer".</p>
+  </header>
+
+  <div class="callout callout-pedagogy">
+    <strong>Pedagogy reminder.</strong> Same as LangGraph: skeleton + TODOs + paste-back review. Don't read the canonical until you've tried.
+  </div>
+
+  <h2>What ADK actually is</h2>
+  <p><strong>ADK = Agent Development Kit.</strong> Google's open-source agent framework, released April 2025. It's the same kind of thing as LangGraph — a Python library for building LLM agents — but it has a very different philosophy.</p>
+
+  <table>
+    <thead><tr><th></th><th>LangGraph</th><th>ADK</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Philosophy</strong></td>
+        <td>Build the graph yourself (unopinionated)</td>
+        <td>Use our conventions (opinionated)</td>
+      </tr>
+      <tr>
+        <td><strong>Core primitive</strong></td>
+        <td><code>StateGraph</code> + nodes + edges</td>
+        <td><code>Agent</code> object (model + tools + instructions)</td>
+      </tr>
+      <tr>
+        <td><strong>Where state lives</strong></td>
+        <td><code>TypedDict</code> you design</td>
+        <td><code>Session.state</code> (managed dict)</td>
+      </tr>
+      <tr>
+        <td><strong>How you run it</strong></td>
+        <td><code>app.invoke(...)</code> — you write the harness</td>
+        <td><code>adk run</code> CLI + <code>adk web</code> UI — built-in</td>
+      </tr>
+      <tr>
+        <td><strong>Dev UI</strong></td>
+        <td>None — bring your own (Phoenix / LangSmith)</td>
+        <td><strong>ADK Web</strong> ships with the package</td>
+      </tr>
+      <tr>
+        <td><strong>Multi-agent</strong></td>
+        <td>You wire it (L25)</td>
+        <td>Declarative: <code>SequentialAgent</code>, <code>ParallelAgent</code>, <code>LoopAgent</code></td>
+      </tr>
+      <tr>
+        <td><strong>Production deployment</strong></td>
+        <td>Bring your own infra</td>
+        <td><strong>Vertex Agent Engine</strong> — one-command deploy</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-compare">
+    <strong>Which to pick.</strong> LangGraph wins when you need fine control over the graph topology or you're framework-agnostic. ADK wins when you want fast iteration, Google's dev UI for free, and a managed deployment story on GCP. Your customers using Google Cloud will ask about ADK — they need to hear an informed answer.
+  </div>
+
+  <h2>The three pieces of an ADK app</h2>
+
+  <div class="ascii-diagram">                          ┌─────────────┐
+   user msg ───►  Runner ──► Agent ──┤ tool calls │──► tool results ──► response
+                    │       (LLM)    └─────────────┘            │
+                    │                                            │
+                    └──── reads/writes ────► Session ◄───────────┘
+                                          (per-user state)</div>
+
+  <ol>
+    <li><strong>Agent</strong> — the configuration: which model, what instructions, which tools. You define this.</li>
+    <li><strong>Runner</strong> — the executor: takes a user message, walks the agent through its loop, calls tools, returns the answer. Provided by ADK; you rarely customise it.</li>
+    <li><strong>Session</strong> — the per-conversation state: messages so far, scratchpad, anything you want to remember across turns. Managed by a <code>SessionService</code> (in-memory by default).</li>
+  </ol>
+
+  <p>Compared to LangGraph: <em>Agent</em> ≈ a compiled graph, <em>Runner</em> ≈ <code>app.invoke</code>, <em>Session</em> ≈ thread + checkpointer.</p>
+
+  <h2>The folder convention — ADK is opinionated</h2>
+
+  <p>This is the biggest mental shift from LangGraph. ADK expects each agent to live in <strong>its own directory</strong>, with these three files:</p>
+
+  <div class="ascii-diagram">my_agent/
+├── agent.py          ← defines a variable named exactly "root_agent"
+├── __init__.py       ← exports the agent (usually one line)
+└── .env              ← API keys, etc.</div>
+
+  <p>The CLI tools (<code>adk run my_agent</code>, <code>adk web</code>) look for this structure. They scan for directories, import each one's <code>agent.py</code>, and find the <code>root_agent</code> variable.</p>
+
+  <div class="callout callout-syntax">
+    <strong>New convention — folder-as-agent.</strong><br>
+    There's no LangGraph equivalent. In LangGraph, an agent is whatever script you write. In ADK, an agent <em>is a directory</em> following a contract. Fight it and the tooling won't find your work. Embrace it and <code>adk web</code> auto-discovers every agent in your folder.
+  </div>
+
+  <h2>Minimal hello-world — read once, then write</h2>
+
+  <p>File: <code>my_agent/agent.py</code></p>
+<pre><code><span class="kw">from</span> google.adk.agents.llm_agent <span class="kw">import</span> Agent
+
+<span class="kw">def</span> <span class="fn">get_current_time</span>(city: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="str">"""Returns the current time in a specified city."""</span>
+    <span class="kw">return</span> {<span class="str">"status"</span>: <span class="str">"success"</span>, <span class="str">"city"</span>: city, <span class="str">"time"</span>: <span class="str">"10:30 AM"</span>}
+
+root_agent <span class="op">=</span> <span class="fn">Agent</span>(
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    name<span class="op">=</span><span class="str">'root_agent'</span>,
+    description<span class="op">=</span><span class="str">"Tells the current time in a specified city."</span>,
+    instruction<span class="op">=</span><span class="str">"You are a helpful assistant that tells the current time."</span>,
+    tools<span class="op">=</span>[get_current_time],
+)</code></pre>
+
+  <p>File: <code>my_agent/__init__.py</code></p>
+<pre><code><span class="kw">from</span> . <span class="kw">import</span> agent</code></pre>
+
+  <p>File: <code>my_agent/.env</code></p>
+<pre><code>GOOGLE_API_KEY=<span class="str">"your-key-from-aistudio.google.com"</span></code></pre>
+
+  <p>Run it:</p>
+<pre><code><span class="cm"># CLI mode — chat in your terminal</span>
+adk run my_agent
+
+<span class="cm"># Web mode — opens a browser-based chat + trace UI</span>
+adk web --port 8000</code></pre>
+
+  <h3>The five things to notice</h3>
+  <ol>
+    <li><strong>Tool functions return dicts, not strings.</strong> ADK convention: <code>{"status": "...", "...": "..."}</code>. The LLM sees the dict and reasons about each field. (LangChain's <code>@tool</code> defaults to strings — different ergonomic.)</li>
+    <li><strong>The function's docstring becomes the tool description</strong> the LLM sees. Same as LangChain <code>@tool</code>.</li>
+    <li><strong>No <code>@tool</code> decorator.</strong> You just pass the function. ADK inspects the signature directly.</li>
+    <li><strong>Variable name matters.</strong> The CLI looks for <code>root_agent</code> — not <code>agent</code>, not <code>my_root</code>. Rename it and <code>adk run</code> can't find it.</li>
+    <li><strong>No <code>Runner</code> code.</strong> You don't write the run loop — <code>adk run</code> does it for you. (If you wanted to embed the agent in your own Python script, you'd write <code>Runner</code> code by hand — covered in L29.)</li>
+  </ol>
+
+  <div class="callout callout-warn">
+    <strong>Auth — two paths, pick one.</strong>
+    <ul style="margin:0.3rem 0 0 1.1rem">
+      <li><strong>AI Studio (dev/learning):</strong> <code>GOOGLE_API_KEY</code> from <a href="https://aistudio.google.com/app/apikey">aistudio.google.com/app/apikey</a> — fastest to set up.</li>
+      <li><strong>Vertex AI (prod):</strong> Set <code>GOOGLE_GENAI_USE_VERTEXAI=TRUE</code>, <code>GOOGLE_CLOUD_PROJECT=...</code>, <code>GOOGLE_CLOUD_LOCATION=...</code>, and authenticate with <code>gcloud auth application-default login</code>. Covered properly in L29.
+      </li>
+    </ul>
+    For this lesson, use AI Studio. Don't commit <code>.env</code>.
+  </div>
+
+  <h2 id="step-0">Step 0 — install</h2>
+<pre><code><span class="cm"># Create a fresh venv for ADK so it doesn't tangle with your LangGraph venv</span>
+cd ~/ai/claude/projects/python/exercises
+mkdir adk <span class="op">&&</span> cd adk
+python3 -m venv .venv
+source .venv/bin/activate
+
+pip install google-adk python-dotenv</code></pre>
+
+  <p>Sanity check:</p>
+<pre><code>adk --version
+<span class="cm"># Should print something like: adk 1.x.x</span></code></pre>
+
+  <p>If the <code>adk</code> command isn't found, your venv isn't active — <code>which adk</code> should point inside <code>.venv/bin/</code>.</p>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 1 · guided · build your first ADK agent</span>
+    <h3>MuleSoft helper agent</h3>
+
+    <p>Goal: build an agent called <code>mulesoft_helper</code> with one tool that looks up Anypoint org status (mocked, of course). Run it in both <code>adk run</code> and <code>adk web</code>.</p>
+
+    <p>Working directory: <code>~/ai/claude/projects/python/exercises/adk/</code></p>
+
+    <h4>Step A — folder structure</h4>
+    <p>Create exactly this layout:</p>
+<pre><code>adk/
+└── mulesoft_helper/
+    ├── agent.py
+    ├── __init__.py
+    └── .env</code></pre>
+
+    <h4>Step B — fill in the TODOs in <code>mulesoft_helper/agent.py</code></h4>
+<pre><code><span class="kw">from</span> google.adk.agents.llm_agent <span class="kw">import</span> Agent
+
+<span class="cm"># TODO 1: write a tool function `lookup_anypoint_status(org_id: str) -> dict`.</span>
+<span class="cm">#  - Type hint the argument and return type.</span>
+<span class="cm">#  - Add a clear docstring (the LLM reads it!).</span>
+<span class="cm">#  - Return a dict with keys: "status", "org_id", "healthy_apis", "alerts".</span>
+<span class="cm">#  - For known orgs ("acme-prod", "acme-dev"), return realistic-looking mock data.</span>
+<span class="cm">#  - For unknown orgs, return {"status": "error", "message": "Unknown org: <id>"}.</span>
+<span class="kw">def</span> <span class="fn">lookup_anypoint_status</span>(...):
+    ...
+
+<span class="cm"># TODO 2: define `root_agent` — note the variable name MUST be `root_agent`.</span>
+<span class="cm">#  - model: 'gemini-flash-latest'</span>
+<span class="cm">#  - name: 'mulesoft_helper'</span>
+<span class="cm">#  - description: short one-liner (this is what adk web shows in the agent picker)</span>
+<span class="cm">#  - instruction: tell the LLM it's a MuleSoft assistant; if asked about an org,</span>
+<span class="cm">#    call lookup_anypoint_status with the org_id; explain the result in plain English.</span>
+<span class="cm">#  - tools: [lookup_anypoint_status]</span>
+root_agent <span class="op">=</span> ...</code></pre>
+
+    <h4>Step C — <code>mulesoft_helper/__init__.py</code></h4>
+<pre><code><span class="kw">from</span> . <span class="kw">import</span> agent</code></pre>
+
+    <h4>Step D — <code>mulesoft_helper/.env</code></h4>
+<pre><code>GOOGLE_API_KEY=<span class="str">"paste-your-aistudio-key-here"</span></code></pre>
+
+    <p>Add <code>.env</code> to <code>.gitignore</code> if you haven't already.</p>
+
+    <h4>Step E — run it two ways</h4>
+<pre><code><span class="cm"># From the adk/ directory (NOT inside mulesoft_helper/)</span>
+adk run mulesoft_helper
+
+<span class="cm"># Try prompts:</span>
+<span class="cm">#   "Is acme-prod healthy?"</span>
+<span class="cm">#   "What's the status of acme-dev?"</span>
+<span class="cm">#   "How about widget-corp?"   (should return an error gracefully)</span>
+
+<span class="cm"># Then in another terminal (or after exiting the CLI):</span>
+adk web --port 8000
+<span class="cm"># Open http://localhost:8000 in your browser.</span></code></pre>
+
+    <details>
+      <summary>Hint 1 — the tool function shape</summary>
+<pre><code><span class="kw">def</span> <span class="fn">lookup_anypoint_status</span>(org_id: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="str">"""Look up the operational status of a MuleSoft Anypoint organization.
+
+    Args:
+        org_id: the organization identifier, e.g. "acme-prod".
+
+    Returns:
+        Dict with keys: status (success|error), org_id, healthy_apis, alerts.
+    """</span>
+    mock_db <span class="op">=</span> {
+        <span class="str">"acme-prod"</span>: {<span class="str">"healthy_apis"</span>: <span class="num">12</span>, <span class="str">"alerts"</span>: <span class="num">0</span>},
+        <span class="str">"acme-dev"</span>:  {<span class="str">"healthy_apis"</span>: <span class="num">8</span>,  <span class="str">"alerts"</span>: <span class="num">2</span>},
+    }
+    <span class="kw">if</span> org_id <span class="kw">not in</span> mock_db:
+        <span class="kw">return</span> {<span class="str">"status"</span>: <span class="str">"error"</span>, <span class="str">"message"</span>: <span class="str">f"Unknown org: {org_id}"</span>}
+    <span class="kw">return</span> {<span class="str">"status"</span>: <span class="str">"success"</span>, <span class="str">"org_id"</span>: org_id, <span class="op">**</span>mock_db[org_id]}</code></pre>
+    </details>
+
+    <details>
+      <summary>Hint 2 — the Agent definition</summary>
+<pre><code>root_agent <span class="op">=</span> <span class="fn">Agent</span>(
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    name<span class="op">=</span><span class="str">'mulesoft_helper'</span>,
+    description<span class="op">=</span><span class="str">"Answers questions about MuleSoft Anypoint org health."</span>,
+    instruction<span class="op">=</span>(
+        <span class="str">"You are a MuleSoft Anypoint Platform assistant. "</span>
+        <span class="str">"When a user asks about the health or status of an org, "</span>
+        <span class="str">"call lookup_anypoint_status with the org_id. "</span>
+        <span class="str">"Explain the result in plain English, including the number of "</span>
+        <span class="str">"healthy APIs and any alerts."</span>
+    ),
+    tools<span class="op">=</span>[lookup_anypoint_status],
+)</code></pre>
+    </details>
+
+    <details>
+      <summary>Hint 3 — common gotchas</summary>
+      <ul>
+        <li><strong>"No agent found"</strong> — your variable isn't named <code>root_agent</code>, or <code>__init__.py</code> doesn't import <code>agent</code>.</li>
+        <li><strong>"GOOGLE_API_KEY not set"</strong> — you ran <code>adk run</code> from the wrong directory; the <code>.env</code> must be inside <code>mulesoft_helper/</code>.</li>
+        <li><strong>"Model not found"</strong> — try <code>gemini-2.5-flash</code> if <code>gemini-flash-latest</code> isn't recognised. ADK model aliases evolve.</li>
+        <li><strong>ADK Web shows no agents</strong> — run <code>adk web</code> from the <em>parent</em> of <code>mulesoft_helper/</code>, not from inside it.</li>
+      </ul>
+    </details>
+
+    <h4>Verification</h4>
+    <p>In <code>adk run</code>, asking <em>"Is acme-prod healthy?"</em> should:</p>
+    <ol>
+      <li>Show a tool call to <code>lookup_anypoint_status(org_id="acme-prod")</code></li>
+      <li>Show the tool result (the dict)</li>
+      <li>Print the LLM's plain-English summary (e.g. <em>"Yes — acme-prod has 12 healthy APIs and 0 alerts."</em>)</li>
+    </ol>
+
+    <p>In <code>adk web</code>, you should see the same flow visually — including a <strong>trace view</strong> with the tool call expanded. This is the killer demo feature.</p>
+
+    <div class="callout callout-tip" style="margin-top:0.5rem">
+      <strong>Checkpoint.</strong> Paste the contents of <code>agent.py</code> + a transcript of one CLI conversation. I'll review before showing canonical.
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 2 · stretch · two tools, one query</span>
+    <h3>Add a second tool and trigger parallel calls</h3>
+
+    <p>Goal: see what the trace view looks like when the LLM calls multiple tools in one turn.</p>
+
+    <p>Add a second tool to <code>mulesoft_helper</code>:</p>
+<pre><code><span class="kw">def</span> <span class="fn">search_anypoint_exchange</span>(query: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="str">"""Search Anypoint Exchange for reusable assets matching a query.
+
+    Args:
+        query: search terms, e.g. "salesforce connector".
+    """</span>
+    <span class="cm"># Return mock results: a list of dicts with "name", "type", "version".</span>
+    ...</code></pre>
+
+    <p>Then in <code>adk web</code>, try a prompt that should trigger <em>both</em> tools:</p>
+    <blockquote style="margin-left:1rem;color:#555">"Is acme-prod healthy, and find me a Salesforce connector from Exchange."</blockquote>
+
+    <h4>Questions to chew on</h4>
+    <ol>
+      <li>Did the LLM call both tools in parallel, or sequentially? What did the trace view show?</li>
+      <li>How does ADK Web compare to what you'd need to set up in LangGraph (Phoenix Docker, LangSmith account)? What's the demo-time cost difference?</li>
+      <li>If you were demoing this to a Google Cloud customer, what's the single most impressive thing about ADK Web compared to "trust me, our agent works"?</li>
+    </ol>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <p class="quiz-q">1. You name your variable <code>my_agent</code> instead of <code>root_agent</code>. You run <code>adk run mulesoft_helper</code>. What happens?</p>
+    <details><summary>Answer</summary>
+      <p>ADK can't find an agent to run — error like "No agent named 'root_agent' found in agent.py." The CLI's auto-discovery looks for the exact name <code>root_agent</code>. This is the convention you signed up for by using ADK. (You can override it with explicit Runner code, but for CLI/Web use, just name it <code>root_agent</code>.)</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">2. Your tool function returns <code>f"Org {org_id} is healthy"</code> (a string) instead of a dict. Does it work?</p>
+    <details><summary>Answer</summary>
+      <p>Technically yes — ADK will wrap it. But you lose the structured-data benefit. By returning a dict like <code>{"status": "success", "healthy_apis": 12, "alerts": 0}</code>, the LLM can reason field-by-field, you can change one field without breaking others, and your trace view in ADK Web is far more readable. Stick to dicts — it's the ADK convention.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">3. Why does ADK insist on the folder-per-agent structure?</p>
+    <details><summary>Answer</summary>
+      <p>Auto-discovery. <code>adk web</code> scans the current directory, treats every subdirectory with an <code>agent.py</code> as an agent, and shows them all in the picker. The convention is what lets the dev UI work with zero config. The cost is rigidity; the benefit is "drop in a folder, it appears in the UI" — huge for fast iteration.</p>
+      <p>You can think of it as ADK's equivalent of how Next.js makes every file under <code>app/</code> a route, or how Rails makes every file under <code>app/controllers/</code> a controller. Convention over configuration.</p>
+    </details>
+  </div>
+
+  <h2>What you now know</h2>
+  <ul>
+    <li><strong>ADK = Google's opinionated answer to LangGraph</strong> — fewer lines, more conventions, batteries included</li>
+    <li><strong>Three primitives:</strong> <code>Agent</code> (config), <code>Runner</code> (executor — hidden behind CLI), <code>Session</code> (state — covered in L28)</li>
+    <li><strong>Folder-as-agent convention</strong> — directory with <code>agent.py</code>, <code>__init__.py</code>, <code>.env</code>; variable must be <code>root_agent</code></li>
+    <li><strong>Tools are plain Python functions returning dicts</strong> — no decorator, signature + docstring drive the LLM</li>
+    <li><strong>Two ways to run:</strong> <code>adk run my_agent</code> (CLI) and <code>adk web</code> (visual UI — the killer feature for demos)</li>
+    <li><strong>Two auth paths:</strong> AI Studio key (dev) vs Vertex AI (prod)</li>
+  </ul>
+
+  <h2>The MuleSoft angle</h2>
+  <p>Your Google Cloud customers will ask: <em>"Why ADK instead of LangChain?"</em> The honest answer for an enterprise audience is:</p>
+  <ul>
+    <li><strong>ADK Web</strong> — your engineers can show a working agent + trace view to stakeholders <em>in minutes</em>, not after Phoenix setup</li>
+    <li><strong>Vertex Agent Engine</strong> — production deployment is a managed Google Cloud service, not a roll-your-own infra exercise (covered in L29)</li>
+    <li><strong>Eval framework built in</strong> — ADK ships with agent evaluation tooling; LangGraph leaves this to third-party</li>
+    <li><strong>Single vendor relationship</strong> — for GCP-committed customers, one throat to choke is operationally valuable</li>
+  </ul>
+  <p>The honest cost: <strong>vendor lock-in</strong>. Your agent code is bound to Google's framework and (likely) Vertex deployment. For customers betting on a multi-cloud or framework-neutral future, LangGraph remains the safer bet.</p>
+
+  <h2>Vertex preview</h2>
+  <p>You'll see this in L29, but worth knowing now: <strong>any ADK agent you build with this folder structure can be deployed to Vertex Agent Engine with one Python script.</strong> No Dockerfile, no FastAPI wrapper. The opinionated structure is the price you pay for that deployment story.</p>
+
+  <h2>What's next</h2>
+  <p><strong>L27 — Tools: <code>FunctionTool</code>, built-ins, MCP toolsets.</strong> ADK's tool system is richer than what we used here. You'll learn:</p>
+  <ul>
+    <li>How <code>FunctionTool</code> wraps a Python function explicitly (and when you'd want to)</li>
+    <li>ADK's built-in tools: <code>google_search</code>, <code>vertex_ai_search</code>, code execution</li>
+    <li><strong>MCP toolsets</strong> — point ADK at an MCP server and every tool on that server becomes available to the agent. Huge for your MuleSoft MCP server story.</li>
+  </ul>
+
+  <div class="footer-links">
+    LangGraph series:
+    <a href="0020-langgraph-state-nodes-edges.html">L20</a>
+    · <a href="0021-llm-node-tools-graph.html">L21</a>
+    · <a href="0022-checkpointing-time-travel.html">L22</a>
+    · <a href="0023-streaming-observability.html">L23</a>
+    · <a href="0024-human-in-the-loop-interrupt.html">L24</a>
+    · <a href="0025-multi-agent-patterns.html">L25</a>
+    &nbsp; · &nbsp;
+    <a href="../MISSION.md">Mission</a>
+  </div>
+
+</div>
+</body>
+</html>

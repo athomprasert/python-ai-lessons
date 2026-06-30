@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 20 — LangGraph: State, Nodes, Edges</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    .series-banner {
+      background: #1a1a1a;
+      color: #fff;
+      border-radius: 10px;
+      padding: 0.9rem 1.2rem;
+      margin: 1.5rem 0;
+      font-size: 0.88rem;
+    }
+    .series-banner strong { color: #fbbf24; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+    .todo { color: #fab387; background: #2d2419; padding: 0 0.2em; border-radius: 3px; font-weight: 700; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .exercise {
+      background: #fff;
+      border: 2px solid #1a1a1a;
+      border-radius: 12px;
+      padding: 1.3rem 1.5rem;
+      margin: 1.6rem 0 2rem;
+    }
+    .ex-label {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      padding: 0.25rem 0.7rem;
+      border-radius: 4px;
+      margin-bottom: 0.7rem;
+    }
+    .ex-label.stretch { background: #b45309; }
+    .ex-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 0.3rem; }
+    .ex-block { margin: 1rem 0; }
+    .ex-block strong { display: block; margin-bottom: 0.3rem; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280; }
+
+    .checkpoint {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 0.8rem 1rem;
+      margin: 1rem 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.9rem;
+    }
+    .checkpoint strong { color: #92400e; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .diagram {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 0.9rem 1.1rem;
+      margin: 0.6rem 0 1rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    details { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.7rem 1rem; margin: 0.8rem 0; }
+    summary { font-weight: 700; cursor: pointer; user-select: none; }
+    details[open] summary { margin-bottom: 0.6rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 20 of ?</p>
+    <h1>LangGraph — State, Nodes, Edges</h1>
+    <p class="tagline">No LLMs. No agents. Just the three primitives every LangGraph program is made of — so the next lessons feel obvious instead of magical.</p>
+    <div class="progress">
+      <a href="0017-agent-framework-landscape.html"><span class="pill pill-done">L17 ✓</span></a>
+      <a href="0018-native-sdk-agent.html"><span class="pill pill-done">L18 ✓</span></a>
+      <a href="0019-frameworks-side-by-side.html"><span class="pill pill-done">L19 ✓</span></a>
+      <span class="pill pill-now">L20 — State / Nodes / Edges</span>
+      <span class="pill pill-next">L21 — LLM + Tools</span>
+      <span class="pill pill-next">L22 — Checkpointing</span>
+      <span class="pill pill-next">L23 — Streaming + Tracing</span>
+    </div>
+  </header>
+
+  <div class="series-banner">
+    <strong>LangGraph mini-series · part 1 of 4</strong> &nbsp;·&nbsp; You're learning by writing code, not reading it. Each exercise has a problem + a skeleton with <code class="todo">TODO</code> markers. You write in your editor, then paste back. I review before showing the canonical answer.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    <a href="../MISSION.md">MISSION.md</a> says: build AI agents that interact with integration systems. You already did that <em>once</em> in <a href="0018-native-sdk-agent.html">L18</a> with the bare Gemini loop. LangGraph is the framework you picked in <a href="0019-frameworks-side-by-side.html">L19</a> to take that agent into production — checkpointing, multi-provider portability, graph-based control flow.
+  </p>
+  <p>
+    But before any LLM appears: <strong>LangGraph is a graph library that happens to run LLMs at its nodes.</strong> If you don't understand the graph part, the LLM part will feel like magic and you won't be able to debug it. So this lesson is pure graph theory — three primitives, two exercises, zero AI.
+  </p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three primitives</h2>
+
+  <table>
+    <thead><tr><th>Primitive</th><th>What it is</th><th>MuleSoft analogy</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>State</strong></td>
+        <td>A typed dictionary that flows through the graph. Every node reads from it and returns updates to it.</td>
+        <td>The <code>Payload</code> object that flows through a Mule flow — every component reads and writes to it.</td>
+      </tr>
+      <tr>
+        <td><strong>Node</strong></td>
+        <td>A Python function that takes the current state and returns a partial update to it.</td>
+        <td>A Mule processor (Transform, HTTP request, Logger) — does one thing to the payload.</td>
+      </tr>
+      <tr>
+        <td><strong>Edge</strong></td>
+        <td>A connection saying "after node A runs, go to node B." Can be unconditional, conditional, or terminal.</td>
+        <td>The arrow between components in Anypoint Studio — including <code>choice</code> routers for conditional flow.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>The lifecycle</h3>
+<div class="diagram">  START
+    │
+    ▼
+  ┌─────────┐    reads state,
+  │ Node A  │ ─→ returns {"key": new_value}
+  └────┬────┘    LangGraph merges into state
+       │
+       ▼
+  ┌─────────┐
+  │ Node B  │ ─→ returns more updates
+  └────┬────┘
+       │
+       ▼
+      END
+</div>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Why a graph and not just functions called in sequence?</div>
+    Three reasons: (1) the graph lets you <em>branch</em> based on state — e.g., "if the LLM produced a tool call, go to the tool node; otherwise end" — without if/else littered through your code. (2) The graph lets you <em>checkpoint</em> at every node automatically (L22). (3) The graph lets the runtime stream events from every node for observability (L23). All three become free once you express your program as a graph.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The smallest possible LangGraph</h2>
+
+  <p>Before you write code, read this carefully — every line introduces something new:</p>
+
+<pre><code><span class="kw">from</span> typing <span class="kw">import</span> TypedDict
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, START, END
+
+<span class="cm"># 1. Define the state shape</span>
+<span class="kw">class</span> <span class="fn">MyState</span>(TypedDict):
+    counter: <span class="fn">int</span>
+
+<span class="cm"># 2. Define nodes — functions that take state, return partial updates</span>
+<span class="kw">def</span> <span class="fn">increment</span>(state: MyState) <span class="op">-&gt;</span> <span class="fn">dict</span>:
+    <span class="kw">return</span> {<span class="str">"counter"</span>: state[<span class="str">"counter"</span>] <span class="op">+</span> <span class="num">1</span>}
+
+<span class="cm"># 3. Wire the graph</span>
+graph <span class="op">=</span> StateGraph(MyState)
+graph.add_node(<span class="str">"inc"</span>, increment)
+graph.add_edge(START, <span class="str">"inc"</span>)
+graph.add_edge(<span class="str">"inc"</span>, END)
+
+<span class="cm"># 4. Compile and run</span>
+app <span class="op">=</span> graph.compile()
+result <span class="op">=</span> app.invoke({<span class="str">"counter"</span>: <span class="num">10</span>})
+<span class="fn">print</span>(result)  <span class="cm"># {'counter': 11}</span>
+</code></pre>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · TypedDict</div>
+    <code>TypedDict</code> is a way to declare what keys a dictionary should have and what types those values should be. It's <em>not</em> enforced at runtime (Python won't raise an error if you pass the wrong type), but type checkers (mypy, Pyright) and editors (VSCode) will warn you. Looks like a class, behaves like a dict.
+
+<pre><code><span class="kw">from</span> typing <span class="kw">import</span> TypedDict
+
+<span class="kw">class</span> <span class="fn">User</span>(TypedDict):
+    name: <span class="fn">str</span>
+    age: <span class="fn">int</span>
+
+u: User <span class="op">=</span> {<span class="str">"name"</span>: <span class="str">"Att"</span>, <span class="str">"age"</span>: <span class="num">40</span>}  <span class="cm"># a normal dict</span>
+<span class="fn">print</span>(u[<span class="str">"name"</span>])  <span class="cm"># "Att" — exactly like a dict</span></code></pre>
+
+    LangGraph requires <code>TypedDict</code> (or a Pydantic <code>BaseModel</code>) for state so it can validate node returns and generate type-aware tracing.
+  </div>
+
+  <h3>Three rules of LangGraph nodes</h3>
+  <ol>
+    <li><strong>A node takes the entire state as input</strong>, even if it only reads one field.</li>
+    <li><strong>A node returns a <em>partial</em> dict</strong> — only the keys it wants to update. LangGraph merges (shallow) into the full state.</li>
+    <li><strong>If a node returns <code>None</code> or <code>{}</code></strong>, state is unchanged but the graph still advances along its edges.</li>
+  </ol>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Common beginner mistake</div>
+    Do <strong>not</strong> mutate the state dict in-place inside a node. Always <code>return</code> a new dict. Mutation will sometimes work and sometimes silently fail (depending on which reducer is configured for that field — more on reducers in L21). Treat state as immutable from the node's perspective.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Exercise 1 — guided</h2>
+
+  <div class="exercise">
+    <span class="ex-label">EXERCISE 1 · GUIDED</span>
+    <p class="ex-title">Build a 2-node pipeline: double then triple</p>
+
+    <div class="ex-block">
+      <strong>Goal</strong>
+      <p style="margin-top:0.3rem">A graph that takes a number, runs it through a <code>double</code> node, then a <code>triple</code> node, and prints the final value. Input <code>3</code> should output <code>18</code> (3 × 2 = 6, 6 × 3 = 18).</p>
+    </div>
+
+    <div class="ex-block">
+      <strong>Step 0 — install + workspace setup</strong>
+      <p style="margin-top:0.3rem">In your terminal:</p>
+<pre><code><span class="cm"># From your project root</span>
+mkdir -p ~/ai/claude/projects/python/exercises/langgraph
+cd ~/ai/claude/projects/python/exercises/langgraph
+
+<span class="cm"># Use a venv (recommended — keeps langgraph deps isolated)</span>
+python3 -m venv .venv
+<span class="kw">source</span> .venv/bin/activate
+
+<span class="cm"># Install langgraph (no LLM packages needed yet — L21 will add them)</span>
+pip install langgraph
+</code></pre>
+      <p>Verify by running <code>python -c "import langgraph; print(langgraph.__version__)"</code>. You should see a version number — anything 0.2+ is fine for this lesson.</p>
+    </div>
+
+    <div class="ex-block">
+      <strong>Step 1 — create the file</strong>
+      <p style="margin-top:0.3rem">Create <code>~/ai/claude/projects/python/exercises/langgraph/l20_ex1_pipeline.py</code> and paste this skeleton:</p>
+
+<pre><code><span class="kw">from</span> typing <span class="kw">import</span> TypedDict
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, START, END
+
+<span class="cm"># --- STATE ---</span>
+<span class="kw">class</span> <span class="fn">NumberState</span>(TypedDict):
+    value: <span class="fn">int</span>
+
+<span class="cm"># --- NODES ---</span>
+<span class="kw">def</span> <span class="fn">double</span>(state: NumberState) <span class="op">-&gt;</span> <span class="fn">dict</span>:
+    <span class="cm"># <span class="todo">TODO 1</span>: return a partial update that doubles state["value"]</span>
+    <span class="kw">pass</span>
+
+<span class="kw">def</span> <span class="fn">triple</span>(state: NumberState) <span class="op">-&gt;</span> <span class="fn">dict</span>:
+    <span class="cm"># <span class="todo">TODO 2</span>: return a partial update that triples state["value"]</span>
+    <span class="kw">pass</span>
+
+<span class="cm"># --- GRAPH ---</span>
+graph <span class="op">=</span> StateGraph(NumberState)
+<span class="cm"># <span class="todo">TODO 3</span>: add the "double" node</span>
+<span class="cm"># <span class="todo">TODO 4</span>: add the "triple" node</span>
+<span class="cm"># <span class="todo">TODO 5</span>: add edges: START → double → triple → END</span>
+
+app <span class="op">=</span> graph.compile()
+
+<span class="cm"># --- RUN ---</span>
+result <span class="op">=</span> app.invoke({<span class="str">"value"</span>: <span class="num">3</span>})
+<span class="fn">print</span>(result)  <span class="cm"># expected: {'value': 18}</span>
+</code></pre>
+    </div>
+
+    <div class="ex-block">
+      <strong>How to verify</strong>
+      <p style="margin-top:0.3rem">Run <code>python l20_ex1_pipeline.py</code>. You should see <code>{'value': 18}</code>. If you see something else, your math is off or your edges are wrong.</p>
+    </div>
+
+    <div class="ex-block">
+      <strong>Hints (only if stuck)</strong>
+      <details>
+        <summary>Hint 1 — what does a node return?</summary>
+        A node returns a dict like <code>{"value": state["value"] * 2}</code>. NOT the full state — just the keys you're updating.
+      </details>
+      <details>
+        <summary>Hint 2 — how does <code>add_node</code> work?</summary>
+        <code>graph.add_node("name_string", function_reference)</code>. The string is what you use in <code>add_edge</code>.
+      </details>
+      <details>
+        <summary>Hint 3 — edges</summary>
+        Three calls: <code>graph.add_edge(START, "double")</code>, <code>graph.add_edge("double", "triple")</code>, <code>graph.add_edge("triple", END)</code>. <code>START</code> and <code>END</code> are special constants from <code>langgraph.graph</code>.
+      </details>
+    </div>
+
+    <div class="checkpoint">
+      <strong>Checkpoint:</strong> Once you have it working, paste your code back to me. I'll review what's right, what's wrong, and what's idiomatic before showing the canonical answer.
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Exercise 2 — stretch</h2>
+
+  <div class="exercise">
+    <span class="ex-label stretch">EXERCISE 2 · STRETCH</span>
+    <p class="ex-title">Branch on even or odd</p>
+
+    <div class="ex-block">
+      <strong>Goal</strong>
+      <p style="margin-top:0.3rem">A graph that takes a number, and:</p>
+      <ul>
+        <li>If <strong>even</strong>: divides by 2 and ends.</li>
+        <li>If <strong>odd</strong>: adds 1 to make it even, divides by 2, ends.</li>
+      </ul>
+      <p>So <code>10</code> → <code>5</code>. <code>7</code> → <code>4</code> (7+1=8, 8/2=4).</p>
+    </div>
+
+    <div class="ex-block">
+      <strong>The new primitive you need</strong>
+      <p style="margin-top:0.3rem">A <strong>conditional edge</strong>. Instead of "always go to node B", a conditional edge runs a router function that <em>returns the name of the next node</em>.</p>
+
+<pre><code><span class="kw">def</span> <span class="fn">route_by_parity</span>(state: NumberState) <span class="op">-&gt;</span> <span class="fn">str</span>:
+    <span class="cm"># Must return the string name of the next node</span>
+    <span class="kw">return</span> <span class="str">"even_branch"</span> <span class="kw">if</span> state[<span class="str">"value"</span>] <span class="op">%</span> <span class="num">2</span> <span class="op">==</span> <span class="num">0</span> <span class="kw">else</span> <span class="str">"odd_branch"</span>
+
+graph.add_conditional_edges(<span class="str">"check_parity"</span>, route_by_parity)</code></pre>
+
+      <p>The router runs <strong>after</strong> the named node ("check_parity" here) finishes. Whatever string the router returns is the next node LangGraph runs.</p>
+    </div>
+
+    <div class="ex-block">
+      <strong>Your task</strong>
+      <p style="margin-top:0.3rem">Create <code>l20_ex2_branching.py</code>. Design a graph that uses one conditional edge to fork between an even branch (divide by 2) and an odd branch (add 1, then divide by 2). Test with at least two inputs — one even, one odd.</p>
+      <p><strong>No skeleton this time.</strong> You decide the node names, you decide the shape. The only requirements:</p>
+      <ul>
+        <li>At least 3 nodes (you can use more)</li>
+        <li>Exactly one <code>add_conditional_edges</code> call</li>
+        <li>Both branches must converge somehow (either both go to END, or both go to a final shared node before END)</li>
+      </ul>
+    </div>
+
+    <div class="ex-block">
+      <strong>Verify</strong>
+      <p style="margin-top:0.3rem"><code>app.invoke({"value": 10})</code> should give <code>{'value': 5}</code>. <code>app.invoke({"value": 7})</code> should give <code>{'value': 4}</code>.</p>
+    </div>
+
+    <div class="checkpoint">
+      <strong>Stretch — no canonical answer.</strong> This one is yours to debug. Paste back if you'd like me to review, or ask if you hit a wall. The goal is to feel a conditional edge in your fingertips.
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Mental models to take into L21</h2>
+
+  <div class="callout callout-tip">
+    <strong>"A node is a pure function from state to partial state."</strong> Same idea as a Mule Transform component: read payload, return payload. The graph framework does the wiring; you only write the transforms.
+  </div>
+
+  <div class="callout callout-tip">
+    <strong>"Edges are choices, not arrows."</strong> An unconditional edge says "always go here next." A conditional edge says "ask this router where to go." This is what makes LangGraph <em>a graph</em> rather than a sequence — and it's exactly what L21 will use for tool calling ("if the LLM produced a tool call, go to the tool node; otherwise end").
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft analogue you've seen before</div>
+    <code>add_conditional_edges</code> is the Mule <code>&lt;choice&gt;</code> router. The function inside is the condition expression; the strings it can return are the route labels. Once you see this, every LangGraph diagram on the internet stops looking like magic.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> A LangGraph node returns <code>{"counter": 5}</code> when the current state is <code>{"counter": 1, "name": "Att"}</code>. What does the state become after the node runs?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0"><code>{"counter": 5}</code> — the return value replaces the state</li>
+        <li data-i="1"><code>{"counter": 1, "name": "Att"}</code> — state is immutable</li>
+        <li data-i="2"><code>{"counter": 5, "name": "Att"}</code> — return is merged into state, only updated keys overwritten</li>
+        <li data-i="3">The graph crashes because the node didn't return <code>name</code></li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> What does a function passed to <code>add_conditional_edges</code> return?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">A partial state update, same as a node</li>
+        <li data-i="1">A string — the name of the next node to run</li>
+        <li data-i="2">A boolean — True to continue, False to stop</li>
+        <li data-i="3">A new graph object</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Why does LangGraph require state to be a <code>TypedDict</code> (or Pydantic model) rather than a plain <code>dict</code>?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">Plain dicts are slower</li>
+        <li data-i="1">Python forbids passing plain dicts to graph libraries</li>
+        <li data-i="2">It enforces the types at runtime — wrong types will raise <code>TypeError</code></li>
+        <li data-i="3">It declares the schema so LangGraph can validate node returns, generate type-aware tracing, and editors can autocomplete the keys. (TypedDict is not enforced at runtime — type checkers warn, the program runs.)</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>If anything's unclear — what "compile" does, why <code>START</code> and <code>END</code> exist, how multiple edges from the same node behave, what happens if a node raises — ask me. I'm your teacher. The exercise is the feedback loop, but the questions you have on the way are the real learning.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>What's next</h2>
+  <ul>
+    <li><strong>L21</strong> — Add an LLM as a node. Add tools. Re-build the L18 agent in graph form.</li>
+    <li><strong>L22</strong> — Checkpointing: pause, persist, resume, time-travel.</li>
+    <li><strong>L23</strong> — Streaming token output + observability (LangSmith / Phoenix).</li>
+  </ul>
+
+  <div class="callout callout-tip">
+    Paste your <strong>Exercise 1</strong> attempt back when ready. We'll review, then I'll set you loose on the stretch.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0019-frameworks-side-by-side.html">← L19 — Frameworks survey</a>
+      <a href="0018-native-sdk-agent.html">L18 — Native SDK agent</a>
+      <a href="https://langchain-ai.github.io/langgraph/concepts/low_level/">LangGraph low-level concepts (docs)</a>
+      <a href="https://langchain-ai.github.io/langgraph/tutorials/introduction/">LangGraph quickstart</a>
+      <a href="../MISSION.md">Mission</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

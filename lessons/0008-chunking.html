@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 8 — Chunking Strategies for RAG</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-frontier { background: #fdf2f8; border-color: #ec4899; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .tryit { background: #fff; border: 2px dashed #94a3b8; border-radius: 10px; padding: 1.2rem 1.4rem; margin: 1.5rem 0; }
+    .tryit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-bottom: 0.6rem; }
+
+    /* Strategy summary cards */
+    .strategy-card {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .strategy-card h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .strategy-num {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      width: 1.7rem;
+      height: 1.7rem;
+      line-height: 1.7rem;
+      text-align: center;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .verdict {
+      margin-top: 0.6rem;
+      padding: 0.5rem 0.8rem;
+      background: #fafaf8;
+      border-radius: 6px;
+      font-size: 0.88rem;
+    }
+    .verdict-label {
+      font-weight: 700;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-right: 0.3rem;
+    }
+
+    /* Visual chunk diagram */
+    .doc-vis {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 0.8rem 0 1.2rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      overflow-x: auto;
+    }
+    .chunk-bar {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      margin: 0.1rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+    .c1 { background: #dbeafe; color: #1e40af; }
+    .c2 { background: #d1fae5; color: #065f46; }
+    .c3 { background: #fef3c7; color: #92400e; }
+    .c4 { background: #fce7f3; color: #9d174d; }
+    .overlap { background: #fbbf24; color: #78350f; }
+
+    /* Comparison table */
+    .ct { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1.2rem; font-size: 0.88rem; }
+    .ct th { background: #1a1a1a; color: #fff; padding: 0.6rem 0.8rem; text-align: left; font-size: 0.78rem; letter-spacing: 0.05em; }
+    .ct td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+    .ct tr:hover td { background: #fafaf8; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 8 of ?</p>
+    <h1>Chunking Strategies for RAG</h1>
+    <p class="tagline">Eight ways to slice a document — and how to pick the right one for your data.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <span class="pill pill-now">L8 — Chunking</span>
+      <span class="pill pill-next">L9 — Build RAG</span>
+    </div>
+  </header>
+
+  <h2>Why chunking is the make-or-break step</h2>
+  <p>You can't just embed a 50-page MuleSoft white paper as one giant blob. Embedding models have token limits (~2,048 for <code>gemini-embedding-001</code>, 8,192 for <code>gemini-embedding-2</code>). Even if you could, retrieval would always return the entire document — defeating the point of <em>finding the relevant section</em>.</p>
+
+  <p>So you split the document into chunks, embed each one, and retrieve only the chunks that match a question. <strong>Chunking is where most RAG systems quietly fail.</strong> Bad chunks → bad retrieval → bad answers, no matter how good your model is.</p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Connection to your mission</div>
+    The doc list in <a href="0007-embeddings.html">Lesson 7</a> was already chunked — you just didn't notice because each "doc" was 1–2 sentences. Real corpora come as full PDFs, RAML specs, or Confluence pages. This lesson is how you turn those into the small text pieces you've already learned to embed.
+  </div>
+
+  <!-- ═══ The principles ═══ -->
+  <h2>Three principles before any strategy</h2>
+
+  <h3>1 — Chunks must be self-contained</h3>
+  <p>A chunk is going to be retrieved <em>alone</em> — without its surroundings — and shown to the LLM. If a chunk says <em>"Revenue grew 3% that quarter"</em>, the LLM has no idea which company or which quarter. Useless context.</p>
+
+  <p style="margin-top:0.6rem"><strong>Rule of thumb (Pinecone):</strong> If a chunk makes sense to a human reading it on its own, it'll make sense to the model too.</p>
+
+  <h3>2 — Size: small enough to be precise, big enough to be meaningful</h3>
+  <p>Common ranges: <strong>128–1024 tokens</strong>. Smaller = more precise retrieval but loses context. Bigger = retains context but retrieval gets fuzzy and the LLM hits the "lost in the middle" problem (relevant info buried in long inputs gets ignored).</p>
+
+  <h3>3 — Overlap prevents seam-loss</h3>
+  <p>If you split a document at character 500, a sentence might be cut in half — and the meaning lives across the split. <strong>Overlap</strong> means each chunk shares its last ~10–20% with the next chunk's start. A common default is <code>chunk_size=500, overlap=50</code>.</p>
+
+  <div class="doc-vis">Original text: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA<br><br>
+  Without overlap:<br>
+  <span class="chunk-bar c1">[chunk 1: AAAAAAAAAAAAAAAAAAAAAAAA]</span><span class="chunk-bar c2">[chunk 2: AAAAAAAAAAAAAAAAAAAAAAAA]</span><span class="chunk-bar c3">[chunk 3: AAAAAAAAAAAAAAAAAAAAAAAA]</span>
+  <br><br>
+  With 4-char overlap:<br>
+  <span class="chunk-bar c1">[chunk 1: AAAAAAAAAAAAAAAAAAAAAAAA]</span><br>
+  <span style="margin-left:9rem"><span class="chunk-bar overlap">←AAAA</span><span class="chunk-bar c2">chunk 2: AAAAAAAAAAAAAAAAAAAA]</span></span><br>
+  <span style="margin-left:18rem"><span class="chunk-bar overlap">←AAAA</span><span class="chunk-bar c3">chunk 3: AAAAAAAAAAAAAAAAAAAA]</span></span>
+  </div>
+
+  <!-- ═══ Strategies ═══ -->
+  <h2>The eight strategies, ordered simplest → smartest</h2>
+  <p>Each one builds on the previous. <a href="https://www.pinecone.io/learn/chunking-strategies/" target="_blank">Sourced from Pinecone's chunking guide</a> + <a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank">Anthropic's Contextual Retrieval</a>.</p>
+
+  <!-- ─── 1 ─── -->
+  <div class="strategy-card">
+    <h3><span class="strategy-num">1</span> Fixed-size chunking</h3>
+    <p><strong>How:</strong> Pick a chunk size (e.g. 500 chars or 200 tokens) and overlap (e.g. 50 chars). Slice from start to end at fixed intervals. No regard for content.</p>
+
+<pre><code><span class="kw">def</span> <span class="fn">chunk_fixed</span>(<span class="var">text</span><span class="op">,</span> <span class="var">size</span><span class="op">=</span><span class="num">500</span><span class="op">,</span> <span class="var">overlap</span><span class="op">=</span><span class="num">50</span>)<span class="op">:</span>
+    <span class="var">chunks</span> <span class="op">=</span> <span class="op">[]</span>
+    <span class="var">step</span> <span class="op">=</span> <span class="var">size</span> <span class="op">-</span> <span class="var">overlap</span>
+    <span class="kw">for</span> <span class="var">i</span> <span class="kw">in</span> <span class="fn">range</span>(<span class="num">0</span><span class="op">,</span> <span class="fn">len</span>(<span class="var">text</span>)<span class="op">,</span> <span class="var">step</span>)<span class="op">:</span>
+        <span class="var">chunks</span><span class="op">.</span><span class="fn">append</span>(<span class="var">text</span><span class="op">[</span><span class="var">i</span><span class="op">:</span><span class="var">i</span> <span class="op">+</span> <span class="var">size</span><span class="op">]</span>)
+    <span class="kw">return</span> <span class="var">chunks</span></code></pre>
+
+    <div class="verdict"><span class="verdict-label">Verdict:</span> The default. Start here and only change if you have evidence it's not enough. Trade-off: cuts mid-sentence often.</div>
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — <code>.strip()</code> and the empty-string filter</div>
+    <p>You'll see <code>.strip()</code> all over the chunking code. It returns a new string with leading and trailing whitespace (spaces, tabs, <code>\n</code>, <code>\r</code>) removed. The original string is unchanged.</p>
+<pre style="margin:0.4rem 0"><code><span class="str">"   Hello world   \n"</span><span class="op">.</span><span class="fn">strip</span>()
+<span class="cm"># → "Hello world"</span>
+
+<span class="str">"  hello  world  "</span><span class="op">.</span><span class="fn">strip</span>()
+<span class="cm"># → "hello  world"   (the middle double-space stays — only the ends are touched)</span></code></pre>
+
+    <p style="margin-top:0.5rem">The pattern <code>[p.strip() for p in parts if p.strip()]</code> does two things at once:</p>
+    <ul style="margin-top:0.3rem">
+      <li><strong>Clean</strong> each piece (<code>p.strip()</code> on the left)</li>
+      <li><strong>Filter</strong> out empty pieces (<code>if p.strip()</code> on the right) — splits often produce empty strings between consecutive separators, and we don't want to embed those.</li>
+    </ul>
+
+    <p style="margin-top:0.5rem">In Python, an empty string <code>""</code> is <em>falsy</em> — it evaluates to <code>False</code> in a boolean context. So <code>if p.strip()</code> is shorthand for "if the stripped string isn't empty".</p>
+
+    <h4 style="margin-top:0.6rem; font-size:0.9rem">The strip family</h4>
+    <table style="width:100%; border-collapse:collapse; font-size:0.85rem">
+      <tr><td style="padding:0.25rem 0.5rem; border-bottom:1px solid #e5e7eb"><code>.strip()</code></td><td style="padding:0.25rem 0.5rem; border-bottom:1px solid #e5e7eb">Whitespace from both ends</td></tr>
+      <tr><td style="padding:0.25rem 0.5rem; border-bottom:1px solid #e5e7eb"><code>.lstrip()</code></td><td style="padding:0.25rem 0.5rem; border-bottom:1px solid #e5e7eb">Left only</td></tr>
+      <tr><td style="padding:0.25rem 0.5rem; border-bottom:1px solid #e5e7eb"><code>.rstrip()</code></td><td style="padding:0.25rem 0.5rem; border-bottom:1px solid #e5e7eb">Right only</td></tr>
+      <tr><td style="padding:0.25rem 0.5rem"><code>.strip(",.")</code></td><td style="padding:0.25rem 0.5rem">Any of the listed characters from both ends, e.g. <code>"...hi.."</code> → <code>"hi"</code></td></tr>
+    </table>
+
+    <p style="margin-top:0.4rem"><strong>MuleSoft analogy:</strong> exactly like DataWeave's <code>trim</code> / Java's <code>String.trim()</code>. The empty-string filter is the equivalent of a <code>filter</code> step that drops empty payloads after a split.</p>
+  </div>
+
+  <!-- ─── 2 ─── -->
+  <div class="strategy-card">
+    <h3><span class="strategy-num">2</span> Sentence-level chunking</h3>
+    <p><strong>How:</strong> Split on sentence boundaries (periods, question marks, exclamation marks). Tools: regex for naïve splits, NLTK or spaCy for accurate ones (handles "Mr. Smith" correctly).</p>
+
+<pre><code><span class="kw">import</span> <span class="var">re</span>
+
+<span class="kw">def</span> <span class="fn">chunk_sentences</span>(<span class="var">text</span>)<span class="op">:</span>
+    <span class="cm"># Naïve split — fine for clean text, bad for abbreviations</span>
+    <span class="kw">return</span> <span class="op">[</span><span class="var">s</span><span class="op">.</span><span class="fn">strip</span>() <span class="kw">for</span> <span class="var">s</span> <span class="kw">in</span> <span class="var">re</span><span class="op">.</span><span class="fn">split</span>(<span class="str">r"(?&lt;=[.!?])\s+"</span><span class="op">,</span> <span class="var">text</span>) <span class="kw">if</span> <span class="var">s</span><span class="op">.</span><span class="fn">strip</span>()<span class="op">]</span></code></pre>
+
+    <div class="verdict"><span class="verdict-label">Verdict:</span> Good for FAQs, classification, short-answer search. Loses broader context for multi-sentence concepts.</div>
+  </div>
+
+  <!-- ─── 3 ─── -->
+  <div class="strategy-card">
+    <h3><span class="strategy-num">3</span> Paragraph-level chunking</h3>
+    <p><strong>How:</strong> Split on double newlines (<code>\n\n</code>) — the natural paragraph delimiter in most prose. Each paragraph becomes a chunk.</p>
+
+<pre><code><span class="kw">def</span> <span class="fn">chunk_paragraphs</span>(<span class="var">text</span>)<span class="op">:</span>
+    <span class="kw">return</span> <span class="op">[</span><span class="var">p</span><span class="op">.</span><span class="fn">strip</span>() <span class="kw">for</span> <span class="var">p</span> <span class="kw">in</span> <span class="var">text</span><span class="op">.</span><span class="fn">split</span>(<span class="str">"\n\n"</span>) <span class="kw">if</span> <span class="var">p</span><span class="op">.</span><span class="fn">strip</span>()<span class="op">]</span></code></pre>
+
+    <div class="verdict"><span class="verdict-label">Verdict:</span> Good for prose where paragraphs are meaningful units (blog posts, articles). Risk: paragraphs vary wildly — some 30 words, some 800.</div>
+  </div>
+
+  <!-- ─── 4 ─── -->
+  <div class="strategy-card">
+    <h3><span class="strategy-num">4</span> Recursive character chunking <em>(the practical default)</em></h3>
+    <p><strong>How:</strong> Try to split on big separators first (<code>\n\n</code>), then smaller ones (<code>\n</code>), then spaces, then characters — until each chunk is under your size limit. LangChain's <code>RecursiveCharacterTextSplitter</code> popularised this pattern.</p>
+
+    <p>This is the "great middle ground" — fixed-size <em>predictability</em> with respect for natural boundaries.</p>
+
+<pre><code><span class="kw">def</span> <span class="fn">chunk_recursive</span>(<span class="var">text</span><span class="op">,</span> <span class="var">size</span><span class="op">=</span><span class="num">500</span><span class="op">,</span> <span class="var">separators</span><span class="op">=</span><span class="op">[</span><span class="str">"\n\n"</span><span class="op">,</span> <span class="str">"\n"</span><span class="op">,</span> <span class="str">". "</span><span class="op">,</span> <span class="str">" "</span><span class="op">,</span> <span class="str">""</span><span class="op">]</span>)<span class="op">:</span>
+    <span class="cm"># Try the biggest separator first; if pieces still too long, recurse with the next.</span>
+    <span class="kw">if</span> <span class="fn">len</span>(<span class="var">text</span>) <span class="op">&lt;=</span> <span class="var">size</span><span class="op">:</span>
+        <span class="kw">return</span> <span class="op">[</span><span class="var">text</span><span class="op">]</span> <span class="kw">if</span> <span class="var">text</span><span class="op">.</span><span class="fn">strip</span>() <span class="kw">else</span> <span class="op">[]</span>
+    <span class="var">sep</span><span class="op">,</span> <span class="op">*</span><span class="var">rest</span> <span class="op">=</span> <span class="var">separators</span>
+    <span class="var">parts</span> <span class="op">=</span> <span class="var">text</span><span class="op">.</span><span class="fn">split</span>(<span class="var">sep</span>) <span class="kw">if</span> <span class="var">sep</span> <span class="kw">else</span> <span class="op">[</span><span class="var">text</span><span class="op">[</span><span class="op">:</span><span class="var">size</span><span class="op">]</span><span class="op">,</span> <span class="var">text</span><span class="op">[</span><span class="var">size</span><span class="op">:</span><span class="op">]</span><span class="op">]</span>
+    <span class="var">out</span> <span class="op">=</span> <span class="op">[]</span>
+    <span class="kw">for</span> <span class="var">p</span> <span class="kw">in</span> <span class="var">parts</span><span class="op">:</span>
+        <span class="kw">if</span> <span class="fn">len</span>(<span class="var">p</span>) <span class="op">&lt;=</span> <span class="var">size</span><span class="op">:</span>
+            <span class="var">out</span><span class="op">.</span><span class="fn">append</span>(<span class="var">p</span>)
+        <span class="kw">else</span><span class="op">:</span>
+            <span class="var">out</span><span class="op">.</span><span class="fn">extend</span>(<span class="fn">chunk_recursive</span>(<span class="var">p</span><span class="op">,</span> <span class="var">size</span><span class="op">,</span> <span class="var">rest</span>))
+    <span class="kw">return</span> <span class="op">[</span><span class="var">x</span><span class="op">.</span><span class="fn">strip</span>() <span class="kw">for</span> <span class="var">x</span> <span class="kw">in</span> <span class="var">out</span> <span class="kw">if</span> <span class="var">x</span><span class="op">.</span><span class="fn">strip</span>()<span class="op">]</span></code></pre>
+
+    <div class="verdict"><span class="verdict-label">Verdict:</span> Use this 80% of the time. It's what LangChain defaults to and what most production RAG systems use.</div>
+  </div>
+
+  <!-- New syntax callout — splat unpacking & re module -->
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — <code>re</code> module &amp; splat unpacking</div>
+    <h4 style="margin-top:0.4rem"><code>import re</code> — regular expressions</h4>
+    <p>Python's built-in regex library. <code>re.split(pattern, text)</code> splits on a pattern instead of a fixed string. The <code>r"..."</code> prefix makes it a <em>raw string</em> so backslashes don't need doubling.</p>
+    <p style="margin-top:0.3rem"><code>r"(?&lt;=[.!?])\s+"</code> means "split on whitespace that comes <em>after</em> a <code>.</code>, <code>!</code> or <code>?</code>" — the <code>(?&lt;=...)</code> is a <em>lookbehind</em>, used to keep the punctuation attached to the previous sentence.</p>
+
+    <h4 style="margin-top:0.6rem">Splat unpacking — <code>sep, *rest = separators</code></h4>
+    <p><code>*rest</code> grabs "everything else" from a list. So <code>sep, *rest = ["\n\n", "\n", ". ", " ", ""]</code> sets <code>sep = "\n\n"</code> and <code>rest = ["\n", ". ", " ", ""]</code>. Useful for "head + tail" splits without slicing.</p>
+
+    <p style="margin-top:0.4rem"><strong>MuleSoft analogy:</strong> regex with lookbehind is like a DataWeave <code>matches</code> expression with a positive look-around.</p>
+  </div>
+
+  <!-- ─── 5 ─── -->
+  <div class="strategy-card">
+    <h3><span class="strategy-num">5</span> Document-structure-aware chunking</h3>
+    <p><strong>How:</strong> Use the document's own structure as the splitter — Markdown headings (<code>#</code>, <code>##</code>), HTML tags (<code>&lt;h1&gt;</code>, <code>&lt;p&gt;</code>), PDF sections, or LaTeX environments. Each section becomes a chunk, often with the heading prepended for context.</p>
+
+    <p><strong>Example:</strong> a RAML spec where each <code>/resource:</code> block becomes one chunk; or a Markdown doc where each <code>##</code> section becomes one chunk.</p>
+
+<pre><code><span class="cm"># LangChain ships specialist splitters for many formats:</span>
+<span class="kw">from</span> <span class="var">langchain</span><span class="op">.</span><span class="var">text_splitter</span> <span class="kw">import</span> <span class="var">MarkdownHeaderTextSplitter</span>
+
+<span class="var">splitter</span> <span class="op">=</span> <span class="fn">MarkdownHeaderTextSplitter</span>(
+    <span class="var">headers_to_split_on</span><span class="op">=</span><span class="op">[</span>(<span class="str">"#"</span><span class="op">,</span> <span class="str">"H1"</span>)<span class="op">,</span> (<span class="str">"##"</span><span class="op">,</span> <span class="str">"H2"</span>)<span class="op">,</span> (<span class="str">"###"</span><span class="op">,</span> <span class="str">"H3"</span>)<span class="op">]</span>
+<span class="op">)</span>
+<span class="var">docs</span> <span class="op">=</span> <span class="var">splitter</span><span class="op">.</span><span class="fn">split_text</span>(<span class="var">markdown_text</span>)
+<span class="cm"># Each result includes both the section text and the heading hierarchy as metadata</span></code></pre>
+
+    <div class="verdict"><span class="verdict-label">Verdict:</span> Best for structured content (docs, specs, papers). The headings often answer the "what is this chunk about?" question for free.</div>
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Direct MuleSoft application</div>
+    A RAML spec is highly structured. Splitting it by <code>/resource</code> + <code>method</code> blocks gives you chunks that each describe one operation — perfect for "find me the API that does X" queries.
+  </div>
+
+  <!-- ─── 6 ─── -->
+  <div class="strategy-card">
+    <h3><span class="strategy-num">6</span> Semantic chunking</h3>
+    <p><strong>How:</strong> Don't split on syntax — split where the <em>meaning</em> changes. Embed every sentence, group it with its neighbours, and start a new chunk whenever the cosine distance to the previous group spikes (i.e., topic shifted).</p>
+
+    <p>Greg Kamradt popularised this. It's compute-intensive — you embed the document twice (once for chunking, again per chunk) — but produces chunks that align with actual themes.</p>
+
+    <div class="verdict"><span class="verdict-label">Verdict:</span> Use when fixed/recursive splitters mangle your content (e.g. transcripts, Q&amp;A logs, mixed-topic docs). Skip if recursive is good enough.</div>
+  </div>
+
+  <!-- ─── 7 ─── -->
+  <div class="strategy-card">
+    <h3><span class="strategy-num">7</span> Late chunking <em>(emerging technique)</em></h3>
+    <p><strong>How:</strong> Embed the <em>whole document</em> first, then take chunk-aligned slices of that whole-document embedding. Reverses the order: instead of "chunk → embed", you "embed → chunk". The chunk vectors carry the document's full context.</p>
+
+    <p>Requires an embedding model that exposes token-level outputs. Newer text-embedding models (Jina v3 family etc.) support this; Gemini doesn't expose it as of 2026.</p>
+
+    <div class="verdict"><span class="verdict-label">Verdict:</span> Promising for chunks that depend heavily on full-document context. Limited support — file under "watch this space".</div>
+  </div>
+
+  <!-- ─── 8 ─── -->
+  <div class="strategy-card" style="border-color:#ec4899; border-width:2px">
+    <h3><span class="strategy-num" style="background:#ec4899">8</span> Contextual chunking <em>(Anthropic, 2024)</em></h3>
+    <p><strong>How:</strong> Before embedding each chunk, ask an LLM to write a 50–100 token <em>contextual blurb</em> situating the chunk inside its parent document. Prepend the blurb to the chunk text, then embed.</p>
+
+    <p>Example transformation, from Anthropic's announcement:</p>
+
+<pre><code><span class="cm"># Original chunk (loses context when retrieved alone)</span>
+<span class="str">"The company's revenue grew by 3% over the previous quarter."</span>
+
+<span class="cm"># Contextual chunk (the LLM has prepended a situating blurb)</span>
+<span class="str">"This chunk is from an SEC filing on ACME Corp's Q2 2023 performance; "</span>
+<span class="str">"the previous quarter's revenue was $314M. The company's revenue "</span>
+<span class="str">"grew by 3% over the previous quarter."</span></code></pre>
+
+    <p><strong>Measured impact:</strong></p>
+    <ul>
+      <li>Contextual embeddings alone: <strong>35% reduction</strong> in retrieval failures</li>
+      <li>Plus contextual BM25 (lexical search): <strong>49% reduction</strong></li>
+      <li>Plus reranking: <strong>67% reduction</strong></li>
+    </ul>
+
+    <p><strong>Cost trick:</strong> Use <em>prompt caching</em> — cache the full document once, then run cheap "describe this chunk" calls against it. Anthropic estimates ~<strong>$1.02 per million document tokens</strong> processed this way.</p>
+
+    <div class="verdict" style="background:#fdf2f8"><span class="verdict-label">Verdict:</span> Best-in-class as of late 2025. Use when you have long documents and high-stakes retrieval (compliance, legal, technical specs). Cost is non-zero but reasonable with caching.</div>
+  </div>
+
+  <div class="callout callout-frontier">
+    <div class="callout-label">Frontier reading</div>
+    Read <a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank">Anthropic's "Contextual Retrieval"</a> end to end before you ship a real RAG. It's the single highest-ROI piece on this topic.
+  </div>
+
+  <!-- ═══ Decision matrix ═══ -->
+  <h2>How to choose</h2>
+
+  <table class="ct">
+    <thead>
+      <tr>
+        <th>Your data</th>
+        <th>Start with</th>
+        <th>Upgrade to (if recall isn't good enough)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Plain prose, single topic</td>
+        <td>Fixed-size or paragraph (#1, #3)</td>
+        <td>Recursive (#4)</td>
+      </tr>
+      <tr>
+        <td>Markdown docs, RAML specs, API references</td>
+        <td>Structure-aware (#5)</td>
+        <td>Add contextual chunking (#8)</td>
+      </tr>
+      <tr>
+        <td>FAQ / Q&amp;A pairs</td>
+        <td>Sentence-level (#2) — each Q&amp;A is one chunk</td>
+        <td>Pair-level metadata + recursive (#4)</td>
+      </tr>
+      <tr>
+        <td>Long PDFs, mixed topics</td>
+        <td>Recursive (#4)</td>
+        <td>Semantic (#6) or contextual (#8)</td>
+      </tr>
+      <tr>
+        <td>Compliance / legal / high-stakes</td>
+        <td>Structure-aware + reranking</td>
+        <td>Contextual chunking (#8)</td>
+      </tr>
+      <tr>
+        <td>Conversation logs / transcripts</td>
+        <td>Semantic (#6) — topics drift</td>
+        <td>Contextual (#8)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Pragmatic order of operations</div>
+    <ol style="margin-top:0.4rem">
+      <li>Start with <strong>recursive (#4)</strong>, <code>chunk_size=500</code>, <code>overlap=50</code>. Measure retrieval quality on real questions.</li>
+      <li>If your data has structure, switch to <strong>structure-aware (#5)</strong>.</li>
+      <li>If retrieval still misses things, layer in <strong>contextual chunking (#8)</strong>.</li>
+      <li>Only consider <strong>semantic (#6)</strong> or <strong>late chunking (#7)</strong> if you have specific evidence the above aren't working.</li>
+    </ol>
+  </div>
+
+  <!-- ═══ Hands on ═══ -->
+  <h2>Hands-on — chunk a real MuleSoft-style doc</h2>
+  <p>Three strategies on the same input so you can <em>feel</em> the difference. Save as <code>chunk_demo.py</code>.</p>
+
+<pre><code><span class="cm"># chunk_demo.py</span>
+<span class="kw">import</span> <span class="var">re</span>
+
+<span class="var">DOC</span> <span class="op">=</span> <span class="str">"""</span>
+<span class="str"># Anypoint Platform Authentication</span>
+<span class="str"></span>
+<span class="str">## OAuth 2.0</span>
+<span class="str">OAuth 2.0 is the industry-standard authorization protocol. It issues short-lived access tokens that clients send with each request. Anypoint's Identity Provider can issue and rotate these tokens, and API Manager validates them at the edge.</span>
+<span class="str"></span>
+<span class="str">## Mutual TLS</span>
+<span class="str">For machine-to-machine integrations, mTLS provides bilateral authentication via X.509 certificates. Both client and server present certificates; both are validated against a trusted CA chain.</span>
+<span class="str"></span>
+<span class="str">## Rate Limiting</span>
+<span class="str">Independent of authentication, you should always apply rate limits. Anypoint's Rate Limiting policy supports per-client and per-method limits with configurable response codes.</span>
+<span class="str">"""</span>
+
+<span class="cm"># Strategy 1 — Fixed-size</span>
+<span class="kw">def</span> <span class="fn">chunk_fixed</span>(<span class="var">text</span><span class="op">,</span> <span class="var">size</span><span class="op">=</span><span class="num">200</span><span class="op">,</span> <span class="var">overlap</span><span class="op">=</span><span class="num">40</span>)<span class="op">:</span>
+    <span class="var">step</span> <span class="op">=</span> <span class="var">size</span> <span class="op">-</span> <span class="var">overlap</span>
+    <span class="kw">return</span> <span class="op">[</span><span class="var">text</span><span class="op">[</span><span class="var">i</span><span class="op">:</span><span class="var">i</span><span class="op">+</span><span class="var">size</span><span class="op">]</span> <span class="kw">for</span> <span class="var">i</span> <span class="kw">in</span> <span class="fn">range</span>(<span class="num">0</span><span class="op">,</span> <span class="fn">len</span>(<span class="var">text</span>)<span class="op">,</span> <span class="var">step</span>)<span class="op">]</span>
+
+<span class="cm"># Strategy 3 — Paragraph</span>
+<span class="kw">def</span> <span class="fn">chunk_paragraphs</span>(<span class="var">text</span>)<span class="op">:</span>
+    <span class="kw">return</span> <span class="op">[</span><span class="var">p</span><span class="op">.</span><span class="fn">strip</span>() <span class="kw">for</span> <span class="var">p</span> <span class="kw">in</span> <span class="var">text</span><span class="op">.</span><span class="fn">split</span>(<span class="str">"\n\n"</span>) <span class="kw">if</span> <span class="var">p</span><span class="op">.</span><span class="fn">strip</span>()<span class="op">]</span>
+
+<span class="cm"># Strategy 5 — Markdown structure-aware (heading + body)</span>
+<span class="kw">def</span> <span class="fn">chunk_markdown</span>(<span class="var">text</span>)<span class="op">:</span>
+    <span class="cm"># split before each "## " heading; keep the heading attached</span>
+    <span class="var">parts</span> <span class="op">=</span> <span class="var">re</span><span class="op">.</span><span class="fn">split</span>(<span class="str">r"(?=^## )"</span><span class="op">,</span> <span class="var">text</span><span class="op">,</span> <span class="var">flags</span><span class="op">=</span><span class="var">re</span><span class="op">.</span><span class="var">MULTILINE</span>)
+    <span class="kw">return</span> <span class="op">[</span><span class="var">p</span><span class="op">.</span><span class="fn">strip</span>() <span class="kw">for</span> <span class="var">p</span> <span class="kw">in</span> <span class="var">parts</span> <span class="kw">if</span> <span class="var">p</span><span class="op">.</span><span class="fn">strip</span>()<span class="op">]</span>
+
+<span class="kw">for</span> <span class="var">name</span><span class="op">,</span> <span class="var">fn</span> <span class="kw">in</span> <span class="op">[</span>(<span class="str">"FIXED"</span><span class="op">,</span> <span class="var">chunk_fixed</span>)<span class="op">,</span> (<span class="str">"PARAGRAPH"</span><span class="op">,</span> <span class="var">chunk_paragraphs</span>)<span class="op">,</span> (<span class="str">"MARKDOWN"</span><span class="op">,</span> <span class="var">chunk_markdown</span>)<span class="op">]</span><span class="op">:</span>
+    <span class="var">chunks</span> <span class="op">=</span> <span class="var">fn</span>(<span class="var">DOC</span>)
+    <span class="fn">print</span>(<span class="str">f"\n=== {name} → {len(chunks)} chunks ==="</span>)
+    <span class="kw">for</span> <span class="var">i</span><span class="op">,</span> <span class="var">c</span> <span class="kw">in</span> <span class="fn">enumerate</span>(<span class="var">chunks</span>)<span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"--- chunk {i} ({len(c)} chars) ---"</span>)
+        <span class="fn">print</span>(<span class="var">c</span><span class="op">[</span><span class="op">:</span><span class="num">100</span><span class="op">]</span><span class="op">,</span> <span class="str">"..."</span> <span class="kw">if</span> <span class="fn">len</span>(<span class="var">c</span>) <span class="op">&gt;</span> <span class="num">100</span> <span class="kw">else</span> <span class="str">""</span>)</code></pre>
+
+  <!-- ═══ Worked example — plug into tiny_rag.py ═══ -->
+  <h2>Worked example — plug chunking into Lesson 7's <code>tiny_rag.py</code></h2>
+  <p>This is where chunking and embeddings finally compose. Lesson 7's <code>tiny_rag.py</code> used a hand-written list of 5 short docs. Real-world RAG starts from a long document — a Markdown page, a RAML spec, a PDF — and chunks it.</p>
+
+  <h3>What changes</h3>
+  <p><strong>Before:</strong> <code>hardcoded DOCS list → embed each → search</code><br>
+     <strong>After:</strong> <code>big DOC string → chunk_markdown() → DOCS → embed each → search</code></p>
+  <p>Only the <em>source</em> of <code>DOCS</code> changes. Everything downstream stays identical — proof that chunking and embedding compose cleanly.</p>
+
+  <h3>The three edits to <code>tiny_rag.py</code></h3>
+
+  <h4>Edit 1 — add <code>import re</code> near the top</h4>
+<pre><code><span class="kw">import</span> <span class="var">re</span></code></pre>
+
+  <h4>Edit 2 — replace the static <code>DOCS</code> list with the markdown doc + chunker</h4>
+  <p>Delete the existing <code>DOCS = [...]</code> block (the 5 hardcoded strings). Replace with:</p>
+
+<pre><code><span class="cm"># The raw document — would normally come from a file or API</span>
+<span class="var">DOC</span> <span class="op">=</span> <span class="str">"""</span>
+<span class="str"># Anypoint Platform Authentication</span>
+
+<span class="str">## OAuth 2.0</span>
+<span class="str">OAuth 2.0 is the industry-standard authorization protocol. It issues short-lived</span>
+<span class="str">access tokens that clients send with each request. Anypoint's Identity Provider</span>
+<span class="str">can issue and rotate these tokens, and API Manager validates them at the edge.</span>
+
+<span class="str">## Mutual TLS</span>
+<span class="str">For machine-to-machine integrations, mTLS provides bilateral authentication via</span>
+<span class="str">X.509 certificates. Both client and server present certificates; both are</span>
+<span class="str">validated against a trusted CA chain.</span>
+
+<span class="str">## Rate Limiting</span>
+<span class="str">Independent of authentication, you should always apply rate limits. Anypoint's</span>
+<span class="str">Rate Limiting policy supports per-client and per-method limits with configurable</span>
+<span class="str">response codes.</span>
+<span class="str">"""</span>
+
+<span class="cm"># The chunker (from this lesson)</span>
+<span class="kw">def</span> <span class="fn">chunk_markdown</span>(<span class="var">text</span>)<span class="op">:</span>
+    <span class="var">parts</span> <span class="op">=</span> <span class="var">re</span><span class="op">.</span><span class="fn">split</span>(<span class="str">r"(?=^## )"</span><span class="op">,</span> <span class="var">text</span><span class="op">,</span> <span class="var">flags</span><span class="op">=</span><span class="var">re</span><span class="op">.</span><span class="var">MULTILINE</span>)
+    <span class="kw">return</span> <span class="op">[</span><span class="var">p</span><span class="op">.</span><span class="fn">strip</span>() <span class="kw">for</span> <span class="var">p</span> <span class="kw">in</span> <span class="var">parts</span> <span class="kw">if</span> <span class="var">p</span><span class="op">.</span><span class="fn">strip</span>()<span class="op">]</span>
+
+<span class="cm"># DOCS is now produced by chunking</span>
+<span class="var">DOCS</span> <span class="op">=</span> <span class="fn">chunk_markdown</span>(<span class="var">DOC</span>)
+
+<span class="fn">print</span>(<span class="str">f"Document split into {len(DOCS)} chunks"</span>)
+<span class="kw">for</span> <span class="var">i</span><span class="op">,</span> <span class="var">c</span> <span class="kw">in</span> <span class="fn">enumerate</span>(<span class="var">DOCS</span>)<span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">f"  [{i}] {c[:60]}..."</span>)</code></pre>
+
+  <h4>Edit 3 — replace the test questions</h4>
+  <p>Update the <code>for q in [...]:</code> loop to ask questions that target specific chunks:</p>
+
+<pre><code><span class="kw">for</span> <span class="var">q</span> <span class="kw">in</span> <span class="op">[</span>
+    <span class="str">"How does Anypoint authenticate machine-to-machine?"</span><span class="op">,</span>
+    <span class="str">"What's the recommended way to throttle API traffic?"</span><span class="op">,</span>
+    <span class="str">"How do I issue tokens to my API clients?"</span>
+<span class="op">]</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">f"\nQ: {q}"</span>)
+    <span class="kw">for</span> <span class="var">score</span><span class="op">,</span> <span class="var">doc</span> <span class="kw">in</span> <span class="fn">search</span>(<span class="var">q</span>)<span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"  [{score:.3f}] {doc[:80]}..."</span>)</code></pre>
+
+  <h3>Expected output</h3>
+<pre><code>Document split into 4 chunks
+  [0] # Anypoint Platform Authentication...
+  [1] ## OAuth 2.0...
+  [2] ## Mutual TLS...
+  [3] ## Rate Limiting...
+
+Q: How does Anypoint authenticate machine-to-machine?
+  [0.79] ## Mutual TLS
+For machine-to-machine integrations, mTLS provides bilateral...
+  [0.62] ## OAuth 2.0
+OAuth 2.0 is the industry-standard authorization protocol...
+
+Q: What's the recommended way to throttle API traffic?
+  [0.74] ## Rate Limiting
+Independent of authentication, you should always apply rate limits...
+
+Q: How do I issue tokens to my API clients?
+  [0.77] ## OAuth 2.0
+OAuth 2.0 is the industry-standard authorization protocol...</code></pre>
+
+  <div class="callout callout-why">
+    <div class="callout-label">What just happened</div>
+    The mTLS chunk wins for the machine-to-machine question — <em>even though the question never says "TLS" or "certificate"</em>. The embedding model recognises that "machine-to-machine" and "mTLS / X.509" are semantically related. <strong>That's chunking + embeddings working together.</strong>
+  </div>
+
+  <h3>From toy to real</h3>
+  <p>You just turned <code>tiny_rag.py</code> from a toy with hardcoded "documents" into something that ingests <strong>real-world markdown</strong> and answers questions about it. Swap the <code>DOC</code> string for <code>Path("anypoint-auth.md").read_text()</code> and you're indexing a real file from disk. That's RAG.</p>
+
+  <p>Lesson 9 adds the final piece: take the top chunks, build a prompt with them, send it to Gemini, return the grounded answer.</p>
+
+  <div class="tryit">
+    <div class="tryit-label">Try it yourself</div>
+    <ol>
+      <li>Run <code>python chunk_demo.py</code>. Compare the three outputs side by side. Notice the FIXED chunks cut mid-word; PARAGRAPH chunks vary wildly in length; MARKDOWN chunks are clean and self-contained.</li>
+      <li><strong>Apply the three edits above</strong> to your <code>tiny_rag.py</code>. Confirm the mTLS chunk wins for the machine-to-machine question.</li>
+      <li><strong>Modify:</strong> add overlap to <code>chunk_paragraphs</code> by also including the <em>last sentence</em> of the previous paragraph. Does retrieval improve?</li>
+      <li><strong>Stretch — contextual chunking lite:</strong> for each markdown chunk, prepend the H1 title (<code>"# Anypoint Platform Authentication — "</code>). Re-embed and see if retrieval gets sharper for vague queries like "how do I authenticate?".</li>
+      <li><strong>From file:</strong> swap the inline <code>DOC</code> string for <code>DOC = Path("your-doc.md").read_text()</code> (don't forget <code>from pathlib import Path</code>). Index any Markdown file you have lying around.</li>
+    </ol>
+  </div>
+
+  <!-- ═══ Multilingual considerations ═══ -->
+  <h2>Multilingual considerations</h2>
+  <p>
+    All eight strategies above were demonstrated on English text. The good news: <strong>most of them work for any language</strong> — but each chunker has language-specific gotchas worth knowing.
+  </p>
+
+  <h3>Embeddings — multilingual by default</h3>
+  <p>
+    Modern embedding models (<code>gemini-embedding-001</code>, <code>gemini-embedding-2</code>, <code>bge-m3</code>) support 100+ languages. A Thai sentence and its English translation land near each other in vector space — which means a user can ask in Thai and retrieve from English docs. <strong>No code changes needed for this; it's a property of the model.</strong>
+  </p>
+  <p>Quality is uneven though:</p>
+  <ul>
+    <li><strong>Tier 1</strong> — English, Spanish, French, German, Chinese, Japanese, Korean → excellent</li>
+    <li><strong>Tier 2</strong> — Thai, Vietnamese, Indonesian, Arabic, Hindi, Portuguese → good</li>
+    <li><strong>Tier 3</strong> — Swahili, Khmer, Burmese, etc. → workable but noisier; test before trusting</li>
+  </ul>
+
+  <h3>Chunking — language-specific gotchas per strategy</h3>
+
+  <table>
+    <thead>
+      <tr><th>Strategy</th><th>Multilingual safe?</th><th>What to watch for</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Fixed-size character</strong></td>
+        <td>✓ Mostly</td>
+        <td>Python strings are Unicode-aware, so it runs. But 500 chars of English ≈ 80 words; 500 chars of Thai ≈ 250 words. Use <em>token</em>-based size for mixed-language corpora.</td>
+      </tr>
+      <tr>
+        <td><strong>2. Sentence-level</strong></td>
+        <td>✗ Needs adapting</td>
+        <td><code>split(". ")</code> is English-only. Japanese/Chinese use <code>。</code>; Hindi uses <code>।</code>; Thai often has no sentence delimiter at all.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Paragraph-level</strong></td>
+        <td>✓ Yes</td>
+        <td><code>\n\n</code> is whitespace — language-agnostic.</td>
+      </tr>
+      <tr>
+        <td><strong>4. Recursive character</strong></td>
+        <td>✗ Adjust ladder</td>
+        <td>Swap the sentence/word separators per language. See snippet below.</td>
+      </tr>
+      <tr>
+        <td><strong>5. Document-structure (Markdown <code>##</code>)</strong></td>
+        <td>✓ Yes</td>
+        <td>Markup is language-neutral. <em>Safest chunker for multilingual content.</em></td>
+      </tr>
+      <tr>
+        <td><strong>6. Semantic</strong></td>
+        <td>✓ Yes</td>
+        <td>Relies on embeddings, which are multilingual. Boundaries follow meaning, not punctuation.</td>
+      </tr>
+      <tr>
+        <td><strong>7. Late chunking</strong></td>
+        <td>✓ Yes</td>
+        <td>Works in any language the embedding model supports.</td>
+      </tr>
+      <tr>
+        <td><strong>8. Contextual retrieval</strong></td>
+        <td>✓ Yes</td>
+        <td>Keep the prompt in English even for non-English docs — the LLM will write the blurb in the doc's language.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>The big trap — sentence and word splitters</h3>
+  <p>
+    Strategy #2 (sentence-level) and any "word-level" splitter need real attention. The naive Lesson 8 versions (<code>text.split(". ")</code>, <code>text.split(" ")</code>) silently misbehave on these languages:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Language</th><th>Sentence terminator</th><th>Word boundary?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>English / French / Spanish</td><td><code>. </code></td><td>Spaces ✓</td></tr>
+      <tr><td>Japanese</td><td><code>。</code> (no space)</td><td><strong>No spaces</strong> — needs segmenter</td></tr>
+      <tr><td>Chinese</td><td><code>。</code> (no space)</td><td><strong>No spaces</strong> — needs segmenter</td></tr>
+      <tr><td>Thai</td><td>(often unmarked)</td><td><strong>No spaces</strong> — needs segmenter</td></tr>
+      <tr><td>Hindi</td><td><code>।</code> (devanagari danda)</td><td>Spaces ✓</td></tr>
+      <tr><td>Arabic</td><td><code>.</code> (right-to-left)</td><td>Spaces ✓</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Word-segmentation in three problem languages:</strong></p>
+
+<pre><code><span class="cm"># Chinese — jieba (most popular Chinese segmenter)</span>
+<span class="kw">import</span> jieba
+words <span class="op">=</span> jieba.lcut(<span class="str">"应用程序密钥过期"</span>)
+<span class="cm"># → ["应用", "程序", "密钥", "过期"]</span>
+
+<span class="cm"># Japanese — fugashi (wraps MeCab)</span>
+<span class="kw">import</span> fugashi
+tagger <span class="op">=</span> fugashi.Tagger()
+words <span class="op">=</span> [w.surface <span class="kw">for</span> w <span class="kw">in</span> tagger(japanese_text)]
+
+<span class="cm"># Thai — PyThaiNLP</span>
+<span class="kw">from</span> pythainlp.tokenize <span class="kw">import</span> word_tokenize, sent_tokenize
+words     <span class="op">=</span> word_tokenize(<span class="str">"คอนเนคเต็ดแอพหมดอายุ"</span>)
+sentences <span class="op">=</span> sent_tokenize(thai_paragraph)</code></pre>
+
+  <p><strong>Multilingual sentence splitting:</strong></p>
+
+<pre><code><span class="cm"># Option A — pysbd: rule-based, supports ~20 languages</span>
+<span class="kw">from</span> pysbd <span class="kw">import</span> Segmenter
+seg <span class="op">=</span> Segmenter(language<span class="op">=</span><span class="str">"ja"</span>, clean<span class="op">=</span><span class="kw">False</span>)
+sentences <span class="op">=</span> seg.segment(japanese_text)
+
+<span class="cm"># Option B — spaCy: model-based, more accurate</span>
+<span class="kw">import</span> spacy
+nlp <span class="op">=</span> spacy.load(<span class="str">"ja_core_news_sm"</span>)
+sentences <span class="op">=</span> [sent.text <span class="kw">for</span> sent <span class="kw">in</span> nlp(japanese_text).sents]</code></pre>
+
+  <h3>Recursive chunking — adjust the separator ladder</h3>
+  <p>
+    The Lesson 8 ladder (<code>["\n\n", "\n", ". ", " ", ""]</code>) is English. Swap the sentence and word separators for the target language:
+  </p>
+
+<pre><code><span class="cm"># Japanese / Chinese — note: NO " " in the list (no word spaces)</span>
+separators <span class="op">=</span> [<span class="str">"\n\n"</span>, <span class="str">"\n"</span>, <span class="str">"。"</span>, <span class="str">"、"</span>, <span class="str">""</span>]
+
+<span class="cm"># Thai — paragraph and line only; no reliable sentence delimiter</span>
+separators <span class="op">=</span> [<span class="str">"\n\n"</span>, <span class="str">"\n"</span>, <span class="str">" "</span>, <span class="str">""</span>]
+
+<span class="cm"># Hindi</span>
+separators <span class="op">=</span> [<span class="str">"\n\n"</span>, <span class="str">"\n"</span>, <span class="str">"। "</span>, <span class="str">" "</span>, <span class="str">""</span>]</code></pre>
+
+  <p>
+    Or skip the manual work — LangChain ships a helper:
+  </p>
+
+<pre><code><span class="kw">from</span> langchain.text_splitter <span class="kw">import</span> RecursiveCharacterTextSplitter
+
+splitter <span class="op">=</span> RecursiveCharacterTextSplitter.from_language(
+    language<span class="op">=</span><span class="str">"ja"</span>, chunk_size<span class="op">=</span><span class="num">500</span>
+)
+chunks <span class="op">=</span> splitter.split_text(japanese_text)</code></pre>
+
+  <h3>Mixed-language documents (e.g. RAML with Japanese comments)</h3>
+  <p>
+    Real-world enterprise docs often mix languages — an English MuleSoft RAML with Japanese annotations, AWS docs with localised examples. <strong>Don't split them apart.</strong> Modern multilingual embedding models handle code-switching well; just embed the chunk as-is and let the model figure it out.
+  </p>
+  <p>The only reason to split per language is if you specifically need to <em>filter</em> by language at query time (e.g. "search Japanese chunks only"). In that case, store language as metadata on the chunk:</p>
+
+<pre><code><span class="kw">from</span> langdetect <span class="kw">import</span> detect
+
+collection.add(
+    ids<span class="op">=</span>ids,
+    documents<span class="op">=</span>chunks,
+    embeddings<span class="op">=</span>vectors,
+    metadatas<span class="op">=</span>[{<span class="str">"lang"</span>: detect(c)} <span class="kw">for</span> c <span class="kw">in</span> chunks],
+)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Practical recommendation for your <code>rag_chroma.py</code></div>
+    Your existing pipeline (markdown <code>##</code> chunker → multilingual embedding → Chroma) <strong>works on Japanese / Thai / Chinese / Spanish docs with zero code changes</strong>. Point it at a non-English Markdown file and try it. The structure-aware chunker is language-neutral; the embedding model is multilingual; only the LLM's <em>answer</em> may need a system-instruction tweak (e.g. "Answer in the same language as the question").
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft analogue</div>
+    Think of language as a <em>content-type header</em> on a Mule message. The transport (Chroma, Gemini, retrieval logic) doesn't care. But the <em>processors</em> — chunkers — need language-specific rules, like a transformer that knows whether to use <code>application/json</code> or <code>application/xml</code>. Same shape, different processor.
+  </div>
+
+  <!-- ═══ Quiz ═══ -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q1.</strong> Why do chunks need overlap?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">To make embeddings more accurate</li>
+        <li data-i="1">To reduce the number of chunks</li>
+        <li data-i="2">So a sentence cut at a chunk boundary still has its meaning preserved in at least one chunk</li>
+        <li data-i="3">To save tokens at retrieval time</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q2.</strong> You're chunking a Markdown documentation site. Which strategy is the natural fit?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Fixed-size</li>
+        <li data-i="1">Sentence-level</li>
+        <li data-i="2">Document-structure-aware (split on headings)</li>
+        <li data-i="3">Late chunking</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q3.</strong> What's the practical default that LangChain made famous?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Fixed-size</li>
+        <li data-i="1">Recursive character chunking (try big separators first, fall back to small)</li>
+        <li data-i="2">Semantic chunking</li>
+        <li data-i="3">Contextual chunking</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q4.</strong> Anthropic's Contextual Retrieval works by…</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Embedding chunks twice and averaging the vectors</li>
+        <li data-i="1">Asking an LLM to write a short context blurb for each chunk and prepending it before embedding</li>
+        <li data-i="2">Splitting the document by semantic distance between sentences</li>
+        <li data-i="3">Using a bigger embedding model</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+
+    <div class="quiz-question" id="q5">
+      <p><strong>Q5.</strong> A chunk reads <em>"It supports per-client and per-method limits."</em> Why is this chunk dangerous in a RAG system?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">"It" has no antecedent — the chunk isn't self-contained, so the LLM can't tell what feature is being described</li>
+        <li data-i="1">It's too long</li>
+        <li data-i="2">It uses American English</li>
+        <li data-i="3">It contains a comma</li>
+      </ul>
+      <p class="feedback" id="fb5"></p>
+    </div>
+  </div>
+
+  <h2>What's next</h2>
+  <p>You now have everything for the retrieval half of RAG: <strong>chunking → embedding → cosine search → threshold</strong>. <strong>Lesson 9</strong> wires them together and adds the LLM call — your first end-to-end RAG.</p>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Show me how to count tokens before chunking, not characters"</li>
+      <li>"Implement contextual chunking in code, not just theory"</li>
+      <li>"How do I chunk a RAML or OpenAPI spec specifically?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0007-embeddings.html">← Lesson 7 — Embeddings</a>
+      <a href="0009-build-rag.html">Lesson 9 — Build your first RAG →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! Overlap saves meaning that lives across the cut.", err: "Not quite. Overlap exists so a sentence/idea split at a chunk boundary still appears intact in at least one chunk." },
+    1: { ok: "Correct! Markdown headings ARE the natural splitter — and they double as chunk metadata.", err: "Not quite. When the document already has structure (headings, sections), use that — it's the cleanest split and gives free metadata." },
+    2: { ok: "Correct! Recursive is the 80% default — fixed-size predictability with respect for natural boundaries.", err: "Not quite. Recursive character chunking (try \\n\\n then \\n then space then char) is LangChain's RecursiveCharacterTextSplitter — the practical default." },
+    3: { ok: "Correct! 50–100 token blurb per chunk, generated by an LLM with the full document in context, prepended before embedding. 35–67% retrieval failure reduction.", err: "Not quite. Contextual Retrieval = LLM writes a 50–100 token blurb situating each chunk in its parent document; the blurb is prepended before embedding." },
+    4: { ok: "Correct! 'It' refers to nothing inside the chunk. The LLM will retrieve this and either hallucinate the antecedent or give a vague answer.", err: "Not quite. The problem is the orphan pronoun — 'It' has no antecedent inside the chunk. Always check chunks make sense alone." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

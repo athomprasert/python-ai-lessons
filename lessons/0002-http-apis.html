@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 2 — Calling HTTP APIs with Python</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 760px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-java { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .quiz-question p { margin-bottom: 0.5rem; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .tryit { background: #fff; border: 2px dashed #94a3b8; border-radius: 10px; padding: 1.2rem 1.4rem; margin: 1.5rem 0; }
+    .tryit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-bottom: 0.6rem; }
+
+    /* anatomy diagram */
+    .anatomy {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1.2rem 0;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.85rem;
+      line-height: 2;
+      overflow-x: auto;
+    }
+    .ann { color: #6c7086; font-style: italic; font-family: -apple-system, sans-serif; font-size: 0.8rem; }
+    .hl  { background: #fef08a; border-radius: 3px; padding: 0 3px; color: #1a1a1a; }
+
+    .http-table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1.2rem; font-size: 0.9rem; }
+    .http-table th { background: #1a1a1a; color: #fff; padding: 0.5rem 0.8rem; text-align: left; font-size: 0.8rem; letter-spacing: 0.05em; }
+    .http-table td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+    .http-table tr:hover td { background: #f9f8f6; }
+
+    .status-badge { display: inline-block; border-radius: 4px; padding: 0.1em 0.5em; font-size: 0.78rem; font-weight: 700; font-family: monospace; }
+    .s2xx { background: #d1fae5; color: #065f46; }
+    .s4xx { background: #fee2e2; color: #991b1b; }
+    .s5xx { background: #fef3c7; color: #92400e; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 2 of ?</p>
+    <h1>Calling HTTP APIs with Python</h1>
+    <p class="tagline">Use the <code>requests</code> library to call a real API — GET data, read JSON, handle errors.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">Lesson 1 — Essentials ✓</span></a>
+      <span class="pill pill-now">Lesson 2 — HTTP APIs</span>
+      <span class="pill pill-next">Lesson 3 — Calling Claude</span>
+      <span class="pill pill-next">Lesson 4 — Building an agent</span>
+    </div>
+  </header>
+
+  <!-- WHY -->
+  <h2>Why this lesson</h2>
+  <p>Every AI agent talks to the outside world via HTTP — whether that's an Anypoint API, a database, or Claude itself. This lesson gives you one skill: <strong>make a real HTTP request from Python and do something with the response</strong>.</p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Connection to your mission</div>
+    A RAG system pulls documents from a source (often an API). An agent calls tools via HTTP. This pattern — request → parse JSON → act on data — is the skeleton of everything you'll build.
+  </div>
+
+  <!-- WHAT IS HTTP -->
+  <h2>1 — What happens in an HTTP call</h2>
+  <p>When your script calls an API, four things happen in sequence:</p>
+
+  <ol>
+    <li><strong>Request</strong> — your code sends a verb + URL + optional headers/body</li>
+    <li><strong>Server processes</strong> — the API does its work</li>
+    <li><strong>Response</strong> — server sends back a status code + body (usually JSON)</li>
+    <li><strong>You parse it</strong> — convert the JSON body into a Python dict</li>
+  </ol>
+
+  <div class="callout callout-java">
+    <div class="callout-label">If you know Java</div>
+    This is the same as <code>HttpClient</code> or <code>RestTemplate</code> in Java — send a request, get a response, parse the body. Python's <code>requests</code> library just makes it much shorter.
+  </div>
+
+  <h3>HTTP verbs you'll use most</h3>
+  <table class="http-table">
+    <thead><tr><th>Verb</th><th>Use for</th><th>Has body?</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET</code></td><td>Read data — list APIs, fetch a document</td><td>No</td></tr>
+      <tr><td><code>POST</code></td><td>Create something, or send data to process</td><td>Yes (JSON)</td></tr>
+      <tr><td><code>PUT</code></td><td>Replace a resource</td><td>Yes (JSON)</td></tr>
+      <tr><td><code>DELETE</code></td><td>Remove a resource</td><td>Usually no</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Status codes to know</h3>
+  <table class="http-table">
+    <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="status-badge s2xx">200</span></td><td>OK — request succeeded, data in body</td></tr>
+      <tr><td><span class="status-badge s2xx">201</span></td><td>Created — POST succeeded, resource created</td></tr>
+      <tr><td><span class="status-badge s4xx">400</span></td><td>Bad request — your payload/params are wrong</td></tr>
+      <tr><td><span class="status-badge s4xx">401</span></td><td>Unauthorized — missing or invalid auth token</td></tr>
+      <tr><td><span class="status-badge s4xx">404</span></td><td>Not found — wrong URL or resource doesn't exist</td></tr>
+      <tr><td><span class="status-badge s5xx">500</span></td><td>Server error — not your fault (usually)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- INSTALL -->
+  <h2>2 — Install <code>requests</code></h2>
+  <p><code>requests</code> is not in the standard library — install it once with pip:</p>
+
+<pre><code>pip install requests</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Tip — virtual environments</div>
+    For now, installing globally is fine. When you start a real project, you'll use a <strong>virtual environment</strong> (<code>python -m venv .venv</code>) so each project has its own packages. We'll cover that before Lesson 3.
+  </div>
+
+  <!-- ANATOMY OF A CALL -->
+  <h2>3 — Anatomy of a GET request</h2>
+  <p>Here's the full pattern — read it once, then we'll break it down:</p>
+
+<pre><code><span class="kw">import</span> <span class="var">requests</span>
+
+<span class="var">response</span> <span class="op">=</span> <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(<span class="str">"https://api.example.com/products"</span>)
+
+<span class="cm"># 1. Check the status code</span>
+<span class="fn">print</span>(<span class="var">response</span><span class="op">.</span><span class="attr">status_code</span>)    <span class="cm"># 200</span>
+
+<span class="cm"># 2. Parse the JSON body into a Python dict/list</span>
+<span class="var">data</span> <span class="op">=</span> <span class="var">response</span><span class="op">.</span><span class="fn">json</span>()
+
+<span class="cm"># 3. Work with the data</span>
+<span class="fn">print</span>(<span class="var">data</span>)</code></pre>
+
+  <div class="anatomy">
+    <span class="hl">response</span> = requests.<span class="hl">get</span>("<span class="hl">https://api.example.com/products</span>")<br>
+    <span class="ann">   ↑ the full response object        ↑ verb    ↑ URL</span>
+    <br><br>
+    <span class="hl">response.status_code</span>   → 200<br>
+    <span class="ann">   ↑ HTTP status number</span>
+    <br><br>
+    <span class="hl">response.json()</span>        → Python dict or list<br>
+    <span class="ann">   ↑ parses the body — same as json.loads(response.text)</span>
+  </div>
+
+  <!-- QUERY PARAMS -->
+  <h2>4 — Adding query parameters</h2>
+  <p>Query parameters are the <code>?key=value</code> pairs in a URL. Pass them as a dict — <code>requests</code> handles the URL encoding for you.</p>
+
+<pre><code><span class="var">params</span> <span class="op">=</span> <span class="op">{</span>
+    <span class="str">"status"</span><span class="op">:</span> <span class="str">"active"</span><span class="op">,</span>
+    <span class="str">"limit"</span><span class="op">:</span>  <span class="num">10</span>
+<span class="op">}</span>
+
+<span class="var">response</span> <span class="op">=</span> <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(
+    <span class="str">"https://api.example.com/products"</span><span class="op">,</span>
+    <span class="var">params</span><span class="op">=</span><span class="var">params</span>
+<span class="op">)</span>
+
+<span class="cm"># requests builds: https://api.example.com/products?status=active&amp;limit=10</span>
+<span class="fn">print</span>(<span class="var">response</span><span class="op">.</span><span class="attr">url</span>)  <span class="cm"># confirms what was sent</span></code></pre>
+
+  <!-- HEADERS / AUTH -->
+  <h2>5 — Headers &amp; authentication</h2>
+  <p>Most real APIs require a token in the request header. Pass headers as a dict:</p>
+
+<pre><code><span class="var">headers</span> <span class="op">=</span> <span class="op">{</span>
+    <span class="str">"Authorization"</span><span class="op">:</span> <span class="str">"Bearer YOUR_TOKEN_HERE"</span><span class="op">,</span>
+    <span class="str">"Content-Type"</span><span class="op">:</span>  <span class="str">"application/json"</span>
+<span class="op">}</span>
+
+<span class="var">response</span> <span class="op">=</span> <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(
+    <span class="str">"https://anypoint.mulesoft.com/exchange/api/v2/assets"</span><span class="op">,</span>
+    <span class="var">headers</span><span class="op">=</span><span class="var">headers</span>
+<span class="op">)</span></code></pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Never hardcode tokens</div>
+    Real tokens belong in environment variables, not in your source code. We'll cover <code>os.environ</code> and <code>.env</code> files in the next lesson when we call Claude for the first time.
+  </div>
+
+  <!-- ERROR HANDLING -->
+  <h2>6 — Checking for errors</h2>
+  <p><code>requests</code> does <strong>not</strong> raise an exception on 4xx or 5xx responses — it just returns the response with a bad status code. You have to check.</p>
+
+<pre><code><span class="var">response</span> <span class="op">=</span> <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(<span class="str">"https://api.example.com/products"</span>)
+
+<span class="cm"># Option A: check manually</span>
+<span class="kw">if</span> <span class="var">response</span><span class="op">.</span><span class="attr">status_code</span> <span class="op">==</span> <span class="num">200</span><span class="op">:</span>
+    <span class="var">data</span> <span class="op">=</span> <span class="var">response</span><span class="op">.</span><span class="fn">json</span>()
+<span class="kw">else</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">f"Error: {response.status_code}"</span><span class="op">,</span> <span class="var">response</span><span class="op">.</span><span class="attr">text</span>)
+
+<span class="cm"># Option B: raise_for_status() throws on 4xx/5xx</span>
+<span class="var">response</span><span class="op">.</span><span class="fn">raise_for_status</span>()   <span class="cm"># throws HTTPError if not 2xx</span>
+<span class="var">data</span> <span class="op">=</span> <span class="var">response</span><span class="op">.</span><span class="fn">json</span>()</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Tip</div>
+    Use <code>raise_for_status()</code> as your default. It turns a silent failure (bad status code, no exception) into a loud one (exception you can catch). Loud failures are easier to debug.
+  </div>
+
+  <!-- REAL SCRIPT -->
+  <h2>Put it together — calling a real public API</h2>
+  <p>We'll use <a href="https://jsonplaceholder.typicode.com/" target="_blank">JSONPlaceholder</a> — a free, no-auth test API that returns realistic-looking JSON. No account needed.</p>
+
+<pre><code><span class="cm"># call_api.py</span>
+<span class="kw">import</span> <span class="var">requests</span>
+<span class="kw">import</span> <span class="var">json</span>
+
+<span class="kw">def</span> <span class="fn">get_posts</span>(<span class="var">user_id</span>)<span class="op">:</span>
+    <span class="var">response</span> <span class="op">=</span> <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(
+        <span class="str">"https://jsonplaceholder.typicode.com/posts"</span><span class="op">,</span>
+        <span class="var">params</span><span class="op">=</span><span class="op">{</span><span class="str">"userId"</span><span class="op">:</span> <span class="var">user_id</span><span class="op">}</span>
+    <span class="op">)</span>
+    <span class="var">response</span><span class="op">.</span><span class="fn">raise_for_status</span>()
+    <span class="kw">return</span> <span class="var">response</span><span class="op">.</span><span class="fn">json</span>()     <span class="cm"># returns a list of dicts</span>
+
+<span class="kw">def</span> <span class="fn">summarise</span>(<span class="var">posts</span>)<span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">f"Found {len(posts)} posts"</span>)
+    <span class="kw">for</span> <span class="var">post</span> <span class="kw">in</span> <span class="var">posts</span><span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"  [{post['id']}] {post['title']}"</span>)
+
+<span class="var">posts</span> <span class="op">=</span> <span class="fn">get_posts</span>(<span class="var">user_id</span><span class="op">=</span><span class="num">1</span>)
+<span class="fn">summarise</span>(<span class="var">posts</span>)</code></pre>
+
+  <p><strong>Expected output (first few lines):</strong></p>
+<pre><code>Found 10 posts
+  [1] sunt aut facere repellat provident occaecati
+  [2] qui est esse
+  ...</code></pre>
+
+  <div class="tryit">
+    <div class="tryit-label">Try it yourself</div>
+    <ol>
+      <li>Save as <code>call_api.py</code> in <code>~/ai/claude/projects/python/</code></li>
+      <li>Run: <code>python call_api.py</code></li>
+      <li><strong>Modify:</strong> Change <code>user_id=1</code> to <code>user_id=2</code> — do you get different posts?</li>
+      <li><strong>Extend:</strong> The API also has <code>/users</code> — fetch <code>https://jsonplaceholder.typicode.com/users</code> and print each user's <code>name</code> and <code>email</code>.</li>
+      <li><strong>Challenge:</strong> Combine both — for each user, count how many posts they have. (Hint: fetch all posts once, then use a list comprehension filtered by <code>userId</code>.)</li>
+    </ol>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q1.</strong> <code>requests.get(url)</code> raises an exception if the server returns <code>404</code>.</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">True</li>
+        <li data-i="1">False — you must check <code>status_code</code> or call <code>raise_for_status()</code></li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q2.</strong> You want to pass <code>?limit=5&amp;page=2</code> in a GET request. What's the right approach?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Manually append <code>"?limit=5&amp;page=2"</code> to the URL string</li>
+        <li data-i="1">Add them to the <code>headers</code> dict</li>
+        <li data-i="2">Pass <code>params={"limit": 5, "page": 2}</code> to <code>requests.get()</code></li>
+        <li data-i="3">Use a POST request instead</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q3.</strong> An API returns <code>401</code>. What does that most likely mean?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">The server is down</li>
+        <li data-i="1">Your auth token is missing or invalid</li>
+        <li data-i="2">The URL is wrong</li>
+        <li data-i="3">Your JSON payload has a syntax error</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+  </div>
+
+  <!-- BONUS: POST -->
+  <h2>Bonus — making a POST request</h2>
+  <p>POST sends data to the server. You pass the body as a dict via <code>json=</code> (requests sets the Content-Type header automatically).</p>
+
+<pre><code><span class="var">payload</span> <span class="op">=</span> <span class="op">{</span>
+    <span class="str">"title"</span><span class="op">:</span>  <span class="str">"New API Design"</span><span class="op">,</span>
+    <span class="str">"body"</span><span class="op">:</span>   <span class="str">"RAG patterns for MuleSoft"</span><span class="op">,</span>
+    <span class="str">"userId"</span><span class="op">:</span> <span class="num">1</span>
+<span class="op">}</span>
+
+<span class="var">response</span> <span class="op">=</span> <span class="var">requests</span><span class="op">.</span><span class="fn">post</span>(
+    <span class="str">"https://jsonplaceholder.typicode.com/posts"</span><span class="op">,</span>
+    <span class="var">json</span><span class="op">=</span><span class="var">payload</span>             <span class="cm"># dict → JSON body + correct Content-Type header</span>
+<span class="op">)</span>
+
+<span class="var">response</span><span class="op">.</span><span class="fn">raise_for_status</span>()
+<span class="fn">print</span>(<span class="var">response</span><span class="op">.</span><span class="attr">status_code</span>)  <span class="cm"># 201 Created</span>
+<span class="fn">print</span>(<span class="var">response</span><span class="op">.</span><span class="fn">json</span>())       <span class="cm"># server echoes back the created resource with an id</span></code></pre>
+
+  <!-- WHAT'S NEXT -->
+  <h2>What's next</h2>
+  <p>In <strong>Lesson 3</strong> you'll make your first call to the <strong>Claude API</strong> using Anthropic's official Python SDK. You'll send a message and print the response — the foundation of every AI agent you'll build.</p>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    Run <strong><code>/teach</code></strong> in your Claude Code session for any follow-up. Examples:
+    <ul style="margin-top:0.4rem">
+      <li>"Show me how to handle a timeout error"</li>
+      <li>"What's a session in requests and when do I use it?"</li>
+      <li>"How do I call a MuleSoft Anypoint API from Python?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0001-python-essentials.html">← Lesson 1 — Python Essentials</a>
+      <a href="0003-timeouts-and-errors.html">Lesson 3 — Timeouts &amp; Errors →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents for integration work · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! requests does NOT raise on bad status codes — you must check yourself.", err: "Not quite. requests is silent on 4xx/5xx — it just returns the response. Use raise_for_status() to make it loud." },
+    1: { ok: "Correct! params= is the clean way — requests handles encoding automatically.", err: "Not quite. Always use params= — manual string building is error-prone (spaces, special chars)." },
+    2: { ok: "Correct! 401 = Unauthorized. Check your token.", err: "Not quite. 401 means the request was understood but not authenticated — wrong or missing token." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

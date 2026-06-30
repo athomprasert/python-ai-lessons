@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — Reranker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      margin: 1.4rem 0 0.4rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.15rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      overflow-x: auto;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      margin: 0.4rem 0 0.7rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.35rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .diagram {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 0.7rem 1rem;
+      margin: 0.5rem 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin: 0.5rem 0; }
+    .twocol > div { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.6rem 0.8rem; font-size: 0.85rem; }
+    .twocol h4 { font-size: 0.85rem; margin-bottom: 0.3rem; }
+    @media (max-width: 600px) { .twocol { grid-template-columns: 1fr; } }
+
+    .callout { border-radius: 6px; padding: 0.6rem 0.8rem; margin: 0.6rem 0; border-left: 3px solid; font-size: 0.85rem; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+
+    .footer-links { margin-top: 1.4rem; padding-top: 0.8rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+
+    @media print {
+      body { padding: 0.5rem; }
+      .page { max-width: 100%; }
+      pre { font-size: 0.7rem; }
+      .twocol { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Python for AI/ML</p>
+    <h1>Reranker</h1>
+    <p class="tagline">A second pass that reorders retrieved chunks using a slower, sharper model — so the most relevant ones float to the top.</p>
+  </header>
+
+  <h2>One-line summary</h2>
+  <p>Retrieval (fast, recall-oriented) gets you the top 50; reranker (slow, precision-oriented) narrows that to the top 5.</p>
+
+  <h2>Two-stage pipeline</h2>
+<div class="diagram">USER QUESTION
+     │
+     ▼
+┌────────────────────────────────┐
+│  STAGE 1 — Retrieval (FAST)    │
+│  Vector / BM25 / hybrid        │
+│  Searches all 10,000 chunks    │
+│  Returns: top 50 candidates    │
+└──────────────┬─────────────────┘
+               │ 50 chunks
+               ▼
+┌────────────────────────────────┐
+│  STAGE 2 — Reranker (SHARP)    │
+│  Cross-encoder scores each     │
+│  (query, chunk) pair directly  │
+│  Returns: top 5                │
+└──────────────┬─────────────────┘
+               │ 5 chunks
+               ▼
+        Pass to the LLM</div>
+
+  <p><strong>Why two stages?</strong> Running the slow model on all 10,000 chunks would take ~100s. On 50 candidates it's ~500ms. Cheap filter first, sharp tool second.</p>
+
+  <h2>Bi-encoder vs cross-encoder</h2>
+  <p>The single most important distinction.</p>
+
+  <div class="twocol">
+    <div>
+      <h4>Bi-encoder (stage 1)</h4>
+<div class="diagram" style="margin:0">Query  ─→ [encoder] ─→ q_vec
+                          │
+                          ▼
+Chunk  ─→ [encoder] ─→ c_vec
+                          │
+                          ▼
+            cosine(q_vec, c_vec)</div>
+      <p style="margin-top:0.3rem; font-size:0.82rem"><strong>Encoded separately.</strong> Vectors pre-computed at index time. Fast over millions of chunks, but blind to query↔chunk interactions.</p>
+    </div>
+    <div>
+      <h4>Cross-encoder (stage 2)</h4>
+<div class="diagram" style="margin:0">Query ─┐
+       ├─→ [reads BOTH] ─→ score
+Chunk ─┘</div>
+      <p style="margin-top:0.3rem; font-size:0.82rem"><strong>Encoded together.</strong> Attention compares phrases between query and chunk. Slow per pair, but understands "how often" → "quarterly".</p>
+    </div>
+  </div>
+
+  <h2>Worked example</h2>
+  <p>Question: <em>"How often should I rotate Connected App secrets?"</em></p>
+
+  <table>
+    <thead>
+      <tr><th>Chunk</th><th>Bi-encoder</th><th>Cross-encoder</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>A: "Connected Apps use OAuth tokens."</td><td><strong>0.78</strong> ← misranked top</td><td>0.31</td></tr>
+      <tr><td>B: "Rotate Connected App secrets quarterly per security policy."</td><td>0.72</td><td><strong>0.95</strong> ← actual best</td></tr>
+      <tr><td>C: "Connected Apps integrate with external clients."</td><td>0.69</td><td>0.18</td></tr>
+    </tbody>
+  </table>
+  <p>The bi-encoder ranks A on top because all the words match the query. The cross-encoder spots that B literally answers the question.</p>
+
+  <h2>Code — drop-in for any RAG</h2>
+<pre><code><span class="kw">from</span> sentence_transformers <span class="kw">import</span> CrossEncoder
+
+reranker <span class="op">=</span> CrossEncoder(<span class="str">"cross-encoder/ms-marco-MiniLM-L-12-v2"</span>)
+
+<span class="kw">def</span> <span class="fn">rerank</span>(question, candidate_chunks, top_n<span class="op">=</span><span class="num">5</span>):
+    pairs <span class="op">=</span> [(question, c) <span class="kw">for</span> c <span class="kw">in</span> candidate_chunks]
+    scores <span class="op">=</span> reranker.predict(pairs)
+    ranked <span class="op">=</span> <span class="fn">sorted</span>(<span class="fn">zip</span>(scores, candidate_chunks), reverse<span class="op">=</span><span class="kw">True</span>)
+    <span class="kw">return</span> [(<span class="fn">float</span>(s), c) <span class="kw">for</span> s, c <span class="kw">in</span> ranked[:top_n]]</code></pre>
+
+  <p>Wire into a hybrid pipeline as a final stage:</p>
+<pre><code><span class="kw">def</span> <span class="fn">hybrid_with_rerank</span>(q, coll, bm25, chunk_ids, top_n<span class="op">=</span><span class="num">5</span>):
+    <span class="cm"># Wide net first</span>
+    candidates <span class="op">=</span> hybrid_search(q, coll, bm25, chunk_ids, k_each<span class="op">=</span><span class="num">25</span>, top_k<span class="op">=</span><span class="num">25</span>)
+    chunks <span class="op">=</span> [c <span class="kw">for</span> _, c <span class="kw">in</span> candidates]
+    <span class="cm"># Sharp narrow</span>
+    <span class="kw">return</span> rerank(q, chunks, top_n<span class="op">=</span>top_n)</code></pre>
+
+  <h2>Common reranker models</h2>
+  <table>
+    <thead>
+      <tr><th>Model</th><th>Size</th><th>Speed (CPU)</th><th>When to pick</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>cross-encoder/ms-marco-MiniLM-L-6-v2</code></td>
+        <td>~80 MB</td>
+        <td>~5 ms/pair</td>
+        <td>Default lightweight pick. Strong on English search.</td>
+      </tr>
+      <tr>
+        <td><code>cross-encoder/ms-marco-MiniLM-L-12-v2</code></td>
+        <td>~130 MB</td>
+        <td>~10 ms/pair</td>
+        <td>Better quality, still fast. <strong>Default in tutorials.</strong></td>
+      </tr>
+      <tr>
+        <td><code>BAAI/bge-reranker-base</code></td>
+        <td>~280 MB</td>
+        <td>~20 ms/pair</td>
+        <td>Multilingual; strong on non-English corpora.</td>
+      </tr>
+      <tr>
+        <td><code>BAAI/bge-reranker-large</code></td>
+        <td>~1.3 GB</td>
+        <td>~80 ms/pair</td>
+        <td>Highest quality open-source. GPU recommended.</td>
+      </tr>
+      <tr>
+        <td><strong>Cohere Rerank API</strong></td>
+        <td>n/a (hosted)</td>
+        <td>~30 ms/pair</td>
+        <td>Managed, multilingual, no infra. Pay per call.</td>
+      </tr>
+      <tr>
+        <td><strong>Vertex AI Ranking API</strong></td>
+        <td>n/a (hosted)</td>
+        <td>~30 ms/pair</td>
+        <td>Managed, fits Gemini-native stacks.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Metrics it moves</h2>
+  <table>
+    <thead><tr><th>Metric</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td>Precision@K</td><td><strong>Big improvement</strong> — the headline win</td></tr>
+      <tr><td>MRR</td><td><strong>Big improvement</strong> — pushes the best chunk to rank 1</td></tr>
+      <tr><td>Context Precision</td><td>Improves — same mechanism</td></tr>
+      <tr><td>Faithfulness / Hallucination Rate</td><td>Modest improvement (cleaner context = fewer hallucinations)</td></tr>
+      <tr><td>Hit@K</td><td>Flat — reranker can't find chunks not already in the candidate set</td></tr>
+      <tr><td>Recall@K</td><td>Mostly flat; sometimes +1–3pp</td></tr>
+      <tr><td>Latency (p95/p99)</td><td><strong>Worse</strong> by typically 100–500ms</td></tr>
+    </tbody>
+  </table>
+
+  <h2>When to add it</h2>
+  <ul>
+    <li>Eval shows <strong>MRR is low</strong> while Hit@K is fine</li>
+    <li>Eval shows <strong>Precision@K is low</strong> while Recall@K is OK</li>
+    <li>Generation cost dominated by junk chunks polluting the prompt</li>
+    <li>You're already using high K (≥ 20) for recall and want focus back</li>
+  </ul>
+
+  <h2>When NOT to bother</h2>
+  <ul>
+    <li><strong>Hit@K is low</strong> — the right chunk isn't in the candidate set; reranking can't conjure it. Fix retrieval first.</li>
+    <li>Latency-bound and SLO already tight — +200ms might break it</li>
+    <li>Tiny corpus (&lt; 100 chunks) — nothing to rerank</li>
+    <li>You haven't measured. Don't add it speculatively.</li>
+  </ul>
+
+  <h2>Tuning knobs</h2>
+  <table>
+    <thead><tr><th>Knob</th><th>Effect</th><th>Default</th></tr></thead>
+    <tbody>
+      <tr><td><code>k_each</code> in stage 1</td><td>Recall ceiling — reranker can only reorder; can't add. Higher = better recall, slower.</td><td>20–50</td></tr>
+      <tr><td><code>top_n</code> after rerank</td><td>How many chunks reach the LLM. Affects prompt size and Precision@K.</td><td>3–5</td></tr>
+      <tr><td>Reranker model size</td><td>Quality vs latency vs memory.</td><td>L-12 MiniLM</td></tr>
+      <tr><td>Score threshold post-rerank</td><td>Optional cutoff. Drop chunks below 0.3 even if in top_n.</td><td>off by default</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Mental models</h2>
+  <div class="callout callout-tip">
+    <strong>Search vs interview.</strong> Bi-encoder retrieval is a resume screen — fast, looks at each candidate independently. Cross-encoder rerank is the actual interview — slow, sees the candidate face-to-face. You can't interview 10,000 candidates and you can't hire from resume scores alone.
+  </div>
+  <div class="callout callout-tip">
+    <strong>MuleSoft analogue.</strong> Same shape as a two-tier filter in a Mule flow: cheap gateway check (API key, rate limit) drops 95% of bad traffic; deeper validation runs only on survivors.
+  </div>
+
+  <h2>Quick gotchas</h2>
+  <div class="callout callout-warn">
+    <ul style="margin:0">
+      <li><strong>Reranker scores aren't probabilities.</strong> They're raw model logits. Don't compare across different reranker models.</li>
+      <li><strong>Stage 1 limits stage 2.</strong> If hybrid retrieval misses the right chunk in top 25, no reranker can save you. Tune retrieval recall before adding rerank.</li>
+      <li><strong>First call is slow.</strong> The model loads on first <code>predict()</code> — warm it at startup.</li>
+      <li><strong>CPU is fine for L-12 MiniLM</strong> at ≤ 50 candidates. For larger or BGE-large, use GPU.</li>
+    </ul>
+  </div>
+
+  <h2>Lessons that touch this</h2>
+  <ul>
+    <li><a href="../lessons/0010-vector-db.html">L10 — Vector DB</a> — first mention as a possible upgrade</li>
+    <li><a href="../lessons/0014-rag-evaluation.html">L14 — RAG Evaluation</a> — how to measure if reranking helped</li>
+    <li><a href="../lessons/0016-improving-rag-metrics.html">L16 — Improving Metrics</a> — playbook entries that prescribe reranking</li>
+  </ul>
+
+  <h2>Going deeper</h2>
+  <ul>
+    <li><a href="https://www.sbert.net/examples/applications/retrieve_rerank/README.html">Sentence-Transformers · Retrieve and Rerank</a> — canonical guide</li>
+    <li><a href="https://huggingface.co/cross-encoder">HuggingFace cross-encoder model hub</a> — browse alternatives</li>
+    <li><a href="https://docs.cohere.com/docs/rerank-overview">Cohere Rerank docs</a> — managed alternative</li>
+    <li><a href="https://cloud.google.com/generative-ai-app-builder/docs/ranking">Vertex AI Ranking API</a> — Google's managed reranker</li>
+  </ul>
+
+  <div class="footer-links">
+    <a href="../lessons/0016-improving-rag-metrics.html">← Back to L16 — Improving Metrics</a>
+    &nbsp; · &nbsp;
+    <a href="../RESOURCES.md">All resources</a>
+  </div>
+
+</div>
+</body>
+</html>

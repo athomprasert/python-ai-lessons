@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L25 — Multi-agent: supervisor, swarm, hierarchical</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .series-banner {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      color: #4338ca;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .series-banner strong { color: #312e81; }
+
+    .lesson-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .lesson-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.3rem; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0.9rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .ty  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.6rem 0 1.1rem; font-size: 0.88rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.65rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+      border-left: 4px solid;
+      font-size: 0.9rem;
+    }
+    .callout strong { font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .callout-tip      { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn     { background: #fffbeb; border-color: #f59e0b; }
+    .callout-syntax   { background: #fdf4ff; border-color: #a855f7; }
+    .callout-pedagogy { background: #f1f5ff; border-color: #6366f1; }
+
+    .exercise-box {
+      border: 2px solid #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+      background: #fefefe;
+    }
+    .exercise-box h3 { margin-top: 0; }
+    .exercise-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    details {
+      margin: 0.5rem 0;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+    }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    details[open] summary { margin-bottom: 0.4rem; }
+
+    .quiz { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.7rem 0; }
+    .quiz-q { font-weight: 600; margin-bottom: 0.4rem; }
+
+    .ascii-diagram {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 6px;
+      margin: 0.7rem 0;
+    }
+
+    .footer-links { margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid #ddd; font-size: 0.82rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="series-banner">
+    <strong>LangGraph mini-series · post-bonus</strong> · Three multi-agent patterns in one lesson. Longer than usual on purpose.
+    &nbsp;<a href="0024-human-in-the-loop-interrupt.html">← L24: HITL</a>
+  </div>
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Lesson 25 · Python for AI/ML</p>
+    <h1>Multi-agent: supervisor, swarm, hierarchical</h1>
+    <p class="tagline">Three ways to coordinate multiple agents in one graph. You learn them all so you can pick the right shape for the job — not the first one you saw on a blog.</p>
+  </header>
+
+  <div class="callout callout-pedagogy">
+    <strong>Heads-up.</strong> This is the longest lesson in the series — three patterns means three exercises. Pace yourself; do them in order. The supervisor exercise is the foundation; swarm and hierarchical build on it.
+  </div>
+
+  <h2>Why bother with multi-agent at all?</h2>
+  <p>Your L21 agent is one LLM in a loop with tools. It works. So why complicate it?</p>
+  <p>A single agent breaks down when:</p>
+  <ul>
+    <li><strong>Too many tools.</strong> Past ~20–30 tools the LLM gets lost picking the right one. Specialists shrink each agent's tool list.</li>
+    <li><strong>Conflicting personas.</strong> "Researcher" wants to explore broadly; "Critic" wants to find flaws; "Planner" wants to commit. Cramming all three into one system prompt produces mediocre work in all three modes.</li>
+    <li><strong>Cost-tier separation.</strong> Routing decisions are simple — use a cheap fast model. Synthesis is hard — use a smart expensive model. One agent can only have one model.</li>
+    <li><strong>Permission boundaries.</strong> Read-only tools can run autonomously. Destructive tools need HITL. Different agents = different security postures.</li>
+  </ul>
+  <p>Multi-agent is the answer. The question is <em>which shape</em>.</p>
+
+  <h2>The three patterns — at a glance</h2>
+
+  <table>
+    <thead><tr><th>Pattern</th><th>Topology</th><th>Routing decided by</th><th>Best for</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Supervisor</strong></td>
+        <td>Star — one boss, N specialists</td>
+        <td>The supervisor (LLM or Python)</td>
+        <td>Most cases; clear audit trail; easy HITL</td>
+      </tr>
+      <tr>
+        <td><strong>Swarm</strong></td>
+        <td>Mesh — agents hand off peer-to-peer</td>
+        <td>Each agent decides who to call next</td>
+        <td>When the "next agent" depends on what the current agent <em>just learned</em></td>
+      </tr>
+      <tr>
+        <td><strong>Hierarchical</strong></td>
+        <td>Tree — supervisors of supervisors</td>
+        <td>Each supervisor at its level</td>
+        <td>Large systems (10+ agents); domain separation</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Pattern 1 — Supervisor</h2>
+
+  <div class="ascii-diagram">                  ┌──► researcher ──┐
+                  │                 │
+   user ──► supervisor ──► executor ┼──► supervisor (loop) ──► END
+                  │                 │
+                  └──► critic ──────┘</div>
+
+  <p>The supervisor receives the message history, picks the next specialist, sends the work, gets the result back, decides what to do next. Each specialist is a full agent with its own prompt and (usually) its own tools.</p>
+
+  <h3>Why it's the default starting point</h3>
+  <ul>
+    <li>One place to inspect routing logic — easy debugging</li>
+    <li>One place to enforce policy ("always run researcher before executor")</li>
+    <li>One place to insert HITL — gate the supervisor's tool calls, or interrupt before the supervisor routes to <code>executor</code></li>
+    <li>One audit trail — every routing decision flows through one node</li>
+  </ul>
+
+  <h3>Code shape</h3>
+<pre><code><span class="kw">def</span> <span class="fn">supervisor</span>(state: MessagesState) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="cm"># Reads state. Returns a "routing decision" — either a normal LLM message,</span>
+    <span class="cm"># or a Command telling the graph which node to go to next.</span>
+    ...
+
+graph.<span class="fn">add_node</span>(<span class="str">"supervisor"</span>, supervisor)
+graph.<span class="fn">add_node</span>(<span class="str">"researcher"</span>, researcher)
+graph.<span class="fn">add_node</span>(<span class="str">"executor"</span>, executor)
+
+graph.<span class="fn">add_edge</span>(START, <span class="str">"supervisor"</span>)
+graph.<span class="fn">add_conditional_edges</span>(<span class="str">"supervisor"</span>, route_from_supervisor)
+graph.<span class="fn">add_edge</span>(<span class="str">"researcher"</span>, <span class="str">"supervisor"</span>)  <span class="cm"># specialists report back</span>
+graph.<span class="fn">add_edge</span>(<span class="str">"executor"</span>,   <span class="str">"supervisor"</span>)</code></pre>
+
+  <p>Specialists always return to the supervisor. The supervisor decides when to stop (route to <code>END</code>).</p>
+
+  <h2>Pattern 2 — Swarm</h2>
+
+  <div class="ascii-diagram">   user ──► researcher ──hands off──► executor ──hands off──► critic ──► END
+              ↑                          │                       │
+              └──────────can call back to either────────────────┘</div>
+
+  <p>No central boss. Each agent decides, at the end of its turn, who to hand off to. The handoff is done via <code>Command(goto="agent_name")</code> — the agent returns a Command instead of a normal state update, and LangGraph routes accordingly.</p>
+
+  <div class="callout callout-syntax">
+    <strong>New syntax — <code>Command(goto=...)</code></strong><br>
+    You already saw <code>Command(resume=...)</code> in L24. <code>Command</code> is a general control-flow primitive: <code>goto</code> jumps to a specific node, <code>update</code> writes state, <code>resume</code> wakes an interrupted graph. You can mix them: <code>Command(goto="executor", update={"plan": "..."})</code> hands off <em>and</em> updates state in one step.
+  </div>
+
+<pre><code><span class="kw">from</span> langgraph.types <span class="kw">import</span> Command
+
+<span class="kw">def</span> <span class="fn">researcher</span>(state: MessagesState) <span class="op">-></span> Command:
+    findings <span class="op">=</span> <span class="fn">do_research</span>(state)
+    <span class="cm"># Researcher itself decides: do I have enough? If yes, hand off to executor.</span>
+    <span class="kw">if</span> findings.complete:
+        <span class="kw">return</span> <span class="fn">Command</span>(goto<span class="op">=</span><span class="str">"executor"</span>, update<span class="op">=</span>{<span class="str">"messages"</span>: [findings]})
+    <span class="kw">return</span> <span class="fn">Command</span>(goto<span class="op">=</span><span class="str">"critic"</span>, update<span class="op">=</span>{<span class="str">"messages"</span>: [findings]})</code></pre>
+
+  <h3>When swarm beats supervisor</h3>
+  <p>When the next agent depends on <em>information the current agent just discovered</em>. A supervisor would have to read the result, decide, then dispatch — two LLM calls. A swarm agent decides in the same step it produces the result — one LLM call.</p>
+
+  <h3>Why it's not the default</h3>
+  <ul>
+    <li>Harder to audit — routing logic scattered across N agents</li>
+    <li>Easier to build infinite loops (A → B → A → B...)</li>
+    <li>Harder to enforce policy globally</li>
+  </ul>
+
+  <h2>Pattern 3 — Hierarchical</h2>
+
+  <div class="ascii-diagram">                    ┌── top-level supervisor ──┐
+                    │                          │
+            research-supervisor          execution-supervisor
+            ┌──┴──┐                      ┌──┴──┐
+       google-     code-           deploy-    monitor-
+       search-     search-         agent      agent
+       agent       agent</div>
+
+  <p>Supervisors of supervisors. Each sub-supervisor is itself a compiled subgraph and is added as a single node to the top-level graph.</p>
+
+  <div class="callout callout-syntax">
+    <strong>New syntax — subgraphs as nodes.</strong><br>
+    Any compiled graph can be added as a node to another graph. The outer graph just sees one node; internally it's a whole graph with its own state and logic.
+<pre style="margin-top:0.4rem"><code>research_subgraph <span class="op">=</span> build_research_team().<span class="fn">compile</span>()  <span class="cm"># its own multi-agent system</span>
+parent_graph.<span class="fn">add_node</span>(<span class="str">"research_team"</span>, research_subgraph)  <span class="cm"># now one node</span></code></pre>
+    Keep the state shapes compatible (both use <code>MessagesState</code>) or write an adapter function.
+  </div>
+
+  <h3>When hierarchical is worth it</h3>
+  <ul>
+    <li>10+ specialists — one supervisor managing all of them gets prompt-context-bloated and confused</li>
+    <li>Clean domain separation — a research team should not see deployment tools, and vice versa</li>
+    <li>Different ownership — different sub-supervisors can be maintained by different teams</li>
+  </ul>
+
+  <h3>Why you should resist using it early</h3>
+  <p>Two layers of LLM routing means two layers of latency and cost per turn. Most projects never need hierarchical — they just <em>think</em> they do because it looks impressive on a slide. Start with supervisor. Add a layer only when supervisor is genuinely overwhelmed.</p>
+
+  <h2>Cost reality — read this before you write code</h2>
+
+  <table>
+    <thead><tr><th>Pattern</th><th>LLM calls per user turn</th><th>Token usage</th><th>Failure modes</th></tr></thead>
+    <tbody>
+      <tr><td>Single agent</td><td>1 (+1 per tool round)</td><td>1×</td><td>Wrong tool, hallucination</td></tr>
+      <tr><td>Supervisor</td><td>2–4× (router + specialists)</td><td>3–5×</td><td>Router routes wrong</td></tr>
+      <tr><td>Swarm</td><td>2–6×</td><td>3–6×</td><td>Infinite handoff loops</td></tr>
+      <tr><td>Hierarchical</td><td>4–10×</td><td>6–15×</td><td>Layered confusion; debug hell</td></tr>
+    </tbody>
+  </table>
+
+  <p>This is why a single-agent system that <em>works</em> beats a multi-agent system that's "more architecturally pure." Reach for multi-agent only when single-agent is genuinely failing.</p>
+
+  <h2 id="step-0">Step 0 — install</h2>
+<pre><code><span class="cm"># Nothing new. Command and StateGraph already ship with langgraph.</span>
+cd ~/ai/claude/projects/python/exercises/langgraph
+source .venv/bin/activate</code></pre>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 1 · guided · supervisor pattern</span>
+    <h3>Build a deterministic supervisor</h3>
+
+    <p>Goal: build a supervisor with two specialists (<code>researcher</code>, <code>executor</code>) using <em>deterministic Python routing</em> — no LLM in the supervisor yet. You'll see the graph topology in isolation.</p>
+
+    <p>Save as <code>l25_ex1_supervisor.py</code>.</p>
+
+    <h4>The scenario</h4>
+    <p>User asks: <em>"deploy customer-api"</em>. The supervisor should:</p>
+    <ol>
+      <li>First call <code>researcher</code> to gather context</li>
+      <li>Then call <code>executor</code> to do the work</li>
+      <li>Then end</li>
+    </ol>
+
+    <h4>Skeleton — fill in the TODOs</h4>
+<pre><code><span class="kw">from</span> typing <span class="kw">import</span> TypedDict, Literal
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, START, END
+
+<span class="cm"># --- STATE ---</span>
+<span class="kw">class</span> <span class="ty">State</span>(TypedDict):
+    task: <span class="ty">str</span>             <span class="cm"># what the user wants</span>
+    research: <span class="ty">str</span>         <span class="cm"># filled by researcher</span>
+    result: <span class="ty">str</span>           <span class="cm"># filled by executor</span>
+    next_agent: <span class="ty">str</span>       <span class="cm"># supervisor sets this; "researcher"|"executor"|"end"</span>
+
+<span class="cm"># --- SPECIALISTS ---</span>
+<span class="kw">def</span> <span class="fn">researcher</span>(state: State) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="fn">print</span>(<span class="str">f"[researcher] researching '{state['task']}'"</span>)
+    <span class="kw">return</span> {<span class="str">"research"</span>: <span class="str">f"docs for '{state['task']}' say: use staging first"</span>}
+
+<span class="kw">def</span> <span class="fn">executor</span>(state: State) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="fn">print</span>(<span class="str">f"[executor] executing with research: {state['research']}"</span>)
+    <span class="kw">return</span> {<span class="str">"result"</span>: <span class="str">f"deployed: {state['task']}"</span>}
+
+<span class="cm"># --- SUPERVISOR ---</span>
+<span class="kw">def</span> <span class="fn">supervisor</span>(state: State) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="cm"># TODO 1: deterministic routing logic</span>
+    <span class="cm">#   - If research is empty -> next_agent = "researcher"</span>
+    <span class="cm">#   - Else if result is empty -> next_agent = "executor"</span>
+    <span class="cm">#   - Else -> next_agent = "end"</span>
+    ...
+
+<span class="cm"># --- ROUTER (used by add_conditional_edges) ---</span>
+<span class="kw">def</span> <span class="fn">route</span>(state: State) <span class="op">-></span> Literal[<span class="str">"researcher"</span>, <span class="str">"executor"</span>, <span class="str">"end"</span>]:
+    <span class="cm"># TODO 2: return the value of state["next_agent"]</span>
+    ...
+
+<span class="cm"># --- GRAPH ---</span>
+graph <span class="op">=</span> StateGraph(State)
+graph.<span class="fn">add_node</span>(<span class="str">"supervisor"</span>, supervisor)
+graph.<span class="fn">add_node</span>(<span class="str">"researcher"</span>, researcher)
+graph.<span class="fn">add_node</span>(<span class="str">"executor"</span>, executor)
+
+graph.<span class="fn">add_edge</span>(START, <span class="str">"supervisor"</span>)
+
+<span class="cm"># TODO 3: add conditional edges from supervisor using the route() function</span>
+<span class="cm"># The path_map should be:  "researcher" -> "researcher", "executor" -> "executor", "end" -> END</span>
+graph.<span class="fn">add_conditional_edges</span>(...)
+
+<span class="cm"># TODO 4: both specialists must come BACK to supervisor — wire those edges</span>
+...
+
+app <span class="op">=</span> graph.<span class="fn">compile</span>()
+
+<span class="cm"># Print the topology to confirm shape</span>
+<span class="fn">print</span>(app.<span class="fn">get_graph</span>().<span class="fn">draw_ascii</span>())
+
+<span class="cm"># Run it</span>
+result <span class="op">=</span> app.<span class="fn">invoke</span>({<span class="str">"task"</span>: <span class="str">"customer-api"</span>, <span class="str">"research"</span>: <span class="str">""</span>, <span class="str">"result"</span>: <span class="str">""</span>, <span class="str">"next_agent"</span>: <span class="str">""</span>})
+<span class="fn">print</span>(<span class="str">"\nFinal:"</span>, result)</code></pre>
+
+    <details>
+      <summary>Hint 1 — supervisor logic</summary>
+<pre><code><span class="kw">def</span> <span class="fn">supervisor</span>(state: State) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="kw">if</span> <span class="kw">not</span> state[<span class="str">"research"</span>]:
+        next_agent <span class="op">=</span> <span class="str">"researcher"</span>
+    <span class="kw">elif</span> <span class="kw">not</span> state[<span class="str">"result"</span>]:
+        next_agent <span class="op">=</span> <span class="str">"executor"</span>
+    <span class="kw">else</span>:
+        next_agent <span class="op">=</span> <span class="str">"end"</span>
+    <span class="fn">print</span>(<span class="str">f"[supervisor] routing to {next_agent}"</span>)
+    <span class="kw">return</span> {<span class="str">"next_agent"</span>: next_agent}</code></pre>
+    </details>
+
+    <details>
+      <summary>Hint 2 — the router function</summary>
+<pre><code><span class="kw">def</span> <span class="fn">route</span>(state: State) <span class="op">-></span> <span class="ty">str</span>:
+    <span class="kw">return</span> state[<span class="str">"next_agent"</span>]</code></pre>
+      <p>The router reads state and returns the string key into the path_map.</p>
+    </details>
+
+    <details>
+      <summary>Hint 3 — wiring the edges</summary>
+<pre><code>graph.<span class="fn">add_conditional_edges</span>(
+    <span class="str">"supervisor"</span>,
+    route,
+    {<span class="str">"researcher"</span>: <span class="str">"researcher"</span>, <span class="str">"executor"</span>: <span class="str">"executor"</span>, <span class="str">"end"</span>: END},
+)
+graph.<span class="fn">add_edge</span>(<span class="str">"researcher"</span>, <span class="str">"supervisor"</span>)
+graph.<span class="fn">add_edge</span>(<span class="str">"executor"</span>,   <span class="str">"supervisor"</span>)</code></pre>
+      <p>The specialists report back to the supervisor — that's what makes it a star topology.</p>
+    </details>
+
+    <h4>Verification</h4>
+    <p>Output should look like:</p>
+<pre><code>[supervisor] routing to researcher
+[researcher] researching 'customer-api'
+[supervisor] routing to executor
+[executor] executing with research: docs for 'customer-api' say: use staging first
+[supervisor] routing to end
+
+Final: {'task': 'customer-api', 'research': '...', 'result': 'deployed: customer-api', 'next_agent': 'end'}</code></pre>
+
+    <div class="callout callout-tip" style="margin-top:0.5rem">
+      <strong>Checkpoint.</strong> Paste your code + output. I'll review before moving to Ex2.
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 2 · guided · swarm pattern</span>
+    <h3>Convert the supervisor into a swarm</h3>
+
+    <p>Goal: same two specialists, but <em>no central supervisor</em>. Each agent hands off directly using <code>Command(goto=...)</code>.</p>
+
+    <p>Save as <code>l25_ex2_swarm.py</code>.</p>
+
+    <h4>The scenario</h4>
+    <p>Same task: <em>"deploy customer-api"</em>. But now:</p>
+    <ul>
+      <li><code>researcher</code> decides where to hand off based on its findings</li>
+      <li><code>executor</code> decides whether to end or loop back to <code>researcher</code> for more info</li>
+    </ul>
+
+    <h4>Skeleton — fill in the TODOs</h4>
+<pre><code><span class="kw">from</span> typing <span class="kw">import</span> TypedDict
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, START, END
+<span class="kw">from</span> langgraph.types <span class="kw">import</span> Command
+
+<span class="cm"># --- STATE ---</span>
+<span class="kw">class</span> <span class="ty">State</span>(TypedDict):
+    task: <span class="ty">str</span>
+    research: <span class="ty">str</span>
+    result: <span class="ty">str</span>
+
+<span class="cm"># --- AGENTS — each returns a Command(goto=..., update=...) ---</span>
+<span class="kw">def</span> <span class="fn">researcher</span>(state: State) <span class="op">-></span> Command:
+    <span class="fn">print</span>(<span class="str">f"[researcher] researching '{state['task']}'"</span>)
+    research <span class="op">=</span> <span class="str">f"docs for '{state['task']}' say: use staging first"</span>
+
+    <span class="cm"># TODO 1: hand off to executor with the research result written to state.</span>
+    <span class="cm"># Use Command(goto=..., update={...}).</span>
+    <span class="kw">return</span> ...
+
+<span class="kw">def</span> <span class="fn">executor</span>(state: State) <span class="op">-></span> Command:
+    <span class="fn">print</span>(<span class="str">f"[executor] executing with: {state['research']}"</span>)
+    result <span class="op">=</span> <span class="str">f"deployed: {state['task']}"</span>
+
+    <span class="cm"># TODO 2: decide to end vs loop back to researcher.</span>
+    <span class="cm"># For this toy: if "staging" is in the research, end. Otherwise loop back.</span>
+    <span class="kw">if</span> <span class="str">"staging"</span> <span class="kw">in</span> state[<span class="str">"research"</span>]:
+        <span class="kw">return</span> ...   <span class="cm"># Command going to END, with update={"result": result}</span>
+    <span class="kw">return</span> ...       <span class="cm"># Command going back to "researcher", update={"result": result}</span>
+
+<span class="cm"># --- GRAPH ---</span>
+<span class="cm"># Note: NO add_conditional_edges. The Command(goto=...) returned by each</span>
+<span class="cm"># node tells LangGraph where to go. The graph just needs to know which nodes EXIST.</span>
+graph <span class="op">=</span> StateGraph(State)
+graph.<span class="fn">add_node</span>(<span class="str">"researcher"</span>, researcher)
+graph.<span class="fn">add_node</span>(<span class="str">"executor"</span>, executor)
+
+<span class="cm"># TODO 3: graph still needs a starting edge from START. Wire START -> researcher.</span>
+...
+
+app <span class="op">=</span> graph.<span class="fn">compile</span>()
+<span class="fn">print</span>(app.<span class="fn">get_graph</span>().<span class="fn">draw_ascii</span>())
+
+result <span class="op">=</span> app.<span class="fn">invoke</span>({<span class="str">"task"</span>: <span class="str">"customer-api"</span>, <span class="str">"research"</span>: <span class="str">""</span>, <span class="str">"result"</span>: <span class="str">""</span>})
+<span class="fn">print</span>(<span class="str">"\nFinal:"</span>, result)</code></pre>
+
+    <details>
+      <summary>Hint 1 — researcher hands off</summary>
+<pre><code><span class="kw">return</span> <span class="fn">Command</span>(
+    goto<span class="op">=</span><span class="str">"executor"</span>,
+    update<span class="op">=</span>{<span class="str">"research"</span>: research},
+)</code></pre>
+    </details>
+
+    <details>
+      <summary>Hint 2 — executor's two branches</summary>
+<pre><code><span class="kw">if</span> <span class="str">"staging"</span> <span class="kw">in</span> state[<span class="str">"research"</span>]:
+    <span class="kw">return</span> <span class="fn">Command</span>(goto<span class="op">=</span>END,            update<span class="op">=</span>{<span class="str">"result"</span>: result})
+<span class="kw">return</span>     <span class="fn">Command</span>(goto<span class="op">=</span><span class="str">"researcher"</span>,   update<span class="op">=</span>{<span class="str">"result"</span>: result})</code></pre>
+      <p><strong>Important:</strong> <code>goto=END</code> uses the imported <code>END</code> sentinel — not the string <code>"end"</code>.</p>
+    </details>
+
+    <h4>Verification</h4>
+<pre><code>[researcher] researching 'customer-api'
+[executor] executing with: docs for 'customer-api' say: use staging first
+
+Final: {'task': 'customer-api', 'research': '...', 'result': 'deployed: customer-api'}</code></pre>
+
+    <h4>Reflection question</h4>
+    <p>Compare your Ex1 and Ex2 graphs. Which one would you find easier to debug if the agents started looping forever? Why?</p>
+
+    <div class="callout callout-tip" style="margin-top:0.5rem">
+      <strong>Checkpoint.</strong> Paste your code + output + your debug-ease take.
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 3 · stretch · hierarchical pattern</span>
+    <h3>Build a hierarchical multi-agent system</h3>
+
+    <p>No skeleton. You have the supervisor and swarm patterns down — combine them.</p>
+
+    <h4>The scenario — Anypoint copilot</h4>
+    <p>Build this topology:</p>
+    <div class="ascii-diagram">              top_supervisor
+              ┌──────┴──────┐
+       research_team   execution_team
+       (subgraph)      (subgraph)
+       ├ doc_search    ├ deployer
+       └ log_search    └ rotator</div>
+
+    <h4>Requirements</h4>
+    <ul>
+      <li><strong>Two subgraphs</strong>, each is its own supervisor + 2 specialists from Ex1's pattern</li>
+      <li><strong>Top supervisor</strong> routes between the two subgraphs based on the task</li>
+      <li>Use deterministic routing for all supervisors (no LLM) — focus on topology</li>
+      <li>The specialist agents can be trivial print-and-return functions</li>
+      <li>Both subgraphs and the top graph share a <code>MessagesState</code>-style state so messages flow cleanly</li>
+    </ul>
+
+    <h4>Hints (not full code)</h4>
+    <ol>
+      <li>Build <code>research_team_graph</code> using Ex1's pattern. Compile it: <code>research_team = research_team_graph.compile()</code></li>
+      <li>Add the compiled subgraph as a node: <code>top_graph.add_node("research_team", research_team)</code></li>
+      <li>Build <code>top_supervisor</code> as a Python function that routes: read state, decide if this is a research task or execution task</li>
+      <li>Wire conditional edges from <code>top_supervisor</code> to the two subgraph nodes</li>
+      <li>Subgraphs report back to the top supervisor — same star shape, just at the higher level</li>
+    </ol>
+
+    <h4>Test scenarios</h4>
+    <ul>
+      <li><em>"find docs on Connected App rotation"</em> → top_supervisor routes to research_team → returns answer → top_supervisor ends</li>
+      <li><em>"rotate the customer-api secret"</em> → top_supervisor routes to execution_team → returns confirmation → top_supervisor ends</li>
+      <li><em>"find docs on rotation AND then rotate the secret"</em> → top_supervisor routes to research_team first, then execution_team, then ends</li>
+    </ul>
+
+    <h4>Reflection questions</h4>
+    <ol>
+      <li>How many LLM calls would this make per user turn if every supervisor were an LLM? (count nodes traversed in scenario 3)</li>
+      <li>If you wanted to add HITL gating from L24 to <em>only</em> the rotator agent, where would <code>interrupt()</code> live? Inside the subgraph or in the top supervisor?</li>
+      <li>What's the smallest change you'd make to convert this hierarchy into a flat supervisor with 4 specialists? Would that be better or worse?</li>
+    </ol>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <p class="quiz-q">1. You're building an agent that searches MuleSoft docs and answers questions. Single agent or multi-agent?</p>
+    <details><summary>Answer</summary>
+      <p>Single agent. One tool (<code>search_docs</code>), one persona (assistant), one model. Multi-agent here adds latency and cost with zero quality gain. <strong>Default to single agent.</strong></p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">2. Supervisor vs swarm — which is harder to debug, and why?</p>
+    <details><summary>Answer</summary>
+      <p>Swarm. In supervisor, all routing logic is in one place — open the supervisor's code, see the whole policy. In swarm, the routing is distributed across N agents — to understand "why did agent C run next," you have to read whichever agent called it, and the trace can ping-pong.</p>
+      <p>This is why supervisor is the default. Reach for swarm only when the per-turn cost saving (one LLM call instead of two) actually matters for your throughput.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">3. You add a research-team subgraph as a node in your top-level graph. The subgraph uses <code>MessagesState</code>; the parent graph has a custom state with extra keys. What happens?</p>
+    <details><summary>Answer</summary>
+      <p>The subgraph only sees the keys it knows about (the <code>MessagesState</code> keys, i.e. <code>messages</code>). Other parent-state keys flow around it untouched. State updates from the subgraph merge back into parent state via the normal node-return mechanism.</p>
+      <p>If the schemas conflict (same key, different reducer or type), you need an adapter function as the node — read parent state, build the subgraph input, invoke the subgraph, translate the output back.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">4. Where does HITL (<code>interrupt()</code> from L24) fit cleanest in a supervisor architecture?</p>
+    <details><summary>Answer</summary>
+      <p>Two good places:</p>
+      <ul>
+        <li><strong>Inside the executor agent</strong>, before any destructive tool — same as L24 Ex2, scoped to the agent that actually has the dangerous tools</li>
+        <li><strong>In the supervisor's router</strong>, conditional on the route — "if the next agent is <code>executor</code> AND the task is destructive, pause for approval before dispatching"</li>
+      </ul>
+      <p>The first is simpler and keeps the safety logic next to the danger. The second gives the supervisor a chance to refine the plan before HITL — useful when the human's approval is for a <em>strategy</em>, not a single tool call.</p>
+    </details>
+  </div>
+
+  <h2>What you now know</h2>
+  <ul>
+    <li><strong>Supervisor</strong> — central router, easiest to debug, the default starting point</li>
+    <li><strong>Swarm</strong> — peer-to-peer handoffs via <code>Command(goto=...)</code>; saves an LLM call when the next agent depends on what was just discovered</li>
+    <li><strong>Hierarchical</strong> — subgraphs as nodes; use only when supervisor is overwhelmed by 10+ specialists</li>
+    <li><code>Command</code> is the multi-tool primitive: <code>goto</code> for routing, <code>update</code> for state, <code>resume</code> for HITL — mix as needed</li>
+    <li>Each LLM call multiplies cost — multi-agent must justify itself with quality, not architectural beauty</li>
+    <li>HITL plugs cleanly into supervisor; harder to enforce uniformly in swarm</li>
+  </ul>
+
+  <h2>The MuleSoft angle</h2>
+  <p>The "Anypoint copilot" demo your customers will ask for is a <strong>supervisor with HITL</strong>:</p>
+  <ul>
+    <li>One supervisor (gpt-4 / Claude Sonnet) routes</li>
+    <li>Researcher agent — read-only, autonomous (search Exchange, read CloudHub logs, query docs)</li>
+    <li>Diagnoser agent — read-only, autonomous (correlate logs with metrics)</li>
+    <li>Remediator agent — destructive tools, HITL-gated via L24 (deploy, restart, rotate)</li>
+    <li>All routing decisions traced through one supervisor → easy audit log → SOC2/SOX-friendly</li>
+  </ul>
+  <p>If you build this end-to-end, you have a real demo asset. Not a slideware concept — a working agent your enterprise customers can poke at.</p>
+
+  <h2>What's next</h2>
+  <p>You now have the complete LangGraph toolkit. Where to go from here is a real architectural choice, not just "next lesson":</p>
+  <ul>
+    <li><strong>L26 — Real MuleSoft tools</strong> — swap the mocks in your L21/L22/L24 agent for live Anypoint Platform API calls (CloudHub status, Exchange asset search, Connected App management). This is where the demo becomes real.</li>
+    <li><strong>L26 — Agent as MCP server</strong> — expose your agent over MCP so Claude Code (or any MCP client) can call it as a tool. Inverts the relationship — your MuleSoft agent becomes a capability for other agents to use.</li>
+    <li><strong>L26 — Production deployment</strong> — what changes when you move from <code>python script.py</code> to FastAPI + Postgres checkpointer + Docker? Concurrency, secrets, state migration.</li>
+  </ul>
+  <p>Tell me which direction when you've worked through L25.</p>
+
+  <div class="footer-links">
+    <a href="0024-human-in-the-loop-interrupt.html">← L24 — HITL with interrupt()</a>
+    &nbsp; · &nbsp;
+    <a href="0023-streaming-observability.html">L23 — Streaming</a>
+    &nbsp; · &nbsp;
+    <a href="0022-checkpointing-time-travel.html">L22 — Checkpointing</a>
+    &nbsp; · &nbsp;
+    <a href="0021-llm-node-tools-graph.html">L21 — LLM Node + Tools</a>
+    &nbsp; · &nbsp;
+    <a href="0020-langgraph-state-nodes-edges.html">L20 — State, Nodes, Edges</a>
+    &nbsp; · &nbsp;
+    <a href="../MISSION.md">Mission</a>
+  </div>
+
+</div>
+</body>
+</html>

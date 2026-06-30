@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 1 — Python Essentials for API Work</title>
+  <style>
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+
+    /* ─── Layout ─── */
+    .page { max-width: 760px; margin: 0 auto; }
+
+    /* ─── Header ─── */
+    .lesson-header {
+      border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-meta {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 0.4rem;
+    }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    /* ─── Progress pill ─── */
+    .progress {
+      display: inline-flex;
+      gap: 0.4rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .pill {
+      border-radius: 99px;
+      padding: 0.2rem 0.8rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    /* ─── Section headings ─── */
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.8rem 0 0.8rem;
+      padding-left: 0.75rem;
+      border-left: 4px solid #1a1a1a;
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+
+    /* ─── Prose ─── */
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    /* ─── Code ─── */
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    /* Syntax highlighting (manual) */
+    .kw  { color: #cba6f7; } /* keyword */
+    .fn  { color: #89dceb; } /* function / builtin */
+    .str { color: #a6e3a1; } /* string */
+    .num { color: #fab387; } /* number */
+    .cm  { color: #6c7086; font-style: italic; } /* comment */
+    .var { color: #cdd6f4; } /* variable */
+    .op  { color: #89b4fa; } /* operator / punctuation */
+
+    /* ─── Callout boxes ─── */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin: 1.2rem 0;
+      border-left: 4px solid;
+    }
+    .callout-why   { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip   { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn  { background: #fffbeb; border-color: #f59e0b; }
+    .callout-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+      opacity: 0.7;
+    }
+
+    /* ─── Quiz ─── */
+    .quiz {
+      background: #fff;
+      border: 2px solid #1a1a1a;
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 2rem 0;
+    }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1rem; }
+    .quiz-question p { margin-bottom: 0.5rem; }
+    .options { list-style: none; padding: 0; }
+    .options li {
+      padding: 0.5rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1.5px solid #e5e7eb;
+      margin-bottom: 0.4rem;
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    /* ─── Try it block ─── */
+    .tryit {
+      background: #fff;
+      border: 2px dashed #94a3b8;
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1.5rem 0;
+    }
+    .tryit-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 0.6rem;
+    }
+
+    /* ─── Footer ─── */
+    .footer {
+      margin-top: 3.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #ddd;
+      font-size: 0.85rem;
+      color: #888;
+    }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    /* ─── Scroll indicator ─── */
+    @media print {
+      .quiz, .tryit { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════════════ -->
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 1 of ?</p>
+    <h1>Python Essentials for API Work</h1>
+    <p class="tagline">The six patterns you'll use in almost every Python script you write.</p>
+    <div class="progress">
+      <span class="pill pill-now">Lesson 1 — You are here</span>
+      <span class="pill pill-next">Lesson 2 — Calling HTTP APIs</span>
+      <span class="pill pill-next">Lesson 3 — Calling Claude</span>
+      <span class="pill pill-next">Lesson 4 — Building an agent</span>
+    </div>
+  </header>
+
+  <!-- ══ INTRO ══════════════════════════════════════════════════════ -->
+  <h2>Why this lesson</h2>
+  <p>Before we call APIs or build AI agents, we need a firm grip on six Python patterns that appear everywhere in that work. This lesson is practical — by the end you'll have a real script that prints structured data, not "Hello, World!".</p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Connection to your mission</div>
+    Every AI agent you'll ever build calls APIs and processes JSON. This lesson builds exactly those muscles.
+  </div>
+
+  <!-- ══ PATTERN 1 ════════════════════════════════════════════════════ -->
+  <h2>1 — Variables &amp; types</h2>
+  <p>Python is <strong>dynamically typed</strong> — you don't declare types, Python figures them out.</p>
+
+<pre><code><span class="var">name</span>    <span class="op">=</span> <span class="str">"Attapol"</span>       <span class="cm"># str</span>
+<span class="var">count</span>   <span class="op">=</span> <span class="num">42</span>              <span class="cm"># int</span>
+<span class="var">price</span>   <span class="op">=</span> <span class="num">9.99</span>            <span class="cm"># float</span>
+<span class="var">active</span>  <span class="op">=</span> <span class="kw">True</span>            <span class="cm"># bool</span>
+<span class="var">nothing</span> <span class="op">=</span> <span class="kw">None</span>            <span class="cm"># null / no value</span>
+
+<span class="fn">print</span>(<span class="fn">type</span>(<span class="var">name</span>))         <span class="cm"># &lt;class 'str'&gt;</span></code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Tip</div>
+    <code>None</code> in Python is like <code>null</code> in JSON or <code>null</code> in Java. You'll see it constantly when a field is missing in an API response.
+  </div>
+
+  <!-- Quiz 1 -->
+  <div class="quiz">
+    <h3>Quick check — Variables</h3>
+    <div class="quiz-question" id="q1">
+      <p>What is the type of <code>x = "42"</code>?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">int (integer)</li>
+        <li data-i="1">str (string)</li>
+        <li data-i="2">float</li>
+        <li data-i="3">bool</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+  </div>
+
+  <!-- ══ PATTERN 2 ════════════════════════════════════════════════════ -->
+  <h2>2 — Dictionaries</h2>
+  <p>A dictionary is a <strong>key-value store</strong> — exactly like a JSON object. It's the most important data structure for API work.</p>
+
+<pre><code><span class="cm"># Create a dict (looks just like JSON)</span>
+<span class="var">user</span> <span class="op">=</span> <span class="op">{</span>
+    <span class="str">"name"</span><span class="op">:</span>  <span class="str">"Attapol"</span><span class="op">,</span>
+    <span class="str">"role"</span><span class="op">:</span>  <span class="str">"Architect"</span><span class="op">,</span>
+    <span class="str">"active"</span><span class="op">:</span> <span class="kw">True</span>
+<span class="op">}</span>
+
+<span class="cm"># Read a value</span>
+<span class="fn">print</span>(<span class="var">user</span><span class="op">[</span><span class="str">"name"</span><span class="op">]</span>)       <span class="cm"># Attapol</span>
+
+<span class="cm"># Safe read — returns None if key missing</span>
+<span class="fn">print</span>(<span class="var">user</span><span class="op">.</span><span class="fn">get</span>(<span class="str">"email"</span>))  <span class="cm"># None</span>
+
+<span class="cm"># Add or update a key</span>
+<span class="var">user</span><span class="op">[</span><span class="str">"email"</span><span class="op">]</span> <span class="op">=</span> <span class="str">"a@example.com"</span>
+
+<span class="cm"># Loop over keys and values</span>
+<span class="kw">for</span> <span class="var">key</span><span class="op">,</span> <span class="var">value</span> <span class="kw">in</span> <span class="var">user</span><span class="op">.</span><span class="fn">items</span>()<span class="op">:</span>
+    <span class="fn">print</span>(<span class="var">key</span><span class="op">,</span> <span class="str">"→"</span><span class="op">,</span> <span class="var">value</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Tip</div>
+    Always use <code>.get()</code> instead of <code>[]</code> when reading from an API response — API fields can be missing, and <code>[]</code> will crash while <code>.get()</code> returns <code>None</code>.
+  </div>
+
+  <!-- Quiz 2 -->
+  <div class="quiz">
+    <h3>Quick check — Dictionaries</h3>
+    <div class="quiz-question" id="q2">
+      <p>What does <code>user.get("phone")</code> return if <code>"phone"</code> is not a key in <code>user</code>?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">An empty string <code>""</code></li>
+        <li data-i="1">A <code>KeyError</code> exception</li>
+        <li data-i="2"><code>None</code></li>
+        <li data-i="3"><code>False</code></li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+  </div>
+
+  <!-- ══ PATTERN 3 ════════════════════════════════════════════════════ -->
+  <h2>3 — Lists &amp; loops</h2>
+  <p>A <strong>list</strong> is an ordered collection. API responses often return a list of objects (e.g. a list of assets in Anypoint Exchange).</p>
+
+<pre><code><span class="var">apis</span> <span class="op">=</span> <span class="op">[</span><span class="str">"orders-api"</span><span class="op">,</span> <span class="str">"products-api"</span><span class="op">,</span> <span class="str">"customers-api"</span><span class="op">]</span>
+
+<span class="cm"># Loop over every item</span>
+<span class="kw">for</span> <span class="var">api</span> <span class="kw">in</span> <span class="var">apis</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">"Found:"</span><span class="op">,</span> <span class="var">api</span>)
+
+<span class="cm"># Filter: only APIs whose name contains "orders"</span>
+<span class="var">order_apis</span> <span class="op">=</span> <span class="op">[</span><span class="var">a</span> <span class="kw">for</span> <span class="var">a</span> <span class="kw">in</span> <span class="var">apis</span> <span class="kw">if</span> <span class="str">"orders"</span> <span class="kw">in</span> <span class="var">a</span><span class="op">]</span>
+<span class="fn">print</span>(<span class="var">order_apis</span>)   <span class="cm"># ['orders-api']</span>
+
+<span class="cm"># Count</span>
+<span class="fn">print</span>(<span class="fn">len</span>(<span class="var">apis</span>))      <span class="cm"># 3</span></code></pre>
+
+  <p>The <code>[a for a in apis if ...]</code> pattern is called a <strong>list comprehension</strong> — a compact way to filter or transform a list. You'll use this a lot.</p>
+
+  <!-- ══ PATTERN 4 ════════════════════════════════════════════════════ -->
+  <h2>4 — Functions</h2>
+  <p>A function groups code you want to reuse. In agent work, you'll write many small functions — one per "action" the agent can take.</p>
+
+<pre><code><span class="cm"># Define a function</span>
+<span class="kw">def</span> <span class="fn">greet</span>(<span class="var">name</span><span class="op">,</span> <span class="var">role</span><span class="op">=</span><span class="str">"User"</span>)<span class="op">:</span>
+    <span class="kw">return</span> <span class="str">f"Hello, {name}. You are a {role}."</span>
+
+<span class="fn">print</span>(<span class="fn">greet</span>(<span class="str">"Attapol"</span><span class="op">,</span> <span class="str">"Architect"</span>))
+<span class="cm"># Hello, Attapol. You are an Architect.</span>
+
+<span class="fn">print</span>(<span class="fn">greet</span>(<span class="str">"Bot"</span>))
+<span class="cm"># Hello, Bot. You are a User.</span></code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Tip — f-strings</div>
+    <code>f"Hello, {name}"</code> is an <strong>f-string</strong> (formatted string). Put <code>f</code> before the quote and use <code>{variable}</code> inside. Way cleaner than string concatenation.
+  </div>
+
+  <!-- ══ PATTERN 5 ════════════════════════════════════════════════════ -->
+  <h2>5 — JSON: reading &amp; writing</h2>
+  <p>JSON is the language of APIs. Python's built-in <code>json</code> module converts between JSON strings and Python dicts/lists.</p>
+
+<pre><code><span class="kw">import</span> <span class="var">json</span>
+
+<span class="cm"># JSON string → Python dict</span>
+<span class="var">raw</span> <span class="op">=</span> <span class="str">'{"name": "Products API", "version": "2.0"}'</span>
+<span class="var">data</span> <span class="op">=</span> <span class="var">json</span><span class="op">.</span><span class="fn">loads</span>(<span class="var">raw</span>)
+<span class="fn">print</span>(<span class="var">data</span><span class="op">[</span><span class="str">"name"</span><span class="op">]</span>)     <span class="cm"># Products API</span>
+
+<span class="cm"># Python dict → JSON string (pretty-printed)</span>
+<span class="var">payload</span> <span class="op">=</span> <span class="op">{</span><span class="str">"status"</span><span class="op">:</span> <span class="str">"ok"</span><span class="op">,</span> <span class="str">"count"</span><span class="op">:</span> <span class="num">3</span><span class="op">}</span>
+<span class="fn">print</span>(<span class="var">json</span><span class="op">.</span><span class="fn">dumps</span>(<span class="var">payload</span><span class="op">,</span> <span class="var">indent</span><span class="op">=</span><span class="num">2</span>))</code></pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Remember</div>
+    <code>json.loads()</code> = "load <em>string</em>" → Python object<br>
+    <code>json.dumps()</code> = "dump to <em>string</em>" → JSON string<br>
+    The <code>s</code> stands for <em>string</em>.
+  </div>
+
+  <!-- ══ PATTERN 6 ════════════════════════════════════════════════════ -->
+  <h2>6 — Importing libraries</h2>
+  <p>Python ships with a <strong>standard library</strong> (like <code>json</code>, <code>os</code>). Third-party libraries are installed with <code>pip</code>. Almost all AI work uses third-party libraries.</p>
+
+<pre><code><span class="cm"># Standard library — no install needed</span>
+<span class="kw">import</span> <span class="var">json</span>
+<span class="kw">import</span> <span class="var">os</span>
+
+<span class="cm"># Import just one thing from a module</span>
+<span class="kw">from</span> <span class="var">datetime</span> <span class="kw">import</span> <span class="var">datetime</span>
+<span class="fn">print</span>(<span class="var">datetime</span><span class="op">.</span><span class="fn">now</span>())
+
+<span class="cm"># Third-party — install first: pip install requests</span>
+<span class="kw">import</span> <span class="var">requests</span>      <span class="cm"># for HTTP calls (Lesson 2)</span></code></pre>
+
+  <!-- ══ REAL SCRIPT ═══════════════════════════════════════════════════ -->
+  <h2>Put it together — your first real script</h2>
+  <p>This script simulates what happens when you get a JSON response from an API and want to process it. It uses all six patterns above.</p>
+
+<pre><code><span class="cm"># api_demo.py  ← save this file and run it with: python api_demo.py</span>
+<span class="kw">import</span> <span class="var">json</span>
+
+<span class="cm"># Simulated API response (a JSON string)</span>
+<span class="var">response_text</span> <span class="op">=</span> <span class="str">'''
+[
+  {"name": "orders-api",    "version": "3.1", "status": "active"},
+  {"name": "products-api",  "version": "2.0", "status": "active"},
+  {"name": "payments-api",  "version": "1.0", "status": "deprecated"}
+]
+'''</span>
+
+<span class="kw">def</span> <span class="fn">get_active_apis</span>(<span class="var">json_text</span>)<span class="op">:</span>
+    <span class="var">all_apis</span> <span class="op">=</span> <span class="var">json</span><span class="op">.</span><span class="fn">loads</span>(<span class="var">json_text</span>)
+    <span class="kw">return</span> <span class="op">[</span><span class="var">api</span> <span class="kw">for</span> <span class="var">api</span> <span class="kw">in</span> <span class="var">all_apis</span> <span class="kw">if</span> <span class="var">api</span><span class="op">.</span><span class="fn">get</span>(<span class="str">"status"</span>) <span class="op">==</span> <span class="str">"active"</span><span class="op">]</span>
+
+<span class="kw">def</span> <span class="fn">print_summary</span>(<span class="var">apis</span>)<span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">f"Active APIs: {len(apis)}"</span>)
+    <span class="kw">for</span> <span class="var">api</span> <span class="kw">in</span> <span class="var">apis</span><span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"  • {api['name']}  (v{api['version']})"</span>)
+
+<span class="var">active</span> <span class="op">=</span> <span class="fn">get_active_apis</span>(<span class="var">response_text</span>)
+<span class="fn">print_summary</span>(<span class="var">active</span>)</code></pre>
+
+  <p><strong>Expected output:</strong></p>
+<pre><code>Active APIs: 2
+  • orders-api  (v3.1)
+  • products-api  (v2.0)</code></pre>
+
+  <div class="tryit">
+    <div class="tryit-label">Try it yourself</div>
+    <ol>
+      <li>Save the code above as <code>api_demo.py</code> in <code>~/ai/claude/projects/python/</code></li>
+      <li>Run it: <code>python api_demo.py</code></li>
+      <li><strong>Modify it:</strong> Add a <code>"customers-api"</code> entry with status <code>"active"</code> to the list and confirm it shows up in the output.</li>
+      <li><strong>Extend it:</strong> Print the count of deprecated APIs too.</li>
+    </ol>
+  </div>
+
+  <!-- ══ QUIZ — ALL PATTERNS ═══════════════════════════════════════════ -->
+  <div class="quiz">
+    <h3>Final check — pick the right tool</h3>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q1.</strong> An API response includes a field <code>"owner"</code> that may or may not be present. What's the safest way to read it from a dict <code>d</code>?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0"><code>d["owner"]</code></li>
+        <li data-i="1"><code>d.get("owner")</code></li>
+        <li data-i="2"><code>d.owner</code></li>
+        <li data-i="3"><code>d.find("owner")</code></li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q2.</strong> You receive a JSON string from an API. Which call converts it to a Python dict?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0"><code>json.loads(text)</code></li>
+        <li data-i="1"><code>json.dumps(text)</code></li>
+        <li data-i="2"><code>json.parse(text)</code></li>
+        <li data-i="3"><code>json.decode(text)</code></li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+
+    <div class="quiz-question" id="q5">
+      <p><strong>Q3.</strong> You have a list <code>items</code> and want a new list containing only items where <code>item["active"] == True</code>. Which is the most Pythonic approach?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Write a for loop, check each item, append to a new list manually</li>
+        <li data-i="1">Use <code>items.filter(lambda x: x["active"])</code></li>
+        <li data-i="2"><code>[item for item in items if item["active"]]</code></li>
+        <li data-i="3"><code>items.select("active")</code></li>
+      </ul>
+      <p class="feedback" id="fb5"></p>
+    </div>
+  </div>
+
+  <!-- ══ WHAT'S NEXT ════════════════════════════════════════════════════ -->
+  <h2>What's next</h2>
+  <p>In <strong>Lesson 2</strong> you'll make real HTTP calls to a live API using the <code>requests</code> library — no more simulated JSON strings. That's the last step before we talk to Claude.</p>
+
+  <!-- ══ ASK YOUR TEACHER ════════════════════════════════════════════ -->
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    Anything unclear? Run <strong><code>/teach</code></strong> in your Claude Code session and ask a follow-up question. Examples:
+    <ul style="margin-top:0.4rem">
+      <li>"Explain f-strings more"</li>
+      <li>"What's the difference between a list and a dict?"</li>
+      <li>"Give me a harder exercise for list comprehensions"</li>
+    </ul>
+  </div>
+
+  <!-- ══ FOOTER ═════════════════════════════════════════════════════════ -->
+  <div class="footer">
+    <div class="nav-links">
+      <span>← No previous lesson</span>
+      <a href="0002-http-apis.html">Lesson 2 — Calling HTTP APIs →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents for integration work · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div><!-- .page -->
+
+<!-- ══ QUIZ LOGIC ══════════════════════════════════════════════════════ -->
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! str — the quotes make it a string, even though it looks like a number.", err: "Not quite. The quotes around 42 make it a string, not a number." },
+    1: { ok: "Correct! .get() returns None when the key is missing — it never throws.", err: "Not quite. .get() is specifically designed to return None (not throw) when a key is missing." },
+    2: { ok: "Correct! .get() is the safe way to read a key that might be missing.", err: "Not quite. d[\"owner\"] would throw a KeyError if missing. Use .get() for optional fields." },
+    3: { ok: "Correct! json.loads() converts a JSON *s*tring into Python.", err: "Not quite. loads = load from string. dumps = dump to string." },
+    4: { ok: "Correct! List comprehensions are idiomatic Python for filtering.", err: "Not quite. [item for item in items if item[\"active\"]] is the Pythonic way." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

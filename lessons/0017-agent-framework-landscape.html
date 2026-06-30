@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 17 — The Agent Framework Landscape</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.83rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .fw-card {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin: 0.8rem 0;
+    }
+    .fw-card .fw-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 0.8rem; margin-bottom: 0.4rem; }
+    .fw-card h3 { margin: 0; font-size: 1.05rem; }
+    .fw-card .meta { font-size: 0.78rem; color: #6b7280; }
+    .fw-card .row { display: grid; grid-template-columns: 90px 1fr; gap: 0.4rem 0.8rem; font-size: 0.9rem; margin-bottom: 0.3rem; }
+    .fw-card .row .label { font-weight: 700; color: #4b5563; }
+    .fw-card pre { margin-top: 0.6rem; }
+
+    .axis-diagram {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin: 1rem 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      white-space: pre;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 17 of ?</p>
+    <h1>The Agent Framework Landscape</h1>
+    <p class="tagline">Nine frameworks worth knowing in 2026, the trade-offs between them, and how to choose before you commit. No agent code — just decisions.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <a href="0008-chunking.html"><span class="pill pill-done">L8 ✓</span></a>
+      <a href="0009-build-rag.html"><span class="pill pill-done">L9 ✓</span></a>
+      <a href="0010-vector-db.html"><span class="pill pill-done">L10 ✓</span></a>
+      <a href="0011-contextual-retrieval.html"><span class="pill pill-done">L11 ✓</span></a>
+      <a href="0012-hybrid-search.html"><span class="pill pill-done">L12 ✓</span></a>
+      <a href="0013-advanced-retrieval-patterns.html"><span class="pill pill-done">L13 ✓</span></a>
+      <a href="0014-rag-evaluation.html"><span class="pill pill-done">L14 ✓</span></a>
+      <a href="0015-enterprise-rag-eval.html"><span class="pill pill-done">L15 ✓</span></a>
+      <a href="0016-improving-rag-metrics.html"><span class="pill pill-done">L16 ✓</span></a>
+      <span class="pill pill-now">L17 — Framework Survey</span>
+      <span class="pill pill-next">L18 — Native SDK Agent</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>Why this lesson before any framework</h2>
+  <p>
+    Picking an agent framework is like picking a build tool — the wrong choice forces a rewrite later. You're a MuleSoft architect; you already think this way about platforms. Same instinct here.
+  </p>
+  <p>
+    This lesson is <strong>decision-making</strong>, not coding. Read it once. Pick the framework you'd reach for given your context. Then in <a href="0018-native-sdk-agent.html">L18</a> we build an agent from scratch with the native SDK (no framework — to feel what frameworks abstract away), and in <a href="0019-frameworks-side-by-side.html">L19</a> we re-implement the same agent in five frameworks side-by-side.
+  </p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">A note on honesty</div>
+    Star counts and ecosystem rankings move weekly. I'll use ranges ("tens of thousands of stars"), not exact numbers. The relative positions in this lesson are accurate as of mid-2026; absolute numbers may have moved.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The 9 frameworks worth knowing</h2>
+  <p>
+    Each card below has a one-line summary, sweet spot, weakest case, a short style snippet (illustrative — not for teaching), and notable users where verifiable. The style snippets all show the same trivial agent pattern: <em>"call a single tool, return the answer."</em>
+  </p>
+
+  <!-- 1. LangGraph -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>1. LangChain / LangGraph</h3><span class="meta">2022 · multi-LLM · Python &amp; JS</span></div>
+    <p>LangGraph is the modern agent layer on top of LangChain. Think of LangChain as the integrations bag (loaders, vector stores, tools) and LangGraph as the orchestration layer (state machines for agents).</p>
+    <div class="row"><span class="label">Sweet spot</span><span>Maximum flexibility, huge ecosystem, complex multi-step flows. Anything custom.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Steep learning curve, lots of magic, sometimes called "framework theatre" — abstractions can outpace your need.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> langgraph.prebuilt <span class="kw">import</span> create_react_agent
+<span class="kw">from</span> langchain_google_genai <span class="kw">import</span> ChatGoogleGenerativeAI
+
+llm <span class="op">=</span> ChatGoogleGenerativeAI(model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>)
+agent <span class="op">=</span> create_react_agent(llm, tools<span class="op">=</span>[my_rag_tool])
+result <span class="op">=</span> agent.invoke({<span class="str">"messages"</span>: [(<span class="str">"user"</span>, <span class="str">"How do I rotate secrets?"</span>)]})</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>Klarna, Replit, LinkedIn, Uber, Elastic — most named LLM production deployments use LangChain somewhere.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://langchain-ai.github.io/langgraph/">LangGraph docs</a> · <a href="https://python.langchain.com/">LangChain docs</a></span></div>
+  </div>
+
+  <!-- 2. LlamaIndex -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>2. LlamaIndex</h3><span class="meta">2022 · multi-LLM · Python &amp; TS</span></div>
+    <p>RAG-first lineage. Many of the chunking, retrieval, and indexing patterns you've learned (L7–L12) were popularised here. Their agent layer (Workflows, FunctionAgent) sits on top of that data foundation.</p>
+    <div class="row"><span class="label">Sweet spot</span><span>Agents whose primary job is reasoning over a document corpus. Strong data loaders for hundreds of formats.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Generic agent orchestration where retrieval isn't the centre of gravity.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> llama_index.core.agent.workflow <span class="kw">import</span> FunctionAgent
+<span class="kw">from</span> llama_index.llms.google_genai <span class="kw">import</span> GoogleGenAI
+
+agent <span class="op">=</span> FunctionAgent(
+    tools<span class="op">=</span>[my_rag_tool],
+    llm<span class="op">=</span>GoogleGenAI(model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>),
+)
+response <span class="op">=</span> <span class="kw">await</span> agent.run(<span class="str">"How do I rotate secrets?"</span>)</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>Workato, Notion, KPMG case studies — strong in enterprise RAG-shaped deployments.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://docs.llamaindex.ai/">LlamaIndex docs</a></span></div>
+  </div>
+
+  <!-- 3. CrewAI -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>3. CrewAI</h3><span class="meta">2024 · multi-LLM · Python</span></div>
+    <p>Multi-agent collaboration. You define <em>roles</em> ("Researcher", "Writer", "Critic"), each gets a goal and tools, and a "crew" coordinates them. Opinionated and very readable.</p>
+    <div class="row"><span class="label">Sweet spot</span><span>Workflows where multiple specialised agents collaborate — content pipelines, research-and-summarise patterns.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Single-agent or tightly-controlled flows — the role-playing abstraction adds friction when you don't need it.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> crewai <span class="kw">import</span> Agent, Task, Crew
+
+researcher <span class="op">=</span> Agent(
+    role<span class="op">=</span><span class="str">"Documentation Searcher"</span>,
+    goal<span class="op">=</span><span class="str">"Find accurate answers in our internal docs"</span>,
+    tools<span class="op">=</span>[my_rag_tool],
+)
+task <span class="op">=</span> Task(description<span class="op">=</span><span class="str">"How do I rotate secrets?"</span>, agent<span class="op">=</span>researcher)
+result <span class="op">=</span> Crew(agents<span class="op">=</span>[researcher], tasks<span class="op">=</span>[task]).kickoff()</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>Salesforce, Oracle, IBM, Deloitte — fast adoption in 2024–25 enterprise PoCs.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://docs.crewai.com/">CrewAI docs</a></span></div>
+  </div>
+
+  <!-- 4. AutoGen -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>4. AutoGen (Microsoft)</h3><span class="meta">2023 · multi-LLM · Python &amp; .NET</span></div>
+    <p>Microsoft Research's multi-agent framework. Strong on autonomous agents that can plan, delegate, and execute code. The conversation-driven model (agents talk to each other) is the signature.</p>
+    <div class="row"><span class="label">Sweet spot</span><span>Research-grade multi-agent systems, code-execution agents, autonomous coding workflows.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Simple production agents — the conversational abstraction adds complexity for routine tool-calling.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> autogen_agentchat.agents <span class="kw">import</span> AssistantAgent
+<span class="kw">from</span> autogen_ext.models.google <span class="kw">import</span> GoogleAIChatCompletionClient
+
+agent <span class="op">=</span> AssistantAgent(
+    name<span class="op">=</span><span class="str">"helper"</span>,
+    model_client<span class="op">=</span>GoogleAIChatCompletionClient(model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>),
+    tools<span class="op">=</span>[my_rag_tool],
+)
+result <span class="op">=</span> <span class="kw">await</span> agent.run(task<span class="op">=</span><span class="str">"How do I rotate secrets?"</span>)</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>Microsoft internal, NASA JPL research, several university labs.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://microsoft.github.io/autogen/">AutoGen docs</a></span></div>
+  </div>
+
+  <!-- 5. Pydantic AI -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>5. Pydantic AI</h3><span class="meta">2024 · multi-LLM · Python</span></div>
+    <p>Type-safe, minimal, Python-native. Built by the Pydantic team — uses Pydantic models for tool schemas and structured outputs. Feels like FastAPI for agents.</p>
+    <div class="row"><span class="label">Sweet spot</span><span>Production code where you want type safety, IDE autocomplete on tool inputs/outputs, and minimal magic.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Massive ecosystem features — fewer pre-built integrations than LangChain.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> pydantic_ai <span class="kw">import</span> Agent
+
+agent <span class="op">=</span> Agent(<span class="str">"google-gla:gemini-3.5-flash"</span>, tools<span class="op">=</span>[my_rag_tool])
+result <span class="op">=</span> agent.run_sync(<span class="str">"How do I rotate secrets?"</span>)
+<span class="fn">print</span>(result.output)</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>Newer — adoption growing in Python-shop production teams that already use Pydantic.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://ai.pydantic.dev/">Pydantic AI docs</a></span></div>
+  </div>
+
+  <!-- 6. Haystack -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>6. Haystack (deepset)</h3><span class="meta">2018 · multi-LLM · Python</span></div>
+    <p>The most mature framework here. Started as an open-source NLP/QA pipeline tool from deepset (Berlin), evolved into a production-grade RAG and agent framework. Pipeline-DAG-first; explicit, testable nodes.</p>
+    <div class="row"><span class="label">Sweet spot</span><span>Production NLP/RAG systems where reliability, evaluation, and deployment matter more than rapid prototyping. Strong on built-in eval and deployment tooling.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Cutting-edge agent patterns — the agent layer is solid but newer than the pipeline foundation.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> haystack.components.agents <span class="kw">import</span> Agent
+<span class="kw">from</span> haystack.components.generators.chat <span class="kw">import</span> GoogleAIGeminiChatGenerator
+
+agent <span class="op">=</span> Agent(
+    chat_generator<span class="op">=</span>GoogleAIGeminiChatGenerator(model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>),
+    tools<span class="op">=</span>[my_rag_tool],
+)
+result <span class="op">=</span> agent.run(messages<span class="op">=</span>[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"How do I rotate secrets?"</span>}])</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>Airbus, NASA JPL, Deutsche Telekom, plus widespread enterprise NLP/QA deployments.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://docs.haystack.deepset.ai/">Haystack docs</a></span></div>
+  </div>
+
+  <!-- 7. Google ADK -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>7. Google ADK</h3><span class="meta">2024 · Gemini-first (model-agnostic interface) · Python</span></div>
+    <p>Google's Agent Development Kit. Model-agnostic in API but Gemini-native in tooling. Includes session memory, deployment helpers, and tight integration with Vertex AI.</p>
+    <div class="row"><span class="label">Sweet spot</span><span>You're already on Google Cloud, using Gemini, and want a managed deployment path with first-party tooling.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Newer — smaller community, evolving API, fewer third-party integrations than LangChain or LlamaIndex.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
+
+agent <span class="op">=</span> Agent(
+    model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>,
+    tools<span class="op">=</span>[my_rag_tool],
+    instruction<span class="op">=</span><span class="str">"You answer from internal docs."</span>,
+)
+result <span class="op">=</span> agent.run(<span class="str">"How do I rotate secrets?"</span>)</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>Early adopters in GCP-native shops; tight Vertex AI integrations.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://adk.dev/">ADK docs</a> · <a href="https://github.com/google/adk-python">GitHub</a></span></div>
+  </div>
+
+  <!-- 8. Smolagents -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>8. Smolagents (HuggingFace)</h3><span class="meta">2024 · multi-LLM · Python</span></div>
+    <p>Lightweight, code-first. The agent's "thoughts" are Python code blocks it writes and executes — instead of JSON tool calls, the model writes <code>tool.search("query")</code> directly. Tiny core (~1k LOC).</p>
+    <div class="row"><span class="label">Sweet spot</span><span>Agents that primarily generate and run code, ML-flavoured workflows, anyone who wants minimum framework footprint.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Conservative production environments — code-execution agents have specific safety constraints.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> smolagents <span class="kw">import</span> CodeAgent, LiteLLMModel
+
+agent <span class="op">=</span> CodeAgent(
+    tools<span class="op">=</span>[my_rag_tool],
+    model<span class="op">=</span>LiteLLMModel(model_id<span class="op">=</span><span class="str">"gemini/gemini-3.5-flash"</span>),
+)
+result <span class="op">=</span> agent.run(<span class="str">"How do I rotate secrets?"</span>)</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>HuggingFace Spaces ecosystem, ML research teams.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://huggingface.co/docs/smolagents/">Smolagents docs</a></span></div>
+  </div>
+
+  <!-- 9. Native SDK -->
+  <div class="fw-card" style="border-color:#1a1a1a; background:#fafafa">
+    <div class="fw-header"><h3>9. Native SDK function-calling (the foundation)</h3><span class="meta">always available · vendor-specific (google-genai, openai, anthropic)</span></div>
+    <p>No framework. You implement the agent loop yourself with the LLM provider's native function-calling API. The basis every framework above is built on.</p>
+    <div class="row"><span class="label">Sweet spot</span><span>Learning the concept (we'll do this in L18), tiny projects, situations where any framework dependency is unwelcome.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Anything complex — you reimplement memory, retries, state, observability yourself.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> google <span class="kw">import</span> genai
+<span class="kw">from</span> google.genai <span class="kw">import</span> types
+
+client <span class="op">=</span> genai.Client()
+chat <span class="op">=</span> client.chats.create(
+    model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>,
+    config<span class="op">=</span>types.GenerateContentConfig(tools<span class="op">=</span>[my_rag_tool]),
+)
+response <span class="op">=</span> chat.send_message(<span class="str">"How do I rotate secrets?"</span>)
+<span class="cm"># YOU implement the loop: check for function_calls, execute, send results back</span></code></pre>
+    <div class="row"><span class="label">Resources</span><span><a href="https://ai.google.dev/gemini-api/docs/function-calling">Gemini function-calling guide</a></span></div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The decision matrix — "I want X → use Y"</h2>
+  <table>
+    <thead><tr><th>Need</th><th>First reach for</th></tr></thead>
+    <tbody>
+      <tr><td>Maximum flexibility, huge ecosystem, complex flows</td><td><strong>LangGraph</strong></td></tr>
+      <tr><td>Agent's main job is reasoning over a document corpus</td><td><strong>LlamaIndex</strong></td></tr>
+      <tr><td>Multiple specialised agents collaborating with role-play</td><td><strong>CrewAI</strong></td></tr>
+      <tr><td>Research-grade multi-agent or autonomous code-execution</td><td><strong>AutoGen</strong></td></tr>
+      <tr><td>Type-safe Python with minimal magic</td><td><strong>Pydantic AI</strong></td></tr>
+      <tr><td>Battle-tested production NLP pipelines with eval &amp; deployment built in</td><td><strong>Haystack</strong></td></tr>
+      <tr><td>All-in on GCP + Gemini + Vertex AI managed deployment</td><td><strong>Google ADK</strong></td></tr>
+      <tr><td>Code-first agents, minimum framework footprint</td><td><strong>Smolagents</strong></td></tr>
+      <tr><td>Learning the concept, or building something tiny</td><td><strong>Native SDK</strong></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>The trade-off axes</h2>
+  <p>Three axes capture most of the choice. Rough positions:</p>
+
+  <h3>Axis 1 — Magic vs Control</h3>
+<div class="axis-diagram">  more magic   ←─────────────────────────────────────→   more control
+
+   CrewAI  LangGraph  AutoGen  Haystack  LlamaIndex  Pydantic AI  Smolagents  Native</div>
+
+  <h3>Axis 2 — Single-agent vs Multi-agent focus</h3>
+<div class="axis-diagram">  single-agent first   ←─────────────────────→   multi-agent first
+
+   Pydantic AI  Native  Smolagents  LlamaIndex  Haystack  ADK  LangGraph  CrewAI  AutoGen</div>
+
+  <h3>Axis 3 — General purpose vs Specialist</h3>
+<div class="axis-diagram">  generalist   ←─────────────────────→   specialist
+
+   LangGraph  Pydantic AI  CrewAI  AutoGen  ADK  Haystack(NLP)  LlamaIndex(RAG)  Smolagents(code)</div>
+
+  <p>These positions are <em>directional</em>, not exact. The point is to recognise that <strong>"best framework"</strong> is a meaningless question — every choice is a position on these axes.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>Industry signals (mid-2026)</h2>
+
+  <table>
+    <thead><tr><th>Framework</th><th>Maturity</th><th>Ecosystem size</th><th>Most active community</th></tr></thead>
+    <tbody>
+      <tr><td>LangChain / LangGraph</td><td>Most mature for agents</td><td>Massive (highest GitHub stars in space)</td><td>Discord, GitHub Discussions</td></tr>
+      <tr><td>LlamaIndex</td><td>Mature, RAG-first</td><td>Large, deep on retrieval</td><td>Discord, monthly office hours</td></tr>
+      <tr><td>Haystack</td><td>Most mature overall (since 2018)</td><td>Large, NLP-focused</td><td>Discord, deepset events</td></tr>
+      <tr><td>CrewAI</td><td>Mature, fast-growing</td><td>Mid-large, opinionated</td><td>Discord</td></tr>
+      <tr><td>AutoGen</td><td>Mature, MS-backed</td><td>Mid, research-heavy</td><td>GitHub, MS Build</td></tr>
+      <tr><td>Pydantic AI</td><td>Newer (2024+), growing fast</td><td>Mid, Python-shop adoption</td><td>GitHub Discussions</td></tr>
+      <tr><td>Google ADK</td><td>Newer (2024+)</td><td>Smaller — early</td><td>GCP forums, Discord</td></tr>
+      <tr><td>Smolagents</td><td>Newer (2024+)</td><td>Smaller — code-agent niche</td><td>HuggingFace Discord</td></tr>
+      <tr><td>Native SDK</td><td>Always available</td><td>n/a — vendor docs</td><td>Each LLM provider's forum</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">A note on stars</div>
+    GitHub-star counts move weekly. The shape (LangChain &gt; LlamaIndex &gt; CrewAI &gt; the rest) is stable; specific numbers aren't. Use this table for relative position only.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Picking a framework — three honest questions</h2>
+
+  <ol>
+    <li>
+      <strong>Is the framework single-vendor or multi-vendor?</strong>
+      Frameworks tied to one LLM provider (ADK to Gemini, partially) are great when you're committed; risky when you might switch. Multi-LLM frameworks (LangChain, LlamaIndex, Haystack, Pydantic AI, CrewAI, AutoGen) protect you from provider lock-in.
+    </li>
+    <li>
+      <strong>Can you drop down to native SDK calls when needed?</strong>
+      Mature frameworks let you escape into raw provider APIs for the 5% of cases the abstraction doesn't cover. The newer ones often don't (yet). Test this before committing.
+    </li>
+    <li>
+      <strong>Is the ecosystem where you need it?</strong>
+      Vector DBs, observability (Phoenix, LangSmith), eval (RAGAS), deployment. Count the integrations <em>your</em> stack needs. LangChain wins on raw integration count; specialist frameworks (Haystack, LlamaIndex) often win on quality within their domain.
+    </li>
+  </ol>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">My personal take after building this curriculum</div>
+    <ul style="margin-top:0.4rem">
+      <li><strong>For most generalist agent work →</strong> LangGraph. The ecosystem and community size compounds.</li>
+      <li><strong>If your system is RAG-shaped (your case) →</strong> LlamaIndex or Haystack. Both fit the L7–L16 work cleanly. Haystack edges ahead if you weight production maturity and built-in eval.</li>
+      <li><strong>If you want type safety →</strong> Pydantic AI.</li>
+      <li><strong>If you're committed to Vertex AI deployment →</strong> ADK, with the caveat that the API is evolving.</li>
+      <li><strong>Always</strong> learn native SDK first. You'll see what every framework abstracts away — and you'll know when to drop down.</li>
+    </ul>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h3>LangChain or LlamaIndex when you need both retrieval AND tools?</h3>
+  <p>This is the most common "I'm stuck" question because both can technically do both. The honest answer:</p>
+
+  <div class="callout callout-why" style="margin-top:0.5rem">
+    <div class="callout-label">The decision rule</div>
+    <ul style="margin-top:0.4rem">
+      <li><strong>LangChain / LangGraph</strong> if your agent is mostly a <em>tool-using assistant</em> that happens to retrieve sometimes</li>
+      <li><strong>LlamaIndex</strong> if your agent is mostly a <em>RAG-over-data system</em> that happens to call tools sometimes</li>
+    </ul>
+    <p style="margin-top:0.4rem">In other words: <strong>where is the centre of gravity?</strong></p>
+  </div>
+
+  <h4>When LangChain / LangGraph wins</h4>
+  <ul>
+    <li>Many heterogeneous tools — APIs, calculators, code-execution, browser, RAG, etc.</li>
+    <li>Complex flow control — branches, retries, loops, human-in-the-loop</li>
+    <li>You'll want LangSmith for observability (best-in-class)</li>
+    <li>The LLM is the orchestrator, retrieval is one capability among many</li>
+    <li>You expect to grow the integration list — LangChain has the largest ecosystem</li>
+  </ul>
+
+  <h4>When LlamaIndex wins</h4>
+  <ul>
+    <li>Corpus is the centre of gravity — hundreds of files, multiple formats, ingestion pipelines matter</li>
+    <li>Advanced RAG patterns out of the box — multi-doc agents, sub-question decomposition, recursive retrieval</li>
+    <li>Document loaders matter — LlamaIndex has 300+ data connectors (Confluence, Notion, S3, GDrive, etc.)</li>
+    <li>You want retrieval-quality views in observability (Phoenix integration is tightest here)</li>
+    <li>The agent's job is mostly "answer from this corpus, occasionally do something else"</li>
+  </ul>
+
+  <h4>The decision tree</h4>
+<pre style="background:#1e1e2e; color:#cdd6f4; border-radius:8px; padding:1rem; font-size:0.82rem; line-height:1.55"><code>1. Will retrieval be &gt; 70% of what the agent does?
+   YES → LlamaIndex
+   NO  → continue
+
+2. Do you have many heterogeneous tools (5+)?
+   YES → LangGraph
+   NO  → continue
+
+3. Will you need complex flow control (branches, loops, human-in-the-loop)?
+   YES → LangGraph
+   NO  → continue
+
+4. Do you need exotic data loaders (Confluence, Notion, S3, GDrive)?
+   YES → LlamaIndex
+   NO  → either; pick by team familiarity</code></pre>
+
+  <h4>The "use both" pattern that production teams use</h4>
+  <p>A surprisingly common production setup: <strong>LlamaIndex for retrieval, LangGraph for orchestration.</strong> They interoperate cleanly because both treat each other as black boxes via OpenAI-style tool schemas:</p>
+
+<pre style="background:#1e1e2e; color:#cdd6f4; border-radius:8px; padding:1rem; font-size:0.82rem; line-height:1.55"><code><span class="cm"># LlamaIndex builds the retrieval layer (where it shines)</span>
+query_engine <span style="color:#89b4fa">=</span> index.as_query_engine(...)
+
+<span class="cm"># Wrap it as a LangChain tool</span>
+<span style="color:#cba6f7">from</span> langchain.tools <span style="color:#cba6f7">import</span> Tool
+docs_tool <span style="color:#89b4fa">=</span> Tool(
+    name<span style="color:#89b4fa">=</span><span style="color:#a6e3a1">"anypoint_docs"</span>,
+    func<span style="color:#89b4fa">=</span><span style="color:#cba6f7">lambda</span> q: <span style="color:#89dceb">str</span>(query_engine.query(q)),
+    description<span style="color:#89b4fa">=</span><span style="color:#a6e3a1">"..."</span>,
+)
+
+<span class="cm"># LangGraph orchestrates everything</span>
+agent <span style="color:#89b4fa">=</span> create_react_agent(llm, tools<span style="color:#89b4fa">=</span>[docs_tool, other_tools])</code></pre>
+
+  <p>Trade-off: two dependencies to maintain, two paradigms to learn. Worth it for non-trivial systems; overkill for small ones.</p>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">For your specific MuleSoft RAG bot</div>
+    Centre of gravity is the corpus (you've spent 7 lessons on RAG). Likely 2–4 tools at most (search docs, query Anypoint, fetch ticket, post to Slack). Production-conscious. → <strong>LlamaIndex with <code>FunctionAgent</code> is the better fit today.</strong>
+    <p style="margin-top:0.4rem">If the agent's responsibilities later expand beyond docs Q&amp;A — say, an integration-lifecycle assistant — the gravity shifts to orchestration and <strong>LangGraph becomes the better backbone</strong>. The eval (L14–L16) tells you when that shift has happened in practice.</p>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Observability per framework</h2>
+  <p>
+    Once you ship an agent to production, the first thing you'll want is <strong>observability</strong> — the ability to see <em>why</em> the agent did what it did. Agent traces are harder to debug than regular API logs because:
+  </p>
+  <ul>
+    <li>They're <strong>deeply nested</strong> — agent calls tool, tool calls another agent, that agent calls the LLM 3 times</li>
+    <li>Each step's input/output is a <strong>multi-page prompt</strong>, not a clean JSON payload</li>
+    <li>Failures are often <strong>semantic</strong> (LLM picked wrong tool) not technical (HTTP 500) — logs alone don't tell you what's wrong</li>
+  </ul>
+
+  <h3>Three levels of observability</h3>
+  <table>
+    <thead><tr><th>Level</th><th>What you see</th><th>Why you need it</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Logging</strong></td><td>Each LLM call's prompt, response, tokens, latency</td><td>Basic debugging, cost tracking</td></tr>
+      <tr><td><strong>Tracing</strong></td><td>Hierarchical view of all calls in one user request — nested tool calls, retries, sub-agent runs</td><td>Understanding <em>why</em> the agent behaved as it did</td></tr>
+      <tr><td><strong>Eval-in-production</strong></td><td>Metrics from L14/L15 computed on live traffic</td><td>Catching regressions and drift</td></tr>
+    </tbody>
+  </table>
+
+  <h3>How each framework handles it</h3>
+
+  <table>
+    <thead>
+      <tr><th>Framework</th><th>Native partner</th><th>Multi-framework friendly?</th><th>Production maturity</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>LangChain / LangGraph</strong></td>
+        <td><a href="https://smith.langchain.com/">LangSmith</a> (managed, two env vars to enable)</td>
+        <td>Yes via OpenTelemetry export</td>
+        <td>Best-in-class. Used by every LangChain shop.</td>
+      </tr>
+      <tr>
+        <td><strong>LlamaIndex</strong></td>
+        <td><a href="https://docs.arize.com/phoenix">Phoenix</a> (Arize) — open-source, runs locally</td>
+        <td>Strong — also LangSmith, W&amp;B, LangFuse, TruLens</td>
+        <td>Mature. Phoenix is the open-source default.</td>
+      </tr>
+      <tr>
+        <td><strong>Haystack</strong></td>
+        <td>OpenTelemetry, Datadog, <a href="https://langfuse.com/">Langfuse</a> integrations + native Evaluator components</td>
+        <td>Strong</td>
+        <td>Mature. Pipeline-DAG architecture means every node is explicitly traceable.</td>
+      </tr>
+      <tr>
+        <td><strong>CrewAI</strong></td>
+        <td><a href="https://www.agentops.ai/">AgentOps</a> — purpose-built for multi-agent conversation trees</td>
+        <td>Yes — also LangSmith, Phoenix</td>
+        <td>Newer; was weak in 2024, much improved in 2025.</td>
+      </tr>
+      <tr>
+        <td><strong>AutoGen</strong></td>
+        <td>OpenTelemetry-first, Azure AI Foundry dashboard</td>
+        <td>Excellent — OTel-native, pipes anywhere</td>
+        <td>Mature. Best fit if you already standardised on OTel.</td>
+      </tr>
+      <tr>
+        <td><strong>Pydantic AI</strong></td>
+        <td><a href="https://pydantic.dev/logfire">Pydantic Logfire</a> — built by the same team, observability is first-class</td>
+        <td>Yes via OTel</td>
+        <td>New (2024+) but excellent — observability was a design goal.</td>
+      </tr>
+      <tr>
+        <td><strong>Google ADK</strong></td>
+        <td>Vertex AI Console + Cloud Logging/Trace</td>
+        <td>Limited if not on GCP</td>
+        <td>Evolving. Seamless inside GCP; weak outside.</td>
+      </tr>
+      <tr>
+        <td><strong>Smolagents</strong></td>
+        <td>None — OpenTelemetry-first by design</td>
+        <td>Excellent — pipes to Phoenix, LangFuse, Logfire, anything OTel</td>
+        <td>Lightweight philosophy: do one thing, integrate for the rest.</td>
+      </tr>
+      <tr>
+        <td><strong>Native SDK</strong></td>
+        <td>None — DIY</td>
+        <td>n/a — you instrument yourself</td>
+        <td>The <code>@measure</code> decorator from L15 is a sane starting point. Pipe through Phoenix or Logfire via OTel.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>The observability platforms (separate from frameworks)</h3>
+  <p>These are <em>backends</em> — they receive trace data from any framework. Pick one that fits your operational profile:</p>
+
+  <table>
+    <thead><tr><th>Platform</th><th>Type</th><th>Strongest for</th></tr></thead>
+    <tbody>
+      <tr><td><strong>LangSmith</strong></td><td>Managed (LangChain)</td><td>LangChain shops; richest LLM-native UI</td></tr>
+      <tr><td><strong>Phoenix (Arize)</strong></td><td>Open-source + hosted</td><td>Multi-framework, RAG retrieval visualisation, generous self-host</td></tr>
+      <tr><td><strong>Pydantic Logfire</strong></td><td>Managed (Pydantic)</td><td>OTel-native, clean UI, generous free tier</td></tr>
+      <tr><td><strong>AgentOps</strong></td><td>Managed</td><td>Multi-agent conversation trees (CrewAI, AutoGen)</td></tr>
+      <tr><td><strong>Langfuse</strong></td><td>Open-source + hosted</td><td>Self-host friendly; Haystack/CrewAI/Smolagents pipelines</td></tr>
+      <tr><td><strong>TruLens</strong></td><td>Open-source</td><td>Feedback functions + longitudinal eval</td></tr>
+      <tr><td><strong>W&amp;B Weave</strong></td><td>Managed</td><td>Already-using-Weights-&amp;-Biases for ML</td></tr>
+    </tbody>
+  </table>
+
+  <p>The honest production pattern: <strong>most teams pick one observability backend</strong> and instrument all their agents to it via OpenTelemetry, regardless of which framework each agent uses.</p>
+
+  <h3>Three decision dimensions when picking observability</h3>
+  <ol>
+    <li><strong>Where does the trace data go?</strong> Vendor cloud (LangSmith, Logfire, AgentOps) = easy but vendor lock-in. Self-hosted (Phoenix local, Langfuse self-host) = more setup, more control. Already-existing infra (Datadog, Grafana via OTel) = reuse what you have.</li>
+    <li><strong>Are you single-framework or multi-framework?</strong> Single → use the framework's native partner. Multi → use OTel + a multi-framework backend (Phoenix, Langfuse).</li>
+    <li><strong>Is observability privacy-sensitive?</strong> Healthcare/finance data → self-host is often mandatory. Internal MuleSoft docs → vendor SaaS is fine for most teams.</li>
+  </ol>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">My personal take for your context</div>
+    <ul style="margin-top:0.4rem">
+      <li><strong>Start with Phoenix</strong> — free, runs locally, supports every framework you'll try in L19, gives genuine production-grade tracing without vendor commitment.</li>
+      <li>If you commit to LangChain later, <strong>LangSmith</strong> pays for itself — the Cadillac of agent observability.</li>
+      <li>If you commit to Pydantic AI, <strong>Logfire</strong> is the obvious match.</li>
+      <li>Avoid rolling your own observability past basic logging — it's a deceptively deep rabbit hole.</li>
+    </ul>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The plan from here</h2>
+
+  <ol>
+    <li>
+      <strong>Lesson 18</strong> — Build an agent in <strong>native Gemini SDK</strong>. No framework. You'll feel exactly what frameworks abstract: the agent loop, tool registration, JSON-call parsing, error handling. <em>~12 minutes.</em>
+    </li>
+    <li>
+      <strong>Lesson 19</strong> — Re-implement the same agent in <strong>five frameworks side-by-side</strong>: LangGraph, CrewAI, Pydantic AI, LlamaIndex, Haystack. Same mission, same tools, very different code. You'll leave with a strong opinion. <em>~20 minutes.</em>
+    </li>
+    <li>
+      <strong>After L19</strong> — Pick one framework, go deep. Or stay on native if your project is small.
+    </li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>MuleSoft tie-in</h2>
+  <div class="callout callout-mule">
+    <div class="callout-label">The same instinct, different domain</div>
+    The agent-framework choice maps directly onto how you already think about platforms:
+    <ul style="margin-top:0.4rem">
+      <li><strong>LangGraph</strong> = MuleSoft Anypoint. Generalist, huge ecosystem, lots of integrations.</li>
+      <li><strong>LlamaIndex / Haystack</strong> = a specialised iPaaS focused on document/data flows.</li>
+      <li><strong>CrewAI / AutoGen</strong> = orchestration tools where the unit is a workflow of collaborating actors.</li>
+      <li><strong>ADK</strong> = a vendor-managed platform with deep integration into one ecosystem (think CloudHub-only).</li>
+      <li><strong>Native SDK</strong> = writing the integration in raw Java/Python without any iPaaS — full control, all the work yours.</li>
+    </ul>
+    The lock-in vs ergonomics, vendor-neutrality vs managed-convenience trade-offs are isomorphic. You already have the architect's instincts for this; just apply them.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> Your agent's main job is answering questions from a 10,000-document corpus. Which framework should you reach for first?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">CrewAI</li>
+        <li data-i="1">AutoGen</li>
+        <li data-i="2">LlamaIndex (or Haystack) — RAG/data-heavy lineages with strong loaders and indexes</li>
+        <li data-i="3">Native SDK</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Why are we building L18 in native SDK before any framework?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Native SDK is faster than any framework</li>
+        <li data-i="1">You only understand a framework after feeling the work it removes — native SDK exposes the agent loop, tool registration, and error handling that frameworks hide</li>
+        <li data-i="2">Frameworks aren't production-ready yet</li>
+        <li data-i="3">Google requires it</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Multi-vendor framework matters when…</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">You only ever use one model</li>
+        <li data-i="1">You're a Microsoft shop</li>
+        <li data-i="2">It improves latency</li>
+        <li data-i="3">You may switch LLM providers later (cost, capability, regional rollout, or vendor outage) — multi-vendor frameworks insulate you from that switch</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> CrewAI's strongest fit is…</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Workflows where multiple specialised agents collaborate (e.g. researcher → writer → critic)</li>
+        <li data-i="1">Single-agent type-safe tool use</li>
+        <li data-i="2">Maximum flexibility on graph-based flows</li>
+        <li data-i="3">Vertex AI managed deployment</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> Why did this lesson refuse to declare a "best framework"?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">All frameworks are identical</li>
+        <li data-i="1">Each framework is a position on a set of trade-off axes (magic vs control, single vs multi-agent, generalist vs specialist) — "best" only makes sense given a specific job</li>
+        <li data-i="2">Anthropic forbids it</li>
+        <li data-i="3">It would offend the LangChain team</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Compare LangGraph and Pydantic AI on a 100-engineer codebase — which scales better?"</li>
+      <li>"What does CrewAI feel like in a real production deployment?"</li>
+      <li>"Should I use LangChain or LlamaIndex if I need both retrieval and tools?"</li>
+      <li>"How does each framework handle observability (tracing, debugging)?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0016-improving-rag-metrics.html">← Lesson 16 — Improving Metrics</a>
+      <a href="0018-native-sdk-agent.html">Lesson 18 — Native SDK Agent →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! LlamaIndex and Haystack are both RAG/data-first lineages with strong document loaders, indexes, and eval. Either is a good starting point for corpus-heavy agents.", err: "Not quite. CrewAI shines for multi-agent workflows; AutoGen for research/code-exec; native SDK is too low-level for 10k docs. RAG-first frameworks (LlamaIndex, Haystack) are the canonical choice." },
+    1: { ok: "Correct! Frameworks abstract real work — but you only learn what they save you by writing it once yourself. L18 makes L19's framework code feel like relief, not magic.", err: "Not quite. The reason is pedagogy: native SDK forces you to write the agent loop, parse function calls, and handle errors yourself. After that, frameworks make sense as labour-savers, not black boxes." },
+    2: { ok: "Correct! Multi-vendor frameworks are insurance against provider lock-in — switch reasons range from cost to capability to regional rollouts. Worth paying a small ergonomic cost for that flexibility.", err: "Not quite. The reason multi-vendor matters is portability — when (not if) you reach for a different model for cost, capability, or availability reasons, you don't want to rewrite the whole agent." },
+    3: { ok: "Correct! CrewAI's role-based 'crew' abstraction is its signature — it makes multi-agent collaboration readable in a way other frameworks don't.", err: "Not quite. CrewAI is opinionated around multi-agent role-play. Single-agent type-safety is Pydantic AI; flexible graphs is LangGraph; Vertex deployment is ADK." },
+    4: { ok: "Correct! The right framework depends on your job. The lesson's value is the axes, not a verdict.", err: "Not quite. The honest answer is that 'best' depends on context — single vs multi-agent, generalist vs specialist, magic vs control. The lesson teaches the axes so you can choose for your context." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

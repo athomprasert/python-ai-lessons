@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 4 — Your First Call to Gemini</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 760px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-java { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .tryit { background: #fff; border: 2px dashed #94a3b8; border-radius: 10px; padding: 1.2rem 1.4rem; margin: 1.5rem 0; }
+    .tryit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-bottom: 0.6rem; }
+
+    .step-box {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin: 0.8rem 0;
+    }
+    .step-num {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      width: 1.6rem;
+      height: 1.6rem;
+      line-height: 1.6rem;
+      text-align: center;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-right: 0.5rem;
+    }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 4 of ?</p>
+    <h1>Your First Call to Gemini</h1>
+    <p class="tagline">Send a prompt to Google Gemini and print the response — the foundation of every agent and RAG system you'll build.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">Lesson 1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">Lesson 2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">Lesson 3 ✓</span></a>
+      <span class="pill pill-now">Lesson 4 — Calling Gemini</span>
+      <span class="pill pill-next">Lesson 5 — System prompts &amp; multi-turn</span>
+    </div>
+  </header>
+
+  <h2>Why this lesson</h2>
+  <p>Up to now you've called normal HTTP APIs. Calling an LLM is similar — but most teams use the <strong>official SDK</strong> instead of raw HTTP because it handles auth, retries, and response parsing for you.</p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Connection to your mission</div>
+    A RAG system has three parts: <em>retrieve</em> documents → <em>build</em> a prompt → <em>call</em> the LLM. This lesson teaches the third part — the simplest, most repeatable building block.
+  </div>
+
+  <!-- ═══ 1. Get an API key ═══ -->
+  <h2>1 — Get a free API key</h2>
+  <p>Google's free Gemini API tier is generous and doesn't require billing setup. <a href="https://ai.google.dev/gemini-api/docs/quickstart?lang=python" target="_blank">Source: official quickstart</a>.</p>
+
+  <div class="step-box"><span class="step-num">1</span> Open <a href="https://aistudio.google.com/" target="_blank">aistudio.google.com</a> and sign in with a Google account.</div>
+  <div class="step-box"><span class="step-num">2</span> Click <strong>"Get API key"</strong> in the left sidebar.</div>
+  <div class="step-box"><span class="step-num">3</span> Click <strong>"Create API key"</strong>. Copy the value — it starts with <code>AIza...</code></div>
+  <div class="step-box"><span class="step-num">4</span> Treat it like a password. We'll put it in an environment variable, never in source code.</div>
+
+  <!-- ═══ 2. Store the key ═══ -->
+  <h2>2 — Store the key safely</h2>
+  <p>The Gemini SDK reads the key from an environment variable named <code>GEMINI_API_KEY</code>. Set it once for your shell session:</p>
+
+<pre><code><span class="cm"># In your terminal, in this folder:</span>
+<span class="kw">export</span> GEMINI_API_KEY=<span class="str">"AIza...your-key-here"</span></code></pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Important</div>
+    <code>export</code> only lasts for the current terminal window. To make it permanent, add the line to <code>~/.zshrc</code>. <strong>Never</strong> commit the key to git — if you ever paste it into a file, also add that file to <code>.gitignore</code>.
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Better: a .env file (we'll use this in Lesson 5)</div>
+    Real projects keep keys in a <code>.env</code> file (git-ignored) and load them with the <code>python-dotenv</code> library. For today, <code>export</code> is enough.
+  </div>
+
+  <!-- ═══ 3. Install the SDK ═══ -->
+  <h2>3 — Set up a virtual environment, then install the SDK</h2>
+  <p>The current official package is <code>google-genai</code>. (Don't confuse it with <code>google-generativeai</code> — the older legacy package.) <a href="https://github.com/googleapis/python-genai" target="_blank">Source: SDK README</a>.</p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Why we don't just run <code>pip install</code> globally</div>
+    On macOS with Homebrew Python, running <code>pip3 install google-genai</code> will fail with <code>error: externally-managed-environment</code>. That's macOS protecting the system Python. The right answer is a <strong>virtual environment</strong> (venv) — a per-project sandbox where pip is allowed to install packages.
+  </div>
+
+  <h3>What is a venv?</h3>
+  <p>A folder named <code>.venv/</code> inside your project. It contains its own copy of Python and its own packages. When you "activate" it, your terminal uses that Python instead of the system one. Each project gets its own clean dependencies — no version conflicts between projects.</p>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">If you know Java / MuleSoft</div>
+    A venv is like a Maven project's <code>target/</code> + local repo: dependencies isolated to this project, not installed system-wide. Activating it is like loading the project's classpath.
+  </div>
+
+  <h3>One-time setup (run these in order)</h3>
+
+<pre><code><span class="cm"># 1. Move into your Python project folder</span>
+cd ~/ai/claude/projects/python/
+
+<span class="cm"># 2. Create the venv (creates a .venv/ subfolder)</span>
+python3 -m venv .venv
+
+<span class="cm"># 3. Activate it — you'll see (.venv) appear in your prompt</span>
+source .venv/bin/activate
+
+<span class="cm"># 4. Install the SDK INSIDE the venv (now plain "pip" works)</span>
+pip install google-genai</code></pre>
+
+  <p>Verify the install:</p>
+<pre><code>python -c "from google import genai; print('OK')"</code></pre>
+
+  <h3>Every time you come back to this project</h3>
+  <p>You only create the venv once. But you must <strong>activate</strong> it every new terminal session:</p>
+
+<pre><code>cd ~/ai/claude/projects/python/
+source .venv/bin/activate</code></pre>
+
+  <p>When done, type <code>deactivate</code> to leave the venv.</p>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Spotting the venv</div>
+    Your shell prompt will show <code>(.venv)</code> at the start when active. If you don't see it, you're using system Python — <code>pip install</code> will fail with the <code>externally-managed</code> error.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Add <code>.venv/</code> to <code>.gitignore</code></div>
+    Don't commit the venv folder — it's huge and machine-specific. Anyone else who clones your project will create their own with <code>python3 -m venv .venv</code>.
+  </div>
+
+  <h3>Tell VS Code about your venv</h3>
+  <p>If VS Code still shows red squiggles on <code>import google.genai</code>: <kbd>Cmd+Shift+P</kbd> → "Python: Select Interpreter" → choose the one in <code>./.venv/bin/python</code>. The squiggles will clear within seconds.</p>
+
+  <!-- ═══ 4. The simplest possible call ═══ -->
+  <h2>4 — The simplest possible call</h2>
+  <p>Three lines of meaningful code: import, instantiate, generate.</p>
+
+<pre><code><span class="cm"># first_gemini.py</span>
+<span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()      <span class="cm"># picks up GEMINI_API_KEY from env</span>
+
+<span class="var">response</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="str">"In one sentence, what is a MuleSoft API?"</span>
+<span class="op">)</span>
+
+<span class="fn">print</span>(<span class="var">response</span><span class="op">.</span><span class="attr">text</span>)</code></pre>
+
+  <p><strong>Run it:</strong></p>
+<pre><code>python3 first_gemini.py</code></pre>
+
+  <p><strong>Expected output</strong> (will vary — that's the LLM):</p>
+<pre><code>A MuleSoft API is a managed integration interface that connects
+applications, data, and devices using reusable connectors and flows
+on the Anypoint Platform.</code></pre>
+
+  <!-- ═══ 5. Anatomy ═══ -->
+  <h2>5 — What each line does</h2>
+
+<pre><code><span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span></code></pre>
+  <p>Imports the package. Note the unusual form: the install name is <code>google-genai</code> but the import name is <code>google.genai</code> — this is normal for namespaced Google packages.</p>
+
+<pre><code><span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()</code></pre>
+  <p>Creates a client object. With no args, it reads <code>GEMINI_API_KEY</code> from the environment. To pass it explicitly: <code>genai.Client(api_key="AIza...")</code>.</p>
+
+<pre><code><span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(<span class="var">model</span><span class="op">=</span><span class="op">...,</span> <span class="var">contents</span><span class="op">=</span><span class="op">...</span>)</code></pre>
+  <p>The actual API call. <code>contents</code> is your prompt — a string is the simplest form. The result has a <code>.text</code> attribute with the model's response as a string.</p>
+
+  <div class="callout callout-java">
+    <div class="callout-label">If you know Java</div>
+    <code>genai.Client()</code> is a typical client/builder — same as instantiating <code>HttpClient.newBuilder().build()</code> in Java. The <code>client.models.generate_content(...)</code> chain is fluent-style API navigation.
+  </div>
+
+  <!-- ═══ 6. Real example ═══ -->
+  <h2>6 — A more useful example</h2>
+  <p>Wrap it in a function and add error handling. This is the shape you'll reuse in every agent.</p>
+
+<pre><code><span class="cm"># ask_gemini.py</span>
+<span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()
+
+<span class="kw">def</span> <span class="fn">ask</span>(<span class="var">question</span>)<span class="op">:</span>
+    <span class="str">"""Send a question to Gemini, return the answer text."""</span>
+    <span class="kw">try</span><span class="op">:</span>
+        <span class="var">response</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(
+            <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+            <span class="var">contents</span><span class="op">=</span><span class="var">question</span>
+        <span class="op">)</span>
+        <span class="kw">return</span> <span class="var">response</span><span class="op">.</span><span class="attr">text</span>
+    <span class="kw">except</span> <span class="var">Exception</span> <span class="kw">as</span> <span class="var">e</span><span class="op">:</span>
+        <span class="kw">return</span> <span class="str">f"Error calling Gemini: {e}"</span>
+
+<span class="cm"># Try a few prompts</span>
+<span class="kw">for</span> <span class="var">q</span> <span class="kw">in</span> <span class="op">[</span>
+    <span class="str">"What does the acronym REST stand for?"</span><span class="op">,</span>
+    <span class="str">"Give me three reasons to use OAuth 2.0."</span><span class="op">,</span>
+    <span class="str">"Explain idempotency to a junior developer."</span>
+<span class="op">]</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">f"\nQ: {q}"</span>)
+    <span class="fn">print</span>(<span class="str">f"A: {ask(q)}"</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — the docstring</div>
+    The triple-quoted string on the second line of <code>ask()</code> is a <strong>docstring</strong> — Python's built-in way to document a function. It must be the <em>first statement</em> inside the function. Three things make it valuable:
+    <ul style="margin-top:0.4rem">
+      <li><code>help(ask)</code> in the REPL prints it.</li>
+      <li>VS Code shows it as a tooltip when you hover over <code>ask(</code>.</li>
+      <li>Frameworks like <strong>Google ADK</strong> read it to describe your function as a <em>tool</em> to the model. Good docstrings = good agent tools.</li>
+    </ul>
+    <p style="margin-top:0.4rem"><strong>Java analogy:</strong> like a Javadoc <code>/** ... */</code> comment — but executable and accessible at runtime.</p>
+  </div>
+
+  <div class="tryit">
+    <div class="tryit-label">Try it yourself</div>
+    <ol>
+      <li>Save the snippet as <code>first_gemini.py</code> and run it.</li>
+      <li>Change the prompt to ask Gemini to summarise something you wrote (a paragraph from your own notes).</li>
+      <li><strong>Modify:</strong> Make <code>ask()</code> accept a second argument <code>model_name</code> with a default of <code>"gemini-3.5-flash"</code>.</li>
+      <li><strong>Extend:</strong> Loop over a list of MuleSoft topics and ask Gemini to explain each one in 2 sentences. Print the results.</li>
+      <li><strong>Stretch:</strong> Add a timeout — pass <code>config=genai.types.GenerateContentConfig(...)</code> with the appropriate setting. (Hint: re-read your <a href="0003-timeouts-and-errors.html">Lesson 3 cheat sheet</a> for what timeout values to pick.)</li>
+    </ol>
+  </div>
+
+  <!-- ═══ 7. The response object ═══ -->
+  <h2>7 — There's more on the response than just <code>.text</code></h2>
+  <p>The response object also tells you how many tokens you used (useful for cost estimation later):</p>
+
+<pre><code><span class="var">response</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(
+    <span class="var">model</span><span class="op">=</span><span class="str">"gemini-3.5-flash"</span><span class="op">,</span>
+    <span class="var">contents</span><span class="op">=</span><span class="str">"Say hi."</span>
+<span class="op">)</span>
+
+<span class="fn">print</span>(<span class="var">response</span><span class="op">.</span><span class="attr">text</span>)
+<span class="fn">print</span>(<span class="var">response</span><span class="op">.</span><span class="attr">usage_metadata</span>)
+<span class="cm"># prompt_token_count: 3</span>
+<span class="cm"># candidates_token_count: 5</span>
+<span class="cm"># total_token_count: 8</span></code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Tip</div>
+    Tokens ≈ word fragments. ~1 token per 4 characters of English. The free tier on Gemini Developer API has a generous daily quota; check the <a href="https://ai.google.dev/pricing" target="_blank">official pricing page</a> if you start running heavier loops.
+  </div>
+
+  <!-- ═══ Quiz ═══ -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q1.</strong> Which package do you install for the current official Gemini Python SDK?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0"><code>gemini</code></li>
+        <li data-i="1"><code>google-genai</code></li>
+        <li data-i="2"><code>google-generativeai</code> (this is the legacy one)</li>
+        <li data-i="3"><code>google-ai-python</code></li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q2.</strong> The SDK reads your API key from which environment variable by default?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0"><code>GOOGLE_API_KEY</code></li>
+        <li data-i="1"><code>GENAI_API_KEY</code></li>
+        <li data-i="2"><code>GEMINI_API_KEY</code></li>
+        <li data-i="3"><code>API_KEY</code></li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q3.</strong> Where should your API key live?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Hardcoded in the Python file so it's easy to share</li>
+        <li data-i="1">In a comment at the top of the file</li>
+        <li data-i="2">In an environment variable or a git-ignored <code>.env</code> file</li>
+        <li data-i="3">In your README so teammates can find it</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q4.</strong> After <code>response = client.models.generate_content(...)</code>, how do you get the model's text answer?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0"><code>response.text</code></li>
+        <li data-i="1"><code>response.body</code></li>
+        <li data-i="2"><code>response.message</code></li>
+        <li data-i="3"><code>response.json()["text"]</code></li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <h2>What's next</h2>
+  <p>You can now talk to Gemini. <strong>Lesson 5</strong> introduces:</p>
+  <ul>
+    <li><strong>System instructions</strong> — telling the model who it is and how to behave (the foundation of an agent's "personality")</li>
+    <li><strong>Multi-turn conversations</strong> — keeping context across multiple messages</li>
+    <li><strong>Loading keys from <code>.env</code></strong> — the right way for real projects</li>
+  </ul>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    Run <code>/teach</code> for follow-ups. Examples:
+    <ul style="margin-top:0.4rem">
+      <li>"How do I stream the response token-by-token?"</li>
+      <li>"What's the difference between flash and pro models?"</li>
+      <li>"Show me how to send an image to Gemini"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0003-timeouts-and-errors.html">← Lesson 3 — Timeouts &amp; Errors</a>
+      <a href="0005-sdk-vs-adk.html">Lesson 5 — SDK vs ADK →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! google-genai is the current package. The older google-generativeai is legacy.", err: "Not quite. The current SDK is google-genai. google-generativeai is the older legacy package — don't use it for new code." },
+    1: { ok: "Correct! GEMINI_API_KEY is the convention used in the official quickstart.", err: "Not quite. The SDK convention is GEMINI_API_KEY (matches the x-goog-api-key REST header pattern)." },
+    2: { ok: "Correct! Env vars or git-ignored .env files. Never in source.", err: "Not quite. Keys go in env vars or git-ignored .env files — never in source, never in comments, never in README." },
+    3: { ok: "Correct! response.text is the convenience accessor for the generated string.", err: "Not quite. The generated text is on response.text — straight attribute, not a method call." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

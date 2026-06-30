@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 9 — Build Your First End-to-End RAG</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .tryit { background: #fff; border: 2px dashed #94a3b8; border-radius: 10px; padding: 1.2rem 1.4rem; margin: 1.5rem 0; }
+    .tryit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-bottom: 0.6rem; }
+
+    /* Pipeline diagram */
+    .pipe {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1.2rem 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .step {
+      background: #fff;
+      border-left: 3px solid #1a1a1a;
+      padding: 0.8rem 1rem 0.8rem 1.2rem;
+      margin: 1rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .step-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 0.3rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 9 of ?</p>
+    <h1>Build Your First End-to-End RAG</h1>
+    <p class="tagline">Wire chunking + embeddings + retrieval + Gemini into one working RAG. The payoff lesson.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <a href="0008-chunking.html"><span class="pill pill-done">L8 ✓</span></a>
+      <span class="pill pill-now">L9 — Build RAG</span>
+      <span class="pill pill-next">L10 — Vector DB</span>
+    </div>
+  </header>
+
+  <h2>What you're about to build</h2>
+  <p>A script you can ask questions of, that:</p>
+  <ol>
+    <li><strong>Loads</strong> a real Markdown file from disk</li>
+    <li><strong>Chunks</strong> it (Lesson 8)</li>
+    <li><strong>Embeds</strong> the chunks — once, then caches them to JSON (Lesson 7)</li>
+    <li><strong>Retrieves</strong> the top-K chunks for a question, with a relevance threshold</li>
+    <li><strong>Builds a grounded prompt</strong> that interleaves chunks and the question</li>
+    <li><strong>Calls Gemini</strong> with strict instructions: answer only from the provided context</li>
+    <li><strong>Returns the answer with citations</strong> — or "I don't know" when retrieval fails</li>
+  </ol>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Connection to your mission</div>
+    This is the smallest possible RAG that works. Once you've built it, the rest of the journey (vector DB, multiple sources, hybrid search) is incremental — every upgrade replaces one piece of this skeleton.
+  </div>
+
+  <!-- ═══ Pipeline diagram ═══ -->
+  <h2>The full pipeline</h2>
+  <div class="pipe">                 ┌──── INDEX (do once) ─────┐
+                 │                          │
+  doc.md ─► chunk ─► embed ─► save vectors ─► chunks.json
+                                              │
+  ┌───────────────────────────────────────────┘
+  │  ┌──── ASK (every question) ────┐
+  │  │                              │
+  └─►│  question ─► embed ─►────►   │
+     │              cosine search   │
+     │              threshold check │
+     │                  │           │
+     │     not enough?  │ enough?   │
+     │     ↓            ↓           │
+     │   "I don't       build       │
+     │    know"        prompt       │
+     │                  │           │
+     │                  ▼           │
+     │           Gemini call  ──►   │  answer + citations
+     └──────────────────────────────┘</div>
+
+  <h2>The new concept: grounded prompting</h2>
+  <p>An ungrounded LLM call is "hey Gemini, what is OAuth?" — it answers from its training data and might hallucinate.</p>
+  <p>A <strong>grounded</strong> call is "here are 3 verified passages from our docs; answer the question using ONLY these passages; if they don't contain the answer, say so". The model becomes an *interpreter* of your retrieved context, not an oracle.</p>
+
+  <p>The grounding lives in two places:</p>
+  <ul>
+    <li><strong>System instruction:</strong> the rules ("answer ONLY from the context", "cite the chunk number", "say 'I don't know' if needed")</li>
+    <li><strong>User message:</strong> the chunks + the question, formatted clearly</li>
+  </ul>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">The hallucination guard</div>
+    Without a strict system instruction, Gemini will <em>try to be helpful</em> by mixing your context with its general knowledge. That's the #1 source of subtle wrong answers. <strong>Be blunt in the system prompt:</strong> "If the context doesn't contain the answer, reply exactly 'I don't have that information.'"
+  </div>
+
+  <!-- ═══ Build it: step by step ═══ -->
+  <h2>Build it — step by step</h2>
+  <p>Save as <code>rag.py</code> in your activated venv. We'll build top-down: imports, helpers, then the main flow.</p>
+
+  <h3>Step 1 — Imports and setup</h3>
+<pre><code><span class="cm"># rag.py</span>
+<span class="kw">import</span> <span class="var">json</span>
+<span class="kw">import</span> <span class="var">math</span>
+<span class="kw">import</span> <span class="var">re</span>
+<span class="kw">from</span> <span class="var">pathlib</span> <span class="kw">import</span> <span class="var">Path</span>
+
+<span class="kw">from</span> <span class="var">dotenv</span> <span class="kw">import</span> <span class="var">load_dotenv</span>
+<span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+<span class="kw">from</span> <span class="var">google</span><span class="op">.</span><span class="var">genai</span> <span class="kw">import</span> <span class="var">types</span>
+
+<span class="fn">load_dotenv</span>()
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()
+
+<span class="cm"># Tunables — change these and rerun</span>
+<span class="var">EMBED_MODEL</span> <span class="op">=</span> <span class="str">"gemini-embedding-001"</span>
+<span class="var">CHAT_MODEL</span>  <span class="op">=</span> <span class="str">"gemini-3.5-flash"</span>
+<span class="var">DOC_PATH</span>    <span class="op">=</span> <span class="var">Path</span>(<span class="str">"anypoint-auth.md"</span>)
+<span class="var">INDEX_PATH</span>  <span class="op">=</span> <span class="var">Path</span>(<span class="str">"index.json"</span>)
+<span class="var">THRESHOLD</span>   <span class="op">=</span> <span class="num">0.5</span>      <span class="cm"># cosine below this = "not relevant"</span>
+<span class="var">TOP_K</span>       <span class="op">=</span> <span class="num">3</span>        <span class="cm"># how many chunks to feed the LLM</span></code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — <code>pathlib.Path</code></div>
+    <code>Path</code> is the modern, OS-agnostic way to handle file paths in Python. Beats string concatenation hands down.
+<pre style="margin:0.4rem 0"><code><span class="kw">from</span> <span class="var">pathlib</span> <span class="kw">import</span> <span class="var">Path</span>
+
+<span class="var">p</span> <span class="op">=</span> <span class="var">Path</span>(<span class="str">"docs/anypoint-auth.md"</span>)
+<span class="var">p</span><span class="op">.</span><span class="fn">read_text</span>()             <span class="cm"># reads the file → string</span>
+<span class="var">p</span><span class="op">.</span><span class="fn">write_text</span>(<span class="str">"hello"</span>)     <span class="cm"># writes a string → file</span>
+<span class="var">p</span><span class="op">.</span><span class="fn">exists</span>()                <span class="cm"># True / False</span>
+<span class="var">p</span><span class="op">.</span><span class="attr">parent</span>                  <span class="cm"># Path("docs")</span>
+<span class="var">p</span><span class="op">.</span><span class="attr">stem</span>                    <span class="cm"># "anypoint-auth"  (filename without extension)</span></code></pre>
+    <p style="margin-top:0.3rem"><strong>Java analogy:</strong> like <code>java.nio.file.Path</code> + <code>Files.readString()</code> rolled into one fluent API.</p>
+  </div>
+
+  <h3>Step 2 — Chunking (from Lesson 8)</h3>
+<pre><code><span class="kw">def</span> <span class="fn">chunk_markdown</span>(<span class="var">text</span>)<span class="op">:</span>
+    <span class="str">"""Split markdown by ## headings, keeping each heading attached to its body."""</span>
+    <span class="var">parts</span> <span class="op">=</span> <span class="var">re</span><span class="op">.</span><span class="fn">split</span>(<span class="str">r"(?=^## )"</span><span class="op">,</span> <span class="var">text</span><span class="op">,</span> <span class="var">flags</span><span class="op">=</span><span class="var">re</span><span class="op">.</span><span class="var">MULTILINE</span>)
+    <span class="kw">return</span> <span class="op">[</span><span class="var">p</span><span class="op">.</span><span class="fn">strip</span>() <span class="kw">for</span> <span class="var">p</span> <span class="kw">in</span> <span class="var">parts</span> <span class="kw">if</span> <span class="var">p</span><span class="op">.</span><span class="fn">strip</span>()<span class="op">]</span></code></pre>
+
+  <h3>Step 3 — Embedding helpers (from Lesson 7)</h3>
+<pre><code><span class="kw">def</span> <span class="fn">embed</span>(<span class="var">text</span><span class="op">,</span> <span class="var">task_type</span>)<span class="op">:</span>
+    <span class="str">"""Embed one string. task_type tells the model how this text will be used."""</span>
+    <span class="var">result</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">embed_content</span>(
+        <span class="var">model</span><span class="op">=</span><span class="var">EMBED_MODEL</span><span class="op">,</span>
+        <span class="var">contents</span><span class="op">=</span><span class="var">text</span><span class="op">,</span>
+        <span class="var">config</span><span class="op">=</span><span class="var">types</span><span class="op">.</span><span class="fn">EmbedContentConfig</span>(<span class="var">task_type</span><span class="op">=</span><span class="var">task_type</span>)
+    <span class="op">)</span>
+    <span class="kw">return</span> <span class="var">result</span><span class="op">.</span><span class="attr">embeddings</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="attr">values</span>
+
+<span class="kw">def</span> <span class="fn">cosine</span>(<span class="var">a</span><span class="op">,</span> <span class="var">b</span>)<span class="op">:</span>
+    <span class="var">dot</span> <span class="op">=</span> <span class="fn">sum</span>(<span class="var">x</span><span class="op">*</span><span class="var">y</span> <span class="kw">for</span> <span class="var">x</span><span class="op">,</span> <span class="var">y</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="var">a</span><span class="op">,</span> <span class="var">b</span>))
+    <span class="kw">return</span> <span class="var">dot</span> <span class="op">/</span> (<span class="var">math</span><span class="op">.</span><span class="fn">sqrt</span>(<span class="fn">sum</span>(<span class="var">x</span><span class="op">*</span><span class="var">x</span> <span class="kw">for</span> <span class="var">x</span> <span class="kw">in</span> <span class="var">a</span>)) <span class="op">*</span> <span class="var">math</span><span class="op">.</span><span class="fn">sqrt</span>(<span class="fn">sum</span>(<span class="var">y</span><span class="op">*</span><span class="var">y</span> <span class="kw">for</span> <span class="var">y</span> <span class="kw">in</span> <span class="var">b</span>)))</code></pre>
+
+  <h3>Step 4 — Build (or load) the index</h3>
+  <p>Embedding costs API calls. We don't want to re-embed every time we ask a question. Cache the chunks + their vectors to <code>index.json</code>; reuse it next run.</p>
+
+<pre><code><span class="kw">def</span> <span class="fn">build_index</span>()<span class="op">:</span>
+    <span class="str">"""Read doc, chunk, embed, save to JSON. Returns the in-memory index."""</span>
+    <span class="fn">print</span>(<span class="str">f"Reading {DOC_PATH}..."</span>)
+    <span class="var">text</span> <span class="op">=</span> <span class="var">DOC_PATH</span><span class="op">.</span><span class="fn">read_text</span>()
+    <span class="var">chunks</span> <span class="op">=</span> <span class="fn">chunk_markdown</span>(<span class="var">text</span>)
+    <span class="fn">print</span>(<span class="str">f"Got {len(chunks)} chunks. Embedding..."</span>)
+    <span class="var">vectors</span> <span class="op">=</span> <span class="op">[</span><span class="fn">embed</span>(<span class="var">c</span><span class="op">,</span> <span class="str">"RETRIEVAL_DOCUMENT"</span>) <span class="kw">for</span> <span class="var">c</span> <span class="kw">in</span> <span class="var">chunks</span><span class="op">]</span>
+    <span class="var">index</span> <span class="op">=</span> <span class="op">{</span><span class="str">"chunks"</span><span class="op">:</span> <span class="var">chunks</span><span class="op">,</span> <span class="str">"vectors"</span><span class="op">:</span> <span class="var">vectors</span><span class="op">}</span>
+    <span class="var">INDEX_PATH</span><span class="op">.</span><span class="fn">write_text</span>(<span class="var">json</span><span class="op">.</span><span class="fn">dumps</span>(<span class="var">index</span>))
+    <span class="fn">print</span>(<span class="str">f"Saved index → {INDEX_PATH}"</span>)
+    <span class="kw">return</span> <span class="var">index</span>
+
+<span class="kw">def</span> <span class="fn">load_or_build_index</span>()<span class="op">:</span>
+    <span class="str">"""Use cached index if it exists, otherwise build a new one."""</span>
+    <span class="kw">if</span> <span class="var">INDEX_PATH</span><span class="op">.</span><span class="fn">exists</span>()<span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"Loading cached index from {INDEX_PATH}"</span>)
+        <span class="kw">return</span> <span class="var">json</span><span class="op">.</span><span class="fn">loads</span>(<span class="var">INDEX_PATH</span><span class="op">.</span><span class="fn">read_text</span>())
+    <span class="kw">return</span> <span class="fn">build_index</span>()</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — <code>json.dumps</code> / <code>json.loads</code></div>
+    Lesson 1 covered <code>json.loads(string)</code> → dict and <code>json.dumps(dict)</code> → string. Pairing those with <code>Path.read_text()</code> / <code>Path.write_text()</code> gives you the simplest possible way to persist Python data to disk: <strong>"convert to JSON string, write to file"</strong> on save and the reverse on load.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Cache invalidation</div>
+    The cache doesn't know your <code>doc.md</code> has changed. If you edit the source, <strong>delete <code>index.json</code></strong> before rerunning, or your old chunks will keep being served. Real systems hash the source file and re-index when the hash changes — out of scope for now.
+  </div>
+
+  <h3>Step 5 — Search with threshold</h3>
+<pre><code><span class="kw">def</span> <span class="fn">search</span>(<span class="var">question</span><span class="op">,</span> <span class="var">index</span>)<span class="op">:</span>
+    <span class="str">"""Embed the question, score every chunk, keep only those above THRESHOLD."""</span>
+    <span class="var">q_vec</span> <span class="op">=</span> <span class="fn">embed</span>(<span class="var">question</span><span class="op">,</span> <span class="str">"RETRIEVAL_QUERY"</span>)
+    <span class="var">scored</span> <span class="op">=</span> <span class="op">[</span>(<span class="fn">cosine</span>(<span class="var">q_vec</span><span class="op">,</span> <span class="var">v</span>)<span class="op">,</span> <span class="var">c</span>) <span class="kw">for</span> <span class="var">v</span><span class="op">,</span> <span class="var">c</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="var">index</span><span class="op">[</span><span class="str">"vectors"</span><span class="op">]</span><span class="op">,</span> <span class="var">index</span><span class="op">[</span><span class="str">"chunks"</span><span class="op">]</span>)<span class="op">]</span>
+    <span class="var">scored</span><span class="op">.</span><span class="fn">sort</span>(<span class="var">reverse</span><span class="op">=</span><span class="kw">True</span>)
+    <span class="kw">return</span> <span class="op">[</span>(<span class="var">s</span><span class="op">,</span> <span class="var">c</span>) <span class="kw">for</span> <span class="var">s</span><span class="op">,</span> <span class="var">c</span> <span class="kw">in</span> <span class="var">scored</span> <span class="kw">if</span> <span class="var">s</span> <span class="op">&gt;</span> <span class="var">THRESHOLD</span><span class="op">]</span><span class="op">[</span><span class="op">:</span><span class="var">TOP_K</span><span class="op">]</span></code></pre>
+
+  <h3>Step 6 — The grounded prompt</h3>
+  <p>This is the heart of RAG. Two pieces: <strong>system instruction</strong> (rules) and <strong>user message</strong> (context + question).</p>
+
+<pre><code><span class="var">SYSTEM_INSTRUCTION</span> <span class="op">=</span> <span class="str">"""</span>
+<span class="str">You are an expert assistant answering questions from a provided document.</span>
+
+<span class="str">RULES (must follow):</span>
+<span class="str">1. Answer ONLY from the CONTEXT below. Do not use outside knowledge.</span>
+<span class="str">2. If the CONTEXT does not contain the answer, reply exactly:</span>
+<span class="str">   "I don't have that information in the provided document."</span>
+<span class="str">3. Cite the chunk number(s) you used at the end of your answer, e.g. [1] [3].</span>
+<span class="str">4. Be concise. Maximum 4 sentences.</span>
+<span class="str">"""</span>
+
+<span class="kw">def</span> <span class="fn">build_user_message</span>(<span class="var">question</span><span class="op">,</span> <span class="var">retrieved</span>)<span class="op">:</span>
+    <span class="str">"""Format the chunks + question into one user message."""</span>
+    <span class="var">context_blocks</span> <span class="op">=</span> <span class="op">[]</span>
+    <span class="kw">for</span> <span class="var">i</span><span class="op">,</span> (<span class="var">score</span><span class="op">,</span> <span class="var">chunk</span>) <span class="kw">in</span> <span class="fn">enumerate</span>(<span class="var">retrieved</span><span class="op">,</span> <span class="var">start</span><span class="op">=</span><span class="num">1</span>)<span class="op">:</span>
+        <span class="var">context_blocks</span><span class="op">.</span><span class="fn">append</span>(<span class="str">f"[{i}] (relevance {score:.2f})\n{chunk}"</span>)
+    <span class="var">context</span> <span class="op">=</span> <span class="str">"\n\n"</span><span class="op">.</span><span class="fn">join</span>(<span class="var">context_blocks</span>)
+    <span class="kw">return</span> <span class="str">f"CONTEXT:\n{context}\n\nQUESTION: {question}"</span></code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — <code>"separator".join(list)</code></div>
+    The opposite of <code>.split()</code>. Joins a list of strings into one string, with the separator between each:
+<pre style="margin:0.4rem 0"><code><span class="str">", "</span><span class="op">.</span><span class="fn">join</span>(<span class="op">[</span><span class="str">"OAuth"</span><span class="op">,</span> <span class="str">"mTLS"</span><span class="op">,</span> <span class="str">"JWT"</span><span class="op">]</span>)
+<span class="cm"># → "OAuth, mTLS, JWT"</span>
+
+<span class="str">"\n\n"</span><span class="op">.</span><span class="fn">join</span>(<span class="op">[</span><span class="str">"chunk one"</span><span class="op">,</span> <span class="str">"chunk two"</span><span class="op">]</span>)
+<span class="cm"># → "chunk one\n\nchunk two"</span></code></pre>
+    <p style="margin-top:0.3rem">Common surprise: it's a method on the <em>separator string</em>, not on the list. <code>",".join(items)</code>, not <code>items.join(",")</code>.</p>
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — <code>enumerate(items, start=1)</code></div>
+    A built-in that pairs each item with its index. Cleaner than <code>for i in range(len(items)): items[i]</code>.
+<pre style="margin:0.4rem 0"><code><span class="kw">for</span> <span class="var">i</span><span class="op">,</span> <span class="var">item</span> <span class="kw">in</span> <span class="fn">enumerate</span>(<span class="op">[</span><span class="str">"a"</span><span class="op">,</span> <span class="str">"b"</span><span class="op">,</span> <span class="str">"c"</span><span class="op">]</span><span class="op">,</span> <span class="var">start</span><span class="op">=</span><span class="num">1</span>)<span class="op">:</span>
+    <span class="fn">print</span>(<span class="var">i</span><span class="op">,</span> <span class="var">item</span>)
+<span class="cm"># 1 a</span>
+<span class="cm"># 2 b</span>
+<span class="cm"># 3 c</span></code></pre>
+    <p style="margin-top:0.3rem">Default <code>start=0</code> matches Python indexing. We use <code>start=1</code> here so chunk citations read <code>[1] [2]</code> instead of <code>[0] [1]</code> (more natural in answers).</p>
+  </div>
+
+  <h3>Step 7 — Ask the question</h3>
+<pre><code><span class="kw">def</span> <span class="fn">ask</span>(<span class="var">question</span><span class="op">,</span> <span class="var">index</span>)<span class="op">:</span>
+    <span class="var">retrieved</span> <span class="op">=</span> <span class="fn">search</span>(<span class="var">question</span><span class="op">,</span> <span class="var">index</span>)
+
+    <span class="cm"># THE GUARD — refuse to retrieve when nothing is relevant</span>
+    <span class="kw">if</span> <span class="kw">not</span> <span class="var">retrieved</span><span class="op">:</span>
+        <span class="kw">return</span> <span class="str">"I don't have that information in the provided document."</span>
+
+    <span class="var">user_msg</span> <span class="op">=</span> <span class="fn">build_user_message</span>(<span class="var">question</span><span class="op">,</span> <span class="var">retrieved</span>)
+    <span class="var">response</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(
+        <span class="var">model</span><span class="op">=</span><span class="var">CHAT_MODEL</span><span class="op">,</span>
+        <span class="var">contents</span><span class="op">=</span><span class="var">user_msg</span><span class="op">,</span>
+        <span class="var">config</span><span class="op">=</span><span class="var">types</span><span class="op">.</span><span class="fn">GenerateContentConfig</span>(<span class="var">system_instruction</span><span class="op">=</span><span class="var">SYSTEM_INSTRUCTION</span>)
+    <span class="op">)</span>
+    <span class="kw">return</span> <span class="var">response</span><span class="op">.</span><span class="attr">text</span></code></pre>
+
+  <h3>Step 8 — Tie it together</h3>
+<pre><code><span class="kw">if</span> <span class="var">__name__</span> <span class="op">==</span> <span class="str">"__main__"</span><span class="op">:</span>
+    <span class="var">index</span> <span class="op">=</span> <span class="fn">load_or_build_index</span>()
+
+    <span class="kw">for</span> <span class="var">q</span> <span class="kw">in</span> <span class="op">[</span>
+        <span class="str">"How does Anypoint authenticate machine-to-machine?"</span><span class="op">,</span>
+        <span class="str">"What's the recommended way to throttle API traffic?"</span><span class="op">,</span>
+        <span class="str">"What's the weather in Tokyo?"</span>      <span class="cm"># should trigger the I-don't-know branch</span>
+    <span class="op">]</span><span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"</span>)
+        <span class="fn">print</span>(<span class="str">f"Q: {q}"</span>)
+        <span class="fn">print</span>(<span class="str">f"A: {ask(q, index)}"</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">New syntax — <code>if __name__ == "__main__":</code></div>
+    A common Python idiom. Code under this guard only runs when the file is <em>executed directly</em> (<code>python rag.py</code>), not when it's <em>imported</em> by another file (<code>from rag import ask</code>). Lets you build reusable modules — your test runner imports <code>ask</code>, but your CLI invocation runs the demo loop.
+    <p style="margin-top:0.3rem"><strong>Java analogy:</strong> the same role as <code>public static void main(String[] args)</code> — entry point only when run directly.</p>
+  </div>
+
+  <!-- ═══ Complete file ═══ -->
+  <h2>The complete <code>rag.py</code></h2>
+  <p>The 8 steps above, assembled into one file you can copy directly. Save as <code>rag.py</code> in your activated venv, alongside <code>anypoint-auth.md</code>.</p>
+
+<pre><code><span class="cm"># rag.py — your first end-to-end RAG</span>
+<span class="kw">import</span> <span class="var">json</span>
+<span class="kw">import</span> <span class="var">math</span>
+<span class="kw">import</span> <span class="var">re</span>
+<span class="kw">from</span> <span class="var">pathlib</span> <span class="kw">import</span> <span class="var">Path</span>
+
+<span class="kw">from</span> <span class="var">dotenv</span> <span class="kw">import</span> <span class="var">load_dotenv</span>
+<span class="kw">from</span> <span class="var">google</span> <span class="kw">import</span> <span class="var">genai</span>
+<span class="kw">from</span> <span class="var">google</span><span class="op">.</span><span class="var">genai</span> <span class="kw">import</span> <span class="var">types</span>
+
+<span class="fn">load_dotenv</span>()
+<span class="var">client</span> <span class="op">=</span> <span class="var">genai</span><span class="op">.</span><span class="fn">Client</span>()
+
+<span class="cm"># ─── Tunables ────────────────────────────────────────────────</span>
+<span class="var">EMBED_MODEL</span> <span class="op">=</span> <span class="str">"gemini-embedding-001"</span>
+<span class="var">CHAT_MODEL</span>  <span class="op">=</span> <span class="str">"gemini-3.5-flash"</span>
+<span class="var">DOC_PATH</span>    <span class="op">=</span> <span class="var">Path</span>(<span class="str">"anypoint-auth.md"</span>)
+<span class="var">INDEX_PATH</span>  <span class="op">=</span> <span class="var">Path</span>(<span class="str">"index.json"</span>)
+<span class="var">THRESHOLD</span>   <span class="op">=</span> <span class="num">0.5</span>      <span class="cm"># cosine below this = "not relevant"</span>
+<span class="var">TOP_K</span>       <span class="op">=</span> <span class="num">3</span>        <span class="cm"># how many chunks to feed the LLM</span>
+
+<span class="var">SYSTEM_INSTRUCTION</span> <span class="op">=</span> <span class="str">"""</span>
+<span class="str">You are an expert assistant answering questions from a provided document.</span>
+
+<span class="str">RULES (must follow):</span>
+<span class="str">1. Answer ONLY from the CONTEXT below. Do not use outside knowledge.</span>
+<span class="str">2. If the CONTEXT does not contain the answer, reply exactly:</span>
+<span class="str">   "I don't have that information in the provided document."</span>
+<span class="str">3. Cite the chunk number(s) you used at the end of your answer, e.g. [1] [3].</span>
+<span class="str">4. Be concise. Maximum 4 sentences.</span>
+<span class="str">"""</span>
+
+<span class="cm"># ─── Chunking (Lesson 8) ─────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">chunk_markdown</span>(<span class="var">text</span>)<span class="op">:</span>
+    <span class="str">"""Split markdown by ## headings, keeping each heading attached to its body."""</span>
+    <span class="var">parts</span> <span class="op">=</span> <span class="var">re</span><span class="op">.</span><span class="fn">split</span>(<span class="str">r"(?=^## )"</span><span class="op">,</span> <span class="var">text</span><span class="op">,</span> <span class="var">flags</span><span class="op">=</span><span class="var">re</span><span class="op">.</span><span class="var">MULTILINE</span>)
+    <span class="kw">return</span> <span class="op">[</span><span class="var">p</span><span class="op">.</span><span class="fn">strip</span>() <span class="kw">for</span> <span class="var">p</span> <span class="kw">in</span> <span class="var">parts</span> <span class="kw">if</span> <span class="var">p</span><span class="op">.</span><span class="fn">strip</span>()<span class="op">]</span>
+
+<span class="cm"># ─── Embedding helpers (Lesson 7) ────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">embed</span>(<span class="var">text</span><span class="op">,</span> <span class="var">task_type</span>)<span class="op">:</span>
+    <span class="str">"""Embed one string. task_type tells the model how this text will be used."""</span>
+    <span class="var">result</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">embed_content</span>(
+        <span class="var">model</span><span class="op">=</span><span class="var">EMBED_MODEL</span><span class="op">,</span>
+        <span class="var">contents</span><span class="op">=</span><span class="var">text</span><span class="op">,</span>
+        <span class="var">config</span><span class="op">=</span><span class="var">types</span><span class="op">.</span><span class="fn">EmbedContentConfig</span>(<span class="var">task_type</span><span class="op">=</span><span class="var">task_type</span>)
+    <span class="op">)</span>
+    <span class="kw">return</span> <span class="var">result</span><span class="op">.</span><span class="attr">embeddings</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="attr">values</span>
+
+<span class="kw">def</span> <span class="fn">cosine</span>(<span class="var">a</span><span class="op">,</span> <span class="var">b</span>)<span class="op">:</span>
+    <span class="var">dot</span> <span class="op">=</span> <span class="fn">sum</span>(<span class="var">x</span><span class="op">*</span><span class="var">y</span> <span class="kw">for</span> <span class="var">x</span><span class="op">,</span> <span class="var">y</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="var">a</span><span class="op">,</span> <span class="var">b</span>))
+    <span class="kw">return</span> <span class="var">dot</span> <span class="op">/</span> (<span class="var">math</span><span class="op">.</span><span class="fn">sqrt</span>(<span class="fn">sum</span>(<span class="var">x</span><span class="op">*</span><span class="var">x</span> <span class="kw">for</span> <span class="var">x</span> <span class="kw">in</span> <span class="var">a</span>)) <span class="op">*</span> <span class="var">math</span><span class="op">.</span><span class="fn">sqrt</span>(<span class="fn">sum</span>(<span class="var">y</span><span class="op">*</span><span class="var">y</span> <span class="kw">for</span> <span class="var">y</span> <span class="kw">in</span> <span class="var">b</span>)))
+
+<span class="cm"># ─── Index: build once, cache to JSON ────────────────────────</span>
+<span class="kw">def</span> <span class="fn">build_index</span>()<span class="op">:</span>
+    <span class="str">"""Read doc, chunk, embed, save to JSON. Returns the in-memory index."""</span>
+    <span class="fn">print</span>(<span class="str">f"Reading {DOC_PATH}..."</span>)
+    <span class="var">text</span> <span class="op">=</span> <span class="var">DOC_PATH</span><span class="op">.</span><span class="fn">read_text</span>()
+    <span class="var">chunks</span> <span class="op">=</span> <span class="fn">chunk_markdown</span>(<span class="var">text</span>)
+    <span class="fn">print</span>(<span class="str">f"Got {len(chunks)} chunks. Embedding..."</span>)
+    <span class="var">vectors</span> <span class="op">=</span> <span class="op">[</span><span class="fn">embed</span>(<span class="var">c</span><span class="op">,</span> <span class="str">"RETRIEVAL_DOCUMENT"</span>) <span class="kw">for</span> <span class="var">c</span> <span class="kw">in</span> <span class="var">chunks</span><span class="op">]</span>
+    <span class="var">index</span> <span class="op">=</span> <span class="op">{</span><span class="str">"chunks"</span><span class="op">:</span> <span class="var">chunks</span><span class="op">,</span> <span class="str">"vectors"</span><span class="op">:</span> <span class="var">vectors</span><span class="op">}</span>
+    <span class="var">INDEX_PATH</span><span class="op">.</span><span class="fn">write_text</span>(<span class="var">json</span><span class="op">.</span><span class="fn">dumps</span>(<span class="var">index</span>))
+    <span class="fn">print</span>(<span class="str">f"Saved index → {INDEX_PATH}"</span>)
+    <span class="kw">return</span> <span class="var">index</span>
+
+<span class="kw">def</span> <span class="fn">load_or_build_index</span>()<span class="op">:</span>
+    <span class="str">"""Use cached index if it exists, otherwise build a new one."""</span>
+    <span class="kw">if</span> <span class="var">INDEX_PATH</span><span class="op">.</span><span class="fn">exists</span>()<span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"Loading cached index from {INDEX_PATH}"</span>)
+        <span class="kw">return</span> <span class="var">json</span><span class="op">.</span><span class="fn">loads</span>(<span class="var">INDEX_PATH</span><span class="op">.</span><span class="fn">read_text</span>())
+    <span class="kw">return</span> <span class="fn">build_index</span>()
+
+<span class="cm"># ─── Retrieval ───────────────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">search</span>(<span class="var">question</span><span class="op">,</span> <span class="var">index</span>)<span class="op">:</span>
+    <span class="str">"""Embed the question, score every chunk, keep only those above THRESHOLD."""</span>
+    <span class="var">q_vec</span> <span class="op">=</span> <span class="fn">embed</span>(<span class="var">question</span><span class="op">,</span> <span class="str">"RETRIEVAL_QUERY"</span>)
+    <span class="var">scored</span> <span class="op">=</span> <span class="op">[</span>(<span class="fn">cosine</span>(<span class="var">q_vec</span><span class="op">,</span> <span class="var">v</span>)<span class="op">,</span> <span class="var">c</span>) <span class="kw">for</span> <span class="var">v</span><span class="op">,</span> <span class="var">c</span> <span class="kw">in</span> <span class="fn">zip</span>(<span class="var">index</span><span class="op">[</span><span class="str">"vectors"</span><span class="op">]</span><span class="op">,</span> <span class="var">index</span><span class="op">[</span><span class="str">"chunks"</span><span class="op">]</span>)<span class="op">]</span>
+    <span class="var">scored</span><span class="op">.</span><span class="fn">sort</span>(<span class="var">reverse</span><span class="op">=</span><span class="kw">True</span>)
+    <span class="kw">return</span> <span class="op">[</span>(<span class="var">s</span><span class="op">,</span> <span class="var">c</span>) <span class="kw">for</span> <span class="var">s</span><span class="op">,</span> <span class="var">c</span> <span class="kw">in</span> <span class="var">scored</span> <span class="kw">if</span> <span class="var">s</span> <span class="op">&gt;</span> <span class="var">THRESHOLD</span><span class="op">]</span><span class="op">[</span><span class="op">:</span><span class="var">TOP_K</span><span class="op">]</span>
+
+<span class="cm"># ─── Grounded prompt ─────────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">build_user_message</span>(<span class="var">question</span><span class="op">,</span> <span class="var">retrieved</span>)<span class="op">:</span>
+    <span class="str">"""Format the chunks + question into one user message."""</span>
+    <span class="var">context_blocks</span> <span class="op">=</span> <span class="op">[]</span>
+    <span class="kw">for</span> <span class="var">i</span><span class="op">,</span> (<span class="var">score</span><span class="op">,</span> <span class="var">chunk</span>) <span class="kw">in</span> <span class="fn">enumerate</span>(<span class="var">retrieved</span><span class="op">,</span> <span class="var">start</span><span class="op">=</span><span class="num">1</span>)<span class="op">:</span>
+        <span class="var">context_blocks</span><span class="op">.</span><span class="fn">append</span>(<span class="str">f"[{i}] (relevance {score:.2f})\n{chunk}"</span>)
+    <span class="var">context</span> <span class="op">=</span> <span class="str">"\n\n"</span><span class="op">.</span><span class="fn">join</span>(<span class="var">context_blocks</span>)
+    <span class="kw">return</span> <span class="str">f"CONTEXT:\n{context}\n\nQUESTION: {question}"</span>
+
+<span class="cm"># ─── Ask: retrieve → ground → call LLM ───────────────────────</span>
+<span class="kw">def</span> <span class="fn">ask</span>(<span class="var">question</span><span class="op">,</span> <span class="var">index</span>)<span class="op">:</span>
+    <span class="var">retrieved</span> <span class="op">=</span> <span class="fn">search</span>(<span class="var">question</span><span class="op">,</span> <span class="var">index</span>)
+
+    <span class="cm"># THE GUARD — refuse to retrieve when nothing is relevant</span>
+    <span class="kw">if</span> <span class="kw">not</span> <span class="var">retrieved</span><span class="op">:</span>
+        <span class="kw">return</span> <span class="str">"I don't have that information in the provided document."</span>
+
+    <span class="var">user_msg</span> <span class="op">=</span> <span class="fn">build_user_message</span>(<span class="var">question</span><span class="op">,</span> <span class="var">retrieved</span>)
+    <span class="var">response</span> <span class="op">=</span> <span class="var">client</span><span class="op">.</span><span class="var">models</span><span class="op">.</span><span class="fn">generate_content</span>(
+        <span class="var">model</span><span class="op">=</span><span class="var">CHAT_MODEL</span><span class="op">,</span>
+        <span class="var">contents</span><span class="op">=</span><span class="var">user_msg</span><span class="op">,</span>
+        <span class="var">config</span><span class="op">=</span><span class="var">types</span><span class="op">.</span><span class="fn">GenerateContentConfig</span>(<span class="var">system_instruction</span><span class="op">=</span><span class="var">SYSTEM_INSTRUCTION</span>)
+    <span class="op">)</span>
+    <span class="kw">return</span> <span class="var">response</span><span class="op">.</span><span class="attr">text</span>
+
+<span class="cm"># ─── Entry point ─────────────────────────────────────────────</span>
+<span class="kw">if</span> <span class="var">__name__</span> <span class="op">==</span> <span class="str">"__main__"</span><span class="op">:</span>
+    <span class="var">index</span> <span class="op">=</span> <span class="fn">load_or_build_index</span>()
+
+    <span class="kw">for</span> <span class="var">q</span> <span class="kw">in</span> <span class="op">[</span>
+        <span class="str">"How does Anypoint authenticate machine-to-machine?"</span><span class="op">,</span>
+        <span class="str">"What's the recommended way to throttle API traffic?"</span><span class="op">,</span>
+        <span class="str">"What's the weather in Tokyo?"</span>      <span class="cm"># should trigger the I-don't-know branch</span>
+    <span class="op">]</span><span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"</span>)
+        <span class="fn">print</span>(<span class="str">f"Q: {q}"</span>)
+        <span class="fn">print</span>(<span class="str">f"A: {ask(q, index)}"</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Quick map of the file</div>
+    <ul style="margin-top:0.4rem">
+      <li><strong>Lines 1–13</strong> — imports + client setup</li>
+      <li><strong>Lines 15–32</strong> — config + system instruction (the only place to change behaviour without touching code)</li>
+      <li><strong>Lines 34–44</strong> — chunking + embedding helpers (Lessons 7 &amp; 8)</li>
+      <li><strong>Lines 46–63</strong> — index build / load with JSON cache</li>
+      <li><strong>Lines 65–70</strong> — retrieval with threshold + top-K</li>
+      <li><strong>Lines 72–80</strong> — grounded prompt builder</li>
+      <li><strong>Lines 82–96</strong> — <code>ask()</code> ties it all together with the "I don't know" guard</li>
+      <li><strong>Lines 98–end</strong> — CLI entry point</li>
+    </ul>
+  </div>
+
+  <!-- ═══ Run it ═══ -->
+  <h2>Run it</h2>
+
+  <h3>Step A — Create a sample document</h3>
+  <p>Create <code>anypoint-auth.md</code> in the same folder as <code>rag.py</code>:</p>
+
+<pre><code># Anypoint Platform Authentication
+
+## OAuth 2.0
+OAuth 2.0 is the industry-standard authorization protocol. It issues short-lived
+access tokens that clients send with each request. Anypoint's Identity Provider
+can issue and rotate these tokens, and API Manager validates them at the edge.
+
+## Mutual TLS
+For machine-to-machine integrations, mTLS provides bilateral authentication via
+X.509 certificates. Both client and server present certificates; both are
+validated against a trusted CA chain.
+
+## Rate Limiting
+Independent of authentication, you should always apply rate limits. Anypoint's
+Rate Limiting policy supports per-client and per-method limits with configurable
+response codes.</code></pre>
+
+  <h3>Step B — Run</h3>
+<pre><code>python rag.py</code></pre>
+
+  <p><strong>Expected first run</strong> (slow — embeds the corpus):</p>
+<pre><code>Reading anypoint-auth.md...
+Got 4 chunks. Embedding...
+Saved index → index.json
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Q: How does Anypoint authenticate machine-to-machine?
+A: For machine-to-machine integrations, Anypoint uses Mutual TLS (mTLS).
+Both client and server present X.509 certificates, validated against a trusted
+CA chain. [1]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Q: What's the recommended way to throttle API traffic?
+A: Apply Anypoint's Rate Limiting policy. It supports per-client and per-method
+limits with configurable response codes. [1]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Q: What's the weather in Tokyo?
+A: I don't have that information in the provided document.</code></pre>
+
+  <p><strong>Expected second run</strong> (instant — uses cached <code>index.json</code>):</p>
+<pre><code>Loading cached index from index.json
+...same answers, much faster, zero embedding cost</code></pre>
+
+  <div class="callout callout-why">
+    <div class="callout-label">What just happened — RAG, completely</div>
+    <ol style="margin-top:0.4rem">
+      <li>Your code ground a real Markdown file into vectors.</li>
+      <li>It found the right chunk for each question — even when the question shared no words with the answer.</li>
+      <li>It refused to hallucinate when the doc didn't cover the topic.</li>
+      <li>It cited its source.</li>
+    </ol>
+    <p style="margin-top:0.4rem">That's the entire core of RAG. Everything else (vector DBs, hybrid search, re-rankers, multi-document, contextual chunking) is an upgrade to one of these pieces.</p>
+  </div>
+
+  <!-- ═══ Try it ═══ -->
+  <div class="tryit">
+    <div class="tryit-label">Try it yourself</div>
+    <ol>
+      <li>Save and run <code>rag.py</code>. Confirm all three answers, including the "I don't know" branch.</li>
+      <li><strong>Bigger doc:</strong> create a longer Markdown file (your own notes, a README, anything). Delete <code>index.json</code> and rerun. Embedding takes longer; querying stays fast.</li>
+      <li><strong>Tighten the threshold</strong> from <code>0.5</code> to <code>0.7</code>. Ask a question that's only loosely related to your doc. Confirm it now triggers "I don't know" instead of a weak answer.</li>
+      <li><strong>Print sources</strong>: after the answer, also print the actual chunks that were retrieved (so you can verify the model's citations).</li>
+      <li><strong>Stretch — interactive mode:</strong> wrap the question loop in <code>while True:</code> with <code>input("\nAsk: ")</code> so you can chat with your doc. Add an <code>exit</code> command.</li>
+      <li><strong>Stretch — multi-doc:</strong> change <code>DOC_PATH</code> to a folder; iterate over <code>folder.glob("*.md")</code>, chunk each, and tag each chunk with its filename. Cite both the file and the chunk.</li>
+    </ol>
+  </div>
+
+  <!-- ═══ Quiz ═══ -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q1.</strong> Why do we cache the embeddings to <code>index.json</code> on the first run?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">It's required by the SDK</li>
+        <li data-i="1">To make the cosine math more accurate</li>
+        <li data-i="2">Embedding costs API calls and time — caching makes subsequent runs free and instant</li>
+        <li data-i="3">It's required by Gemini's terms of service</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q2.</strong> The system instruction tells Gemini "if the context doesn't contain the answer, say so." Why is this so important?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">It saves tokens</li>
+        <li data-i="1">Without it, Gemini will mix retrieved chunks with its training-data knowledge — producing confident-sounding hallucinations</li>
+        <li data-i="2">It's a legal requirement</li>
+        <li data-i="3">It speeds up the response</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q3.</strong> What does <code>if not retrieved:</code> guard against in <code>ask()</code>?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Calling the LLM with no context — letting it hallucinate from its training data alone</li>
+        <li data-i="1">A network error</li>
+        <li data-i="2">An empty index file</li>
+        <li data-i="3">A malformed question</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q4.</strong> If you edit <code>anypoint-auth.md</code> and rerun, what happens?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">The script automatically detects the change and re-indexes</li>
+        <li data-i="1">The cached <code>index.json</code> is reused — your edits are ignored until you delete the cache</li>
+        <li data-i="2">The script crashes</li>
+        <li data-i="3">Gemini handles the diff internally</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+
+    <div class="quiz-question" id="q5">
+      <p><strong>Q5.</strong> Where do the rules for "answer only from context, cite the chunks" belong?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">In the user message every time</li>
+        <li data-i="1">In the system instruction — set once for all calls</li>
+        <li data-i="2">In the embedding step</li>
+        <li data-i="3">In the chunking function</li>
+      </ul>
+      <p class="feedback" id="fb5"></p>
+    </div>
+  </div>
+
+  <h2>What's next</h2>
+  <p>You built RAG. Now we make it production-shaped:</p>
+  <ul>
+    <li><strong>Lesson 10</strong> — replace the JSON cache with a real <strong>vector database</strong> (Chroma is the gentle starting point). Same code shape, much faster at scale.</li>
+    <li><strong>Lesson 11</strong> — implement Anthropic's <strong>contextual chunking</strong> from Lesson 8 — the 35–67% retrieval improvement.</li>
+    <li><strong>Lesson 12</strong> — turn this RAG into a <strong>tool</strong> for an ADK agent. The agent decides <em>when</em> to use RAG vs answer directly.</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Direct MuleSoft application</div>
+    Replace <code>anypoint-auth.md</code> with your own design docs, RAML specs, or runbooks and you have a private MuleSoft Q&amp;A bot — local, private, fast. This is the same shape as a presales-engineer companion or an internal architect's assistant.
+  </div>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Show me how to add streaming so the answer appears word by word"</li>
+      <li>"How do I make the citations clickable links to the source file?"</li>
+      <li>"What if my doc has tables or code blocks — does chunking still work?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0008-chunking.html">← Lesson 8 — Chunking</a>
+      <a href="0010-vector-db.html">Lesson 10 — Vector DB →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! First run pays the embedding cost; every run after is free.", err: "Not quite. Caching avoids re-embedding the corpus on every run — saves API cost and time." },
+    1: { ok: "Correct! The grounding rules are the difference between RAG and a hallucinating chatbot.", err: "Not quite. Without strict grounding rules, Gemini will helpfully mix your context with its training knowledge — that's the #1 cause of subtle wrong answers." },
+    2: { ok: "Correct! No retrieval = no context. Calling the LLM anyway means it answers from training data alone.", err: "Not quite. The guard prevents calling the LLM with zero retrieved context — which would let it answer from its training data with no grounding at all." },
+    3: { ok: "Correct! The cache doesn't track source changes. Delete it manually after edits.", err: "Not quite. The cache is a simple file — it has no idea your source changed. Delete index.json after edits to force a re-index." },
+    4: { ok: "Correct! System instruction = global rules; user message = per-call data.", err: "Not quite. The rules are global behaviour and belong in the system instruction. The user message carries per-call data: chunks + question." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 14 — Evaluating RAG Quality</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .step {
+      background: #fff;
+      border-left: 3px solid #1a1a1a;
+      padding: 0.8rem 1rem 0.8rem 1.2rem;
+      margin: 1rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .step-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 0.3rem; }
+
+    .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .twocol > div { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 0.9rem 1rem; }
+    .twocol h4 { margin-top: 0; }
+    @media (max-width: 700px) { .twocol { grid-template-columns: 1fr; } }
+
+    .metric-card {
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin: 0.8rem 0;
+    }
+    .metric-card h4 { margin: 0 0 0.4rem; font-size: 1rem; }
+    .metric-card .formula { font-family: "JetBrains Mono", monospace; background: #1e1e2e; color: #cdd6f4; padding: 0.5rem 0.8rem; border-radius: 6px; font-size: 0.85rem; margin: 0.4rem 0; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 14 of ?</p>
+    <h1>Evaluating RAG Quality</h1>
+    <p class="tagline">Stop guessing whether your changes help. A 50-line eval harness turns vibes into numbers — and tells you which K to use.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
+      <a href="0003-timeouts-and-errors.html"><span class="pill pill-done">L3 ✓</span></a>
+      <a href="0004-calling-gemini.html"><span class="pill pill-done">L4 ✓</span></a>
+      <a href="0005-sdk-vs-adk.html"><span class="pill pill-done">L5 ✓</span></a>
+      <a href="0006-system-and-env.html"><span class="pill pill-done">L6 ✓</span></a>
+      <a href="0007-embeddings.html"><span class="pill pill-done">L7 ✓</span></a>
+      <a href="0008-chunking.html"><span class="pill pill-done">L8 ✓</span></a>
+      <a href="0009-build-rag.html"><span class="pill pill-done">L9 ✓</span></a>
+      <a href="0010-vector-db.html"><span class="pill pill-done">L10 ✓</span></a>
+      <a href="0011-contextual-retrieval.html"><span class="pill pill-done">L11 ✓</span></a>
+      <a href="0012-hybrid-search.html"><span class="pill pill-done">L12 ✓</span></a>
+      <a href="0013-advanced-retrieval-patterns.html"><span class="pill pill-done">L13 ✓</span></a>
+      <span class="pill pill-now">L14 — Evaluating RAG</span>
+      <span class="pill pill-next">L15 — Enterprise Eval</span>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Why this lesson</h2>
+  <p>
+    You've made big upgrades since Lesson 9 — vector DB, contextual retrieval, prompt caching, hybrid search. Each was sold to you with a promise (<em>"35–67% better recall"</em>). But on <strong>your</strong> corpus, did each upgrade actually help, or did it cost money for no benefit?
+  </p>
+  <p>
+    Without measurement, you're flying blind. With a small evaluation harness, you can answer two questions every time you change something:
+  </p>
+  <ul>
+    <li><strong>Did the change make retrieval better, worse, or the same?</strong></li>
+    <li><strong>What's the right value of <code>K</code> for my corpus?</strong></li>
+  </ul>
+
+  <div class="callout callout-why">
+    <div class="callout-label">The mindset shift</div>
+    Production RAG teams treat the eval set like a unit test suite. You write it once, run it after every change, and only ship if numbers stay flat or improve. Without it, you're shipping on hope.
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>The three layers to measure</h2>
+
+  <p>RAG has three places things can go wrong. Each needs its own metrics.</p>
+
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>The question</th><th>Metrics we'll cover</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1. Retrieval</td>
+        <td>Did we surface the right chunks?</td>
+        <td>Hit@K, Precision@K, Recall@K, MRR, (nDCG)</td>
+      </tr>
+      <tr>
+        <td>2. Generation</td>
+        <td>Did the LLM use those chunks faithfully?</td>
+        <td>Faithfulness, Answer Relevance</td>
+      </tr>
+      <tr>
+        <td>3. End-to-end</td>
+        <td>Did the user actually get a correct answer?</td>
+        <td>Correctness (LLM-as-a-judge)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    The retrieval layer is where most issues live and the easiest to evaluate objectively. We'll spend most of the lesson there.
+  </p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>The eval set — your golden source of truth</h2>
+  <p>
+    Before any metric makes sense, you need a list of questions paired with the chunks that <em>should</em> answer them. This is your <strong>eval set</strong> (also called a <em>golden set</em>).
+  </p>
+
+  <p>Format — one JSON file:</p>
+
+<pre><code>[
+  {
+    <span class="str">"question"</span>: <span class="str">"How do I rotate a Connected App secret?"</span>,
+    <span class="str">"relevant_chunk_ids"</span>: [<span class="str">"chunk_5"</span>, <span class="str">"chunk_12"</span>],
+    <span class="str">"expected_answer"</span>: <span class="str">"Use the self-service portal at /admin/secrets..."</span>
+  },
+  {
+    <span class="str">"question"</span>: <span class="str">"What does ticket ABC-12345 say?"</span>,
+    <span class="str">"relevant_chunk_ids"</span>: [<span class="str">"chunk_18"</span>],
+    <span class="str">"expected_answer"</span>: <span class="str">"It tracks the deprecation of the v1 token endpoint."</span>
+  },
+  {
+    <span class="str">"question"</span>: <span class="str">"What is the capital of France?"</span>,
+    <span class="str">"relevant_chunk_ids"</span>: [],
+    <span class="str">"expected_answer"</span>: <span class="str">"I don't have that information in the provided document."</span>
+  }
+]</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Build a balanced 20-question set</div>
+    Mix three categories of question:
+    <ul style="margin-top:0.4rem">
+      <li><strong>Paraphrase queries</strong> — different words from the doc (tests vector search)</li>
+      <li><strong>Exact-ID queries</strong> — error codes, tickets, version strings (tests BM25 / hybrid)</li>
+      <li><strong>Should-fall-back queries</strong> — questions <em>not</em> in the corpus (tests the threshold guard)</li>
+    </ul>
+    Anthropic's published Contextual Retrieval eval used as few as 50 questions per dataset. 20 is enough to start; grow it as you find real-user questions you missed.
+  </div>
+
+  <p>The chunk IDs come from your existing Chroma collection (Lesson 10's content-hash IDs). Open Chroma, browse a few chunks, write the questions yourself the first time. <strong>Yes, this is manual work — once.</strong></p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Retrieval metrics — five ways to score the same retrieval</h2>
+
+  <p>Worked example for every metric below. Eval question:</p>
+  <pre><code>"How do I rotate a Connected App secret?"
+relevant_chunk_ids = ["chunk_5", "chunk_12"]    ← ground truth: 2 chunks are relevant</code></pre>
+  <p>Your retrieval returns top 5:</p>
+<pre><code>Position 1:  chunk_8     ← not relevant
+Position 2:  chunk_5     ← relevant ✓
+Position 3:  chunk_3     ← not relevant
+Position 4:  chunk_12    ← relevant ✓
+Position 5:  chunk_99    ← not relevant</code></pre>
+
+  <!-- Hit@K -->
+  <div class="metric-card">
+    <h4>1. Hit@K — "did we get at least one right?"</h4>
+    <div class="formula">Hit@K = 1 if any relevant chunk appears in top K, else 0</div>
+    <p>The simplest metric. Binary yes/no.</p>
+    <ul>
+      <li><strong>Hit@1</strong> = 0 (top 1 was chunk_8, not relevant)</li>
+      <li><strong>Hit@3</strong> = 1 (chunk_5 is in the top 3 ✓)</li>
+      <li><strong>Hit@5</strong> = 1</li>
+    </ul>
+    <p style="margin-top:0.4rem"><em>Use when:</em> coarse "did retrieval work at all?" check across many queries. Average it across the eval set to get an overall hit rate.</p>
+  </div>
+
+  <!-- Precision@K -->
+  <div class="metric-card">
+    <h4>2. Precision@K — "of what we returned, how much was useful?"</h4>
+    <div class="formula">Precision@K = (relevant chunks in top K) / K</div>
+    <ul>
+      <li><strong>Precision@3</strong> = 1/3 = 0.33  (1 relevant out of 3 returned)</li>
+      <li><strong>Precision@5</strong> = 2/5 = 0.40  (2 relevant out of 5 returned)</li>
+    </ul>
+    <p style="margin-top:0.4rem"><em>Use when:</em> you care about <strong>prompt pollution</strong>. Every irrelevant chunk you pass to Gemini wastes tokens, costs money, and dilutes the signal.</p>
+  </div>
+
+  <!-- Recall@K -->
+  <div class="metric-card">
+    <h4>3. Recall@K — "of what was relevant, how much did we find?"</h4>
+    <div class="formula">Recall@K = (relevant chunks in top K) / (total relevant chunks)</div>
+    <ul>
+      <li><strong>Recall@3</strong> = 1/2 = 0.50  (found 1 of 2 relevant chunks)</li>
+      <li><strong>Recall@5</strong> = 2/2 = 1.00  (found both)</li>
+    </ul>
+    <p style="margin-top:0.4rem"><em>Use when:</em> some questions need <strong>multiple chunks</strong> to answer correctly (think runbooks, multi-step procedures). Missing one means an incomplete answer.</p>
+  </div>
+
+  <!-- MRR -->
+  <div class="metric-card">
+    <h4>4. MRR — Mean Reciprocal Rank</h4>
+    <div class="formula">RR = 1 / (rank of first relevant chunk)
+MRR = average of RR across the eval set</div>
+    <ul>
+      <li>First relevant chunk (chunk_5) appeared at rank 2.</li>
+      <li><strong>RR</strong> = 1/2 = 0.50</li>
+      <li>If retrieval put it at rank 1, RR = 1.0. If at rank 5, RR = 0.20. If never found, RR = 0.</li>
+    </ul>
+    <p style="margin-top:0.4rem"><em>Use when:</em> position matters. LLMs weight earlier chunks in the prompt more heavily — a relevant chunk at rank 1 is more useful than the same chunk at rank 5.</p>
+  </div>
+
+  <!-- nDCG (sidebar) -->
+  <div class="metric-card" style="border-color:#cbd5e1; background:#f8fafc">
+    <h4>5. nDCG@K — for graded relevance (sidebar — recognise it, don't implement it yet)</h4>
+    <p style="font-size:0.92rem">
+      <strong>n</strong>ormalised <strong>D</strong>iscounted <strong>C</strong>umulative <strong>G</strong>ain. Like Precision@K, but treats relevance as a <em>score</em> (e.g. 0 = irrelevant, 1 = somewhat, 2 = highly relevant) and discounts it by position. Used in academic IR papers and in tools like RAGAS.
+    </p>
+    <p style="font-size:0.92rem; margin-top:0.4rem">
+      For practical RAG with binary relevance (relevant or not), Precision@K + Recall@K + MRR cover what nDCG would. Skip it on day one; come back if you start labelling chunks with graded relevance.
+    </p>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>The classic precision/recall trade-off</h2>
+  <p>The same retrieval scores differently at different K. This is the most important fact about K:</p>
+
+<pre><code>K = 3                                  K = 10
+─────────────                          ────────────────
+Returned: 3 chunks                     Returned: 10 chunks
+Relevant in returned: 2                Relevant in returned: 4
+Total relevant in DB: 4                Total relevant in DB: 4
+
+Precision@3 = 2/3  = 0.67              Precision@10 = 4/10 = 0.40   ↓
+Recall@3    = 2/4  = 0.50              Recall@10    = 4/4  = 1.00   ↑</code></pre>
+
+  <p>Bigger K = better recall, worse precision. <strong>The eval shows you the right K for your corpus.</strong></p>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Heuristic for K</div>
+    <ul style="margin-top:0.4rem">
+      <li>Self-contained chunks (FAQ): K = 3</li>
+      <li>Multi-step runbooks: K = 5–8</li>
+      <li>Long repetitive corpora (legal): K = 8–15</li>
+      <li>Code / cross-referenced refs: K = 5 + reranking</li>
+    </ul>
+    Use the eval to confirm. <em>"My recall stops improving past K=5"</em> is the kind of finding that justifies the choice.
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Hands-on — build <code>eval.py</code></h2>
+
+  <!-- Step 1 -->
+  <div class="step">
+    <p class="step-title">Step 1 — Save your eval set</p>
+    <p>Create <code>eval_set.json</code> next to your <code>rag_chroma.py</code>. Use real chunk IDs from your Chroma collection — open it once with <code>collection.get()</code> to find them.</p>
+<pre><code><span class="cm"># quick ID dump to help you build the set</span>
+fetched <span class="op">=</span> collection.get()
+<span class="kw">for</span> i, (cid, doc) <span class="kw">in</span> <span class="fn">enumerate</span>(<span class="fn">zip</span>(fetched[<span class="str">"ids"</span>], fetched[<span class="str">"documents"</span>])):
+    <span class="fn">print</span>(<span class="str">f"{cid}: {doc[:80]}..."</span>)</code></pre>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <p class="step-title">Step 2 — Implement the four core retrieval metrics</p>
+<pre><code><span class="kw">import</span> json
+<span class="kw">from</span> statistics <span class="kw">import</span> mean
+
+<span class="kw">def</span> <span class="fn">hit_at_k</span>(retrieved_ids, relevant_ids, k):
+    top_k <span class="op">=</span> retrieved_ids[:k]
+    <span class="cm"># Set intersection: shared elements between two sets</span>
+    <span class="kw">return</span> <span class="num">1</span> <span class="kw">if</span> <span class="fn">set</span>(top_k) <span class="op">&amp;</span> <span class="fn">set</span>(relevant_ids) <span class="kw">else</span> <span class="num">0</span>
+
+<span class="kw">def</span> <span class="fn">precision_at_k</span>(retrieved_ids, relevant_ids, k):
+    top_k <span class="op">=</span> retrieved_ids[:k]
+    <span class="kw">if</span> <span class="kw">not</span> top_k:
+        <span class="kw">return</span> <span class="num">0.0</span>
+    hits <span class="op">=</span> <span class="fn">len</span>(<span class="fn">set</span>(top_k) <span class="op">&amp;</span> <span class="fn">set</span>(relevant_ids))
+    <span class="kw">return</span> hits <span class="op">/</span> <span class="fn">len</span>(top_k)
+
+<span class="kw">def</span> <span class="fn">recall_at_k</span>(retrieved_ids, relevant_ids, k):
+    <span class="kw">if</span> <span class="kw">not</span> relevant_ids:
+        <span class="kw">return</span> <span class="num">1.0</span>   <span class="cm"># nothing to find = trivially perfect</span>
+    top_k <span class="op">=</span> retrieved_ids[:k]
+    hits <span class="op">=</span> <span class="fn">len</span>(<span class="fn">set</span>(top_k) <span class="op">&amp;</span> <span class="fn">set</span>(relevant_ids))
+    <span class="kw">return</span> hits <span class="op">/</span> <span class="fn">len</span>(relevant_ids)
+
+<span class="kw">def</span> <span class="fn">reciprocal_rank</span>(retrieved_ids, relevant_ids):
+    <span class="kw">for</span> i, doc_id <span class="kw">in</span> <span class="fn">enumerate</span>(retrieved_ids, start<span class="op">=</span><span class="num">1</span>):
+        <span class="kw">if</span> doc_id <span class="kw">in</span> relevant_ids:
+            <span class="kw">return</span> <span class="num">1.0</span> <span class="op">/</span> i
+    <span class="kw">return</span> <span class="num">0.0</span></code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: set intersection (<code>&amp;</code>)</div>
+      <code>set(a) &amp; set(b)</code> returns the elements present in <strong>both</strong> sets. Just like the set difference (<code>-</code>) you saw in Lesson 10, but for "what's common" instead of "what's missing".
+<pre style="margin-top:0.4rem"><code><span class="fn">set</span>([<span class="str">"a"</span>, <span class="str">"b"</span>, <span class="str">"c"</span>]) <span class="op">&amp;</span> <span class="fn">set</span>([<span class="str">"b"</span>, <span class="str">"c"</span>, <span class="str">"d"</span>])
+<span class="cm"># → {"b", "c"}</span></code></pre>
+      Wrap in <code>len(...)</code> and you have "how many elements appear in both" — exactly what Precision and Recall need.
+    </div>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: <code>statistics.mean()</code></div>
+      <code>from statistics import mean</code> imports Python's built-in average function. <code>mean([0.5, 1.0, 0.0])</code> → <code>0.5</code>. You could write <code>sum(xs)/len(xs)</code> instead, but <code>mean</code> handles edge cases (returns a clean error on empty input) and signals intent at a glance.
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <p class="step-title">Step 3 — The eval runner</p>
+<pre><code><span class="kw">def</span> <span class="fn">eval_retrieval</span>(eval_set_path, k_values<span class="op">=</span>(<span class="num">3</span>, <span class="num">5</span>, <span class="num">10</span>)):
+    eval_set <span class="op">=</span> json.loads(Path(eval_set_path).read_text())
+    coll, bm25, chunk_ids <span class="op">=</span> get_collection()   <span class="cm"># from your rag_chroma.py</span>
+
+    <span class="cm"># Collect per-question scores at every K</span>
+    rows <span class="op">=</span> []
+    <span class="kw">for</span> entry <span class="kw">in</span> eval_set:
+        q <span class="op">=</span> entry[<span class="str">"question"</span>]
+        relevant <span class="op">=</span> entry[<span class="str">"relevant_chunk_ids"</span>]
+
+        <span class="cm"># Retrieve a generous number — up to max(k_values)</span>
+        max_k <span class="op">=</span> <span class="fn">max</span>(k_values)
+        results <span class="op">=</span> hybrid_search(q, coll, bm25, chunk_ids, k_each<span class="op">=</span><span class="num">20</span>, top_k<span class="op">=</span>max_k)
+        <span class="cm"># hybrid_search returns [(score, chunk_text)] — we need IDs</span>
+        <span class="cm"># Quick adapter: re-fetch IDs from Chroma using the chunk text</span>
+        retrieved_ids <span class="op">=</span> retrieve_ids_for_query(q, coll, bm25, chunk_ids, max_k)
+
+        row <span class="op">=</span> {<span class="str">"question"</span>: q[:50]}
+        <span class="kw">for</span> k <span class="kw">in</span> k_values:
+            row[<span class="str">f"hit@{k}"</span>]       <span class="op">=</span> hit_at_k(retrieved_ids, relevant, k)
+            row[<span class="str">f"precision@{k}"</span>] <span class="op">=</span> precision_at_k(retrieved_ids, relevant, k)
+            row[<span class="str">f"recall@{k}"</span>]    <span class="op">=</span> recall_at_k(retrieved_ids, relevant, k)
+        row[<span class="str">"rr"</span>] <span class="op">=</span> reciprocal_rank(retrieved_ids, relevant)
+        rows.append(row)
+
+    <span class="cm"># Aggregate (averages across the eval set)</span>
+    summary <span class="op">=</span> {}
+    <span class="kw">for</span> k <span class="kw">in</span> k_values:
+        summary[<span class="str">f"Hit@{k}"</span>]       <span class="op">=</span> mean(r[<span class="str">f"hit@{k}"</span>] <span class="kw">for</span> r <span class="kw">in</span> rows)
+        summary[<span class="str">f"Precision@{k}"</span>] <span class="op">=</span> mean(r[<span class="str">f"precision@{k}"</span>] <span class="kw">for</span> r <span class="kw">in</span> rows)
+        summary[<span class="str">f"Recall@{k}"</span>]    <span class="op">=</span> mean(r[<span class="str">f"recall@{k}"</span>] <span class="kw">for</span> r <span class="kw">in</span> rows)
+    summary[<span class="str">"MRR"</span>] <span class="op">=</span> mean(r[<span class="str">"rr"</span>] <span class="kw">for</span> r <span class="kw">in</span> rows)
+    <span class="kw">return</span> summary, rows</code></pre>
+
+    <p>And a small printer for the table:</p>
+<pre><code><span class="kw">def</span> <span class="fn">print_summary</span>(summary):
+    <span class="fn">print</span>(<span class="str">"\n=== Eval summary ==="</span>)
+    <span class="kw">for</span> name, val <span class="kw">in</span> summary.items():
+        <span class="fn">print</span>(<span class="str">f"  {name:&lt;15} {val:.3f}"</span>)</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax: <code>{name:&lt;15}</code> in f-strings</div>
+      The colon-and-stuff inside an f-string is <em>format spec</em>. <code>{name:&lt;15}</code> means "left-align in a 15-character-wide field". <code>{val:.3f}</code> means "float with 3 decimal places". Useful for printing aligned tables.
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <p class="step-title">Step 4 — Run it</p>
+<pre><code><span class="kw">if</span> __name__ <span class="op">==</span> <span class="str">"__main__"</span>:
+    summary, _ <span class="op">=</span> eval_retrieval(<span class="str">"eval_set.json"</span>)
+    print_summary(summary)</code></pre>
+    <p>Sample output:</p>
+<pre><code>=== Eval summary ===
+  Hit@3           0.850
+  Precision@3     0.483
+  Recall@3        0.625
+  Hit@5           0.950
+  Precision@5     0.350
+  Recall@5        0.825
+  Hit@10          1.000
+  Precision@10    0.190
+  Recall@10       0.975
+  MRR             0.671</code></pre>
+    <p>Now you have a baseline. Anything you change in the pipeline can be measured against these numbers.</p>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>The whole point — A/B testing your upgrades</h2>
+  <p>Run the eval twice — before and after a change — and compare. Did Contextual Retrieval (Lesson 11) actually help <em>your</em> corpus?</p>
+
+  <table>
+    <thead>
+      <tr><th>Metric</th><th>Plain RAG (L9)</th><th>+ Contextual (L11)</th><th>Change</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Hit@3</td><td>0.65</td><td>0.85</td><td><strong style="color:#15803d">+0.20 ✓</strong></td></tr>
+      <tr><td>Precision@3</td><td>0.42</td><td>0.48</td><td><strong style="color:#15803d">+0.06 ✓</strong></td></tr>
+      <tr><td>Recall@3</td><td>0.50</td><td>0.63</td><td><strong style="color:#15803d">+0.13 ✓</strong></td></tr>
+      <tr><td>MRR</td><td>0.55</td><td>0.67</td><td><strong style="color:#15803d">+0.12 ✓</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p>This is what production teams ship. Sample numbers above — your real numbers will differ. <strong>The point is having numbers at all.</strong></p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Don't just trust marketing claims</div>
+    Anthropic's "35–67% improvement" was measured on their datasets. On a clean MuleSoft RAML corpus, contextual retrieval might only buy 5%. On a pronoun-heavy legal corpus, 80%. The eval tells you which world you're in.
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>Generation metrics — when retrieval isn't the whole story</h2>
+  <p>Retrieval can be perfect and the LLM can still produce a bad answer — by hallucinating, ignoring the context, or summarising poorly. Two metrics catch this.</p>
+
+  <h3>Faithfulness</h3>
+  <p><em>"Is every claim in the answer supported by the retrieved chunks?"</em></p>
+  <p>You can't compute this with set arithmetic — you need a judge. The standard trick is <strong>LLM-as-a-judge</strong>: ask another LLM call to grade the answer.</p>
+
+<pre><code>FAITHFULNESS_PROMPT <span class="op">=</span> <span class="str">"""</span>
+<span class="str">Given the following CONTEXT and ANSWER, identify whether every</span>
+<span class="str">factual claim in the ANSWER is supported by the CONTEXT.</span>
+
+<span class="str">CONTEXT:</span>
+<span class="str">{context}</span>
+
+<span class="str">ANSWER:</span>
+<span class="str">{answer}</span>
+
+<span class="str">Respond with ONLY a JSON object:</span>
+<span class="str">{{"faithful": true|false, "unsupported_claims": [...]}}</span>
+<span class="str">"""</span>
+
+<span class="kw">def</span> <span class="fn">faithfulness</span>(context, answer):
+    response <span class="op">=</span> client.models.generate_content(
+        model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>,
+        contents<span class="op">=</span>FAITHFULNESS_PROMPT.format(context<span class="op">=</span>context, answer<span class="op">=</span>answer),
+    )
+    parsed <span class="op">=</span> json.loads(response.text)
+    <span class="kw">return</span> <span class="num">1.0</span> <span class="kw">if</span> parsed[<span class="str">"faithful"</span>] <span class="kw">else</span> <span class="num">0.0</span></code></pre>
+
+  <h3>Answer relevance</h3>
+  <p><em>"Does the answer actually address the question?"</em> Same pattern, different prompt:</p>
+
+<pre><code>RELEVANCE_PROMPT <span class="op">=</span> <span class="str">"""</span>
+<span class="str">Question: {question}</span>
+<span class="str">Answer: {answer}</span>
+
+<span class="str">Score how well the ANSWER addresses the QUESTION on a 0–1 scale.</span>
+<span class="str">Respond with ONLY a JSON object: {{"score": 0.0-1.0, "reason": "..."}}</span>
+<span class="str">"""</span></code></pre>
+
+  <h3>End-to-end correctness</h3>
+  <p>Compare the produced answer to the <code>expected_answer</code> field in your eval set. Same LLM-as-a-judge pattern: <em>"Is the produced answer semantically equivalent to the expected answer?"</em></p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">LLM-as-a-judge has known biases</div>
+    <ul style="margin-top:0.4rem">
+      <li><strong>Verbosity bias</strong> — judges prefer longer answers, even if shorter would do</li>
+      <li><strong>Self-preference</strong> — Gemini judging Gemini-produced answers tends to be lenient. Use a <em>different</em> family of model as the judge when stakes are high</li>
+      <li><strong>Ordering bias</strong> — when asked to compare A vs B, judges often pick the first one</li>
+    </ul>
+    Treat LLM-as-a-judge scores as <em>signals</em>, not ground truth. Always sample a few by hand to sanity-check.
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>The tools landscape</h2>
+  <p>You wrote your eval harness from scratch because the concepts are simple enough to grok. In production you'll typically use a library — both for richer metrics and to integrate with dashboards.</p>
+
+  <table>
+    <thead>
+      <tr><th>Tool</th><th>What it gives you</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>RAGAS</strong></td>
+        <td>The de facto standard for RAG eval. Implements faithfulness, context precision/recall, answer relevance, etc., with built-in LLM-judges. Plays nicely with LangChain &amp; LlamaIndex.</td>
+      </tr>
+      <tr>
+        <td><strong>TruLens</strong></td>
+        <td>Feedback-functions framework with a rich UI. Strong on observability — track eval scores over time as you ship changes.</td>
+      </tr>
+      <tr>
+        <td><strong>Phoenix / Arize</strong></td>
+        <td>Open-source observability for LLM apps. Captures traces, metrics, and lets you replay queries. Strongest of the bunch on production monitoring.</td>
+      </tr>
+      <tr>
+        <td><strong>DeepEval</strong></td>
+        <td>Pytest-style "unit tests for LLMs." Best fit if you want eval to live in your existing test suite.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Your hand-rolled <code>eval.py</code> is enough for now. Switch to RAGAS or DeepEval the day you find yourself reimplementing nDCG or wanting eval-runs to show up in CI.</p>
+
+  <!-- ─────────────────────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> Your retrieval returns 5 chunks. 2 are relevant. There are 4 relevant chunks total in the corpus. What is Recall@5?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">2/5 = 0.40</li>
+        <li data-i="1">2/4 = 0.50, then divided by 5</li>
+        <li data-i="2">2/4 = 0.50</li>
+        <li data-i="3">5/4 = 1.25</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Same scenario as Q1. What is Precision@5?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">2/5 = 0.40</li>
+        <li data-i="1">2/4 = 0.50</li>
+        <li data-i="2">5/4 = 1.25</li>
+        <li data-i="3">It cannot be calculated</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> What happens to Precision@K and Recall@K as you increase K?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">Both go up</li>
+        <li data-i="1">Both go down</li>
+        <li data-i="2">Precision goes up, recall goes down</li>
+        <li data-i="3">Precision goes down, recall goes up (or stays the same)</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> When does Recall@K matter MORE than Hit@K?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">When you have a small eval set</li>
+        <li data-i="1">When the question requires multiple chunks to answer correctly — finding only one isn't enough</li>
+        <li data-i="2">When K is small</li>
+        <li data-i="3">Only when using BM25</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> Why use a different model family as the judge in LLM-as-a-judge eval?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Different models are cheaper</li>
+        <li data-i="1">It's required by the OpenAI Terms of Service</li>
+        <li data-i="2">A model judging answers from its own family tends to be lenient (self-preference bias) — using a different family makes the score more honest</li>
+        <li data-i="3">Different models produce different embeddings</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+
+    <div class="quiz-question" id="q5">
+      <p><strong>Q6.</strong> Anthropic's blog claimed Contextual Retrieval gives 35–67% recall improvement. After running your eval, you only see a 5% improvement on your corpus. What's the correct conclusion?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Anthropic was lying</li>
+        <li data-i="1">Their measured improvement was on their datasets; yours is what counts for your corpus. The eval is doing its job.</li>
+        <li data-i="2">You implemented it wrong; redo it until you see 35%</li>
+        <li data-i="3">5% improvement is unacceptable; remove contextual retrieval</li>
+      </ul>
+      <p class="feedback" id="fb5"></p>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────── -->
+  <h2>What's next</h2>
+  <ul>
+    <li><strong>Lesson 15</strong> — Enterprise RAG eval: per-query depth metrics (Context Precision/Recall, Groundedness), safety, operations, and system-health metrics that production teams track.</li>
+    <li><strong>Lesson 16</strong> — Improving each metric: a playbook for moving the numbers cheapest-first, with the trade-offs spelled out.</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Direct MuleSoft application</div>
+    Your eval set is the equivalent of MUnit tests for your RAG. Run them on every CI build of your private docs Q&amp;A bot. When the doc changes or you tweak chunking, the suite tells you whether retrieval got better, worse, or held steady. Same instinct as the test pyramid you already apply to integrations.
+  </div>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    <ul style="margin-top:0.4rem">
+      <li>"Help me build my first 20-question eval set for this MuleSoft doc"</li>
+      <li>"Show me how to run the same eval with RAGAS instead"</li>
+      <li>"How do I track eval scores over time as I make changes?"</li>
+      <li>"What's a cross-encoder reranker and when do I need one?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0013-advanced-retrieval-patterns.html">← Lesson 13 — Advanced Retrieval Patterns</a>
+      <a href="0015-enterprise-rag-eval.html">Lesson 15 — Enterprise Eval →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! Recall is 'what fraction of the relevant chunks did we find?' = 2 found out of 4 total relevant = 0.50. K is the cutoff for what we look at, not the denominator.", err: "Not quite. Recall@K = (relevant in top K) / (total relevant). The denominator is total relevant chunks (4), not K (5)." },
+    1: { ok: "Correct! Precision is 'what fraction of what we returned was relevant?' = 2 relevant out of 5 returned = 0.40. K is the denominator here.", err: "Not quite. Precision@K = (relevant in top K) / K. The denominator is K (5), not the total relevant chunks." },
+    2: { ok: "Correct! As K grows, you can only find more (or the same) relevant chunks → recall up. But you're also returning more chunks proportionally so precision dilutes → precision down. The classic trade-off.", err: "Not quite. Bigger K returns more chunks total, so the denominator of precision grows faster than the numerator (precision falls), while recall can only stay the same or go up." },
+    3: { ok: "Correct! Hit@K only asks 'did at least one relevant chunk appear?' Recall@K asks 'did we find ALL the relevant chunks?' For multi-chunk answers, that distinction matters.", err: "Not quite. Recall punishes you for missing relevant chunks; Hit just needs one. When the question genuinely requires multiple chunks, Recall is the metric that fails honestly." },
+    4: { ok: "Correct! Self-preference bias is well-documented — models lean kind on outputs from their own family. A judge from a different family gives a less biased score.", err: "Not quite. The reason is bias: models are systematically more lenient when grading their own family's outputs. A different-family judge controls for that." },
+    5: { ok: "Correct! Published gains are dataset-specific. The whole point of eval is to find out what works on YOUR data. 5% may still be worth keeping — or not, depending on cost.", err: "Not quite. The published number was measured on Anthropic's datasets, not yours. Your number is the one that should drive your decisions. The eval gave you that number — that's the win." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

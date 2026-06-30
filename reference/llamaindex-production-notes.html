@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — LlamaIndex Production Notes</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-size: 0.82rem;
+      font-weight: 800;
+      margin: 1.4rem 0 0.4rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.15rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      overflow-x: auto;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      margin: 0.4rem 0 0.7rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.35rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin: 0.5rem 0; }
+    .twocol > div { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.6rem 0.8rem; font-size: 0.85rem; }
+    .twocol h4 { font-size: 0.85rem; margin-bottom: 0.3rem; }
+    @media (max-width: 600px) { .twocol { grid-template-columns: 1fr; } }
+
+    .callout { border-radius: 6px; padding: 0.6rem 0.8rem; margin: 0.6rem 0; border-left: 3px solid; font-size: 0.85rem; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-honesty { background: #f1f5ff; border-color: #6366f1; }
+
+    .footer-links { margin-top: 1.4rem; padding-top: 0.8rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+
+    @media print {
+      body { padding: 0.5rem; }
+      .page { max-width: 100%; }
+      pre { font-size: 0.7rem; }
+      .twocol { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Python for AI/ML</p>
+    <h1>LlamaIndex in Production</h1>
+    <p class="tagline">What LlamaIndex feels like once you ship it — what works, what surprises, and where teams outgrow it.</p>
+  </header>
+
+  <div class="callout callout-honesty">
+    <strong>Source honesty.</strong> Synthesised from public production reports — case studies, conference talks, GitHub issues, practitioner blog posts through mid-2026. Not first-hand operations. Verify in <a href="https://discord.com/invite/eN6D2HQ4aX">LlamaIndex Discord</a> and <a href="https://reddit.com/r/LocalLLaMA">r/LocalLLaMA</a> before betting on it.
+  </div>
+
+  <h2>One-line summary</h2>
+  <p>Deeply RAG-native. Fast to ship for retrieval-shaped problems. Migrations off it usually mean "we outgrew RAG and the agent layer is now the centre of gravity."</p>
+
+  <h2>The honeymoon — week one</h2>
+  <p>Five lines from a folder of docs to a working RAG system:</p>
+<pre><code><span class="kw">from</span> llama_index.core <span class="kw">import</span> VectorStoreIndex, SimpleDirectoryReader
+
+docs <span class="op">=</span> SimpleDirectoryReader(<span class="str">"./mulesoft_docs"</span>).load_data()
+index <span class="op">=</span> VectorStoreIndex.from_documents(docs)
+query_engine <span class="op">=</span> index.as_query_engine()
+
+response <span class="op">=</span> query_engine.query(<span class="str">"How do I rotate Connected App secrets?"</span>)</code></pre>
+
+  <p>The agent layer sits on the data foundation:</p>
+<pre><code><span class="kw">from</span> llama_index.core.agent.workflow <span class="kw">import</span> FunctionAgent
+<span class="kw">from</span> llama_index.core.tools <span class="kw">import</span> QueryEngineTool
+
+docs_tool <span class="op">=</span> QueryEngineTool.from_defaults(
+    query_engine<span class="op">=</span>query_engine,
+    name<span class="op">=</span><span class="str">"mulesoft_docs"</span>,
+    description<span class="op">=</span><span class="str">"Answer questions about MuleSoft Anypoint Platform..."</span>,
+)
+
+agent <span class="op">=</span> FunctionAgent(tools<span class="op">=</span>[docs_tool, anypoint_api_tool], llm<span class="op">=</span>llm)
+result <span class="op">=</span> <span class="kw">await</span> agent.run(<span class="str">"How do I rotate Connected App secrets?"</span>)</code></pre>
+
+  <p>The mental model is consistent: <strong>everything orbits indexes and query engines</strong>. Tools are wrappers around them.</p>
+
+  <h2>Five things that hurt in production</h2>
+
+  <h3>1. API churn is real</h3>
+  <p>LlamaIndex has restructured public APIs multiple times — the move to <code>llama_index_core</code>, the agent/workflow rewrite, deprecation of legacy <code>ServiceContext</code>, the move to <code>Settings</code>. Each refactor was architecturally right; each broke production code.</p>
+  <p><strong>The #1 production complaint:</strong> "my code worked in 0.10 and broke in 0.11."</p>
+  <p><strong>Mitigation:</strong> pin to a minor version, read migration guides, plan upgrade time as real engineering work.</p>
+
+  <h3>2. The abstraction stack is deep</h3>
+  <p>Many layers, each replaceable:</p>
+<pre><code>Document → Node → Index → Retriever → QueryEngine → Agent</code></pre>
+  <p>Strength: any layer can be customised. Cost: when something breaks, <em>knowing which layer to inspect</em> is the hard part.</p>
+  <blockquote style="font-style:italic; padding:0.4rem 0.8rem; border-left:3px solid #cbd5e1; color:#555; font-size:0.9rem">
+    "I asked my agent a question and got back gibberish — was it the chunker, the retriever, the response synthesiser, or the agent?"
+  </blockquote>
+  <p>Phoenix observability (tight integration) makes this manageable. <strong>Don't operate without it.</strong></p>
+
+  <h3>3. Document loaders quality is uneven</h3>
+  <p>LlamaHub advertises 300+ data connectors. Reality: <strong>top 30 are excellent; the rest vary sharply</strong>. Confluence, Notion, S3, GitHub, GDrive, web scraping — all solid. Niche connectors can be last-updated-2-years-ago and silently drop fields.</p>
+  <p><strong>Production rule:</strong> for any connector outside the top 30, read the source. Under 200 lines? Write your own.</p>
+
+  <h3>4. Cost surprises around response synthesis</h3>
+  <p>Response modes differ in LLM-call count per query:</p>
+  <table>
+    <thead><tr><th>Mode</th><th>LLM calls</th><th>When to use</th></tr></thead>
+    <tbody>
+      <tr><td><code>compact</code> (default-ish)</td><td>1</td><td>Default. Fast and cheap. Right answer 80% of the time.</td></tr>
+      <tr><td><code>refine</code></td><td>N (one per chunk, sequential)</td><td>Better quality on long contexts; <strong>N× cost</strong></td></tr>
+      <tr><td><code>tree_summarize</code></td><td>Multi-pass tree</td><td>Synthesis questions; expensive at scale</td></tr>
+      <tr><td><code>accumulate</code></td><td>One per chunk; concatenated answers</td><td>Niche — when you want answers per-chunk explicitly</td></tr>
+    </tbody>
+  </table>
+  <p><strong>The bill surprise:</strong> "I switched to refine because quality" without understanding the cost multiplier. Reddit complaint regularly.</p>
+
+  <h3>5. Agent layer is younger than retrieval layer</h3>
+  <p>LlamaIndex was a 2022 RAG framework that grew an agent layer in 2024. Retrieval primitives are battle-tested; agent primitives are newer.</p>
+  <ul>
+    <li><strong>FunctionAgent</strong> for single-agent + tools — the well-trodden path. Solid.</li>
+    <li><strong>AgentWorkflow</strong> for multi-agent — improving rapidly but younger than CrewAI/LangGraph equivalents.</li>
+    <li>Complex multi-agent patterns (handoffs, supervisor) are easier in LangGraph.</li>
+  </ul>
+  <p><strong>Rule of thumb:</strong> "agent that uses retrieval" → LlamaIndex wins. "Multi-agent system that occasionally retrieves" → LangGraph wins.</p>
+
+  <h2>What teams ship successfully on it</h2>
+  <ul>
+    <li><strong>Internal documentation Q&amp;A bots</strong> — Confluence + Notion + GitHub READMEs unified. The canonical fit.</li>
+    <li><strong>Customer support knowledge agents</strong> — long-history policies, troubleshooting docs, ticket archives</li>
+    <li><strong>Research and analysis tools</strong> — financial filings, legal documents, scientific literature; advanced retrieval (sub-question, recursive, multi-doc) shines</li>
+    <li><strong>Code search agents</strong> — repos as a corpus; tree-style indexes for code are well-tuned</li>
+    <li><strong>Data agents over structured data</strong> — <code>PandasQueryEngine</code>, <code>SQLQueryEngine</code> for "ask questions about this CSV/database"</li>
+  </ul>
+
+  <h2>What teams quietly migrate off it for</h2>
+  <ul>
+    <li><strong>Generalist agents</strong> — when retrieval becomes 20% of the agent's job, LangGraph orchestration fits better</li>
+    <li><strong>Bespoke flow control</strong> — branches, retries, human-in-the-loop, complex state machines → LangGraph</li>
+    <li><strong>Tiny projects</strong> — 3-tool agent over 50 docs; LlamaIndex's depth is overkill, Pydantic AI is cleaner</li>
+    <li><strong>Deep multi-agent collaboration</strong> — see CrewAI/AutoGen sweet spots in <a href="../lessons/0017-agent-framework-landscape.html">L17</a></li>
+  </ul>
+
+  <h2>Surprise table — what actually breaks first</h2>
+  <table>
+    <thead><tr><th>Surprise</th><th>Reality</th></tr></thead>
+    <tbody>
+      <tr><td>"Why is my bill high on long answers?"</td><td>Response mode is probably <code>refine</code> or <code>tree_summarize</code>. Use <code>compact</code> unless you need otherwise.</td></tr>
+      <tr><td>"My code broke after <code>pip install -U llama-index</code>"</td><td>Pin minor versions. Read migration guide before upgrades.</td></tr>
+      <tr><td>"Retrieval finds the chunk but the answer is wrong"</td><td>Response synthesiser is a separate stage from retrieval. Phoenix shows both — debug independently.</td></tr>
+      <tr><td>"Why does this loader silently drop fields?"</td><td>Community connector quality varies. For non-top-30, read the source.</td></tr>
+      <tr><td>"My agent works locally but is slow in production"</td><td>Default settings often run sequentially. Check <code>use_async=True</code> and parallel sub-question execution.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Three production-grade rules</h2>
+  <ol>
+    <li><strong>Phoenix from day one.</strong> Retrieval-quality views are the difference between debugging in 2 minutes vs 2 hours. Observability isn't optional for a deep stack.</li>
+    <li><strong>Pin to a minor version</strong> (<code>llama-index==0.x.y</code>) and treat upgrades as real engineering work. Read the migration guide; don't auto-upgrade.</li>
+    <li><strong>Stick to the well-trodden path.</strong> <code>VectorStoreIndex</code> + <code>as_query_engine()</code> + <code>FunctionAgent</code> covers 80% of cases. Reach for <code>tree_summarize</code>, custom <code>Retriever</code>, or <code>AgentWorkflow</code> only when measurement says you need them.</li>
+  </ol>
+
+  <h2>The team-fit question</h2>
+  <p>LlamaIndex rewards <strong>engineering teams that think structurally about data</strong>. The framework asks "what does your corpus look like? what shape are queries? what answer synthesis?" before it gives you good answers.</p>
+  <p>Teams that engage with that are productive in week one. Teams that want a black-box "RAG library" can be frustrated by the depth.</p>
+  <p>Compared to CrewAI's "any team member can edit the role description" model, LlamaIndex is <strong>engineer-shaped</strong>. Non-technical iteration is harder.</p>
+
+  <h2>When to reach for it</h2>
+  <ul>
+    <li>Retrieval is &gt; 60% of what the agent does</li>
+    <li>Many heterogeneous data sources (PDF, Confluence, Notion, GitHub, S3...)</li>
+    <li>You need advanced RAG patterns (sub-question, recursive, multi-doc)</li>
+    <li>Engineering team can engage with structural data thinking</li>
+    <li>You're production-conscious and want Phoenix observability tightly integrated</li>
+  </ul>
+
+  <h2>When NOT to reach for it</h2>
+  <ul>
+    <li>Multi-agent / orchestration is the centre of gravity</li>
+    <li>Tiny project where the depth is overkill</li>
+    <li>Highly bespoke flow control with branches and human-in-the-loop</li>
+    <li>You want a black-box "RAG library" with zero learning curve</li>
+  </ul>
+
+  <h2>Where it shines vs other frameworks</h2>
+  <table>
+    <thead><tr><th>You need…</th><th>vs alternatives</th></tr></thead>
+    <tbody>
+      <tr><td>Best document loaders</td><td><strong>Wins</strong> vs LangChain — more, better-organised, RAG-native</td></tr>
+      <tr><td>Best advanced RAG patterns out of the box</td><td><strong>Wins</strong> — sub-question, recursive, multi-doc, hybrid built-in</td></tr>
+      <tr><td>Best retrieval observability</td><td><strong>Tied with LangChain via Phoenix</strong> — Phoenix is its native partner</td></tr>
+      <tr><td>Best generalist agent orchestration</td><td>Loses to <strong>LangGraph</strong></td></tr>
+      <tr><td>Best multi-agent collaboration</td><td>Loses to <strong>CrewAI / AutoGen</strong></td></tr>
+      <tr><td>Lowest learning curve</td><td>Loses to <strong>Pydantic AI</strong> for simple cases</td></tr>
+      <tr><td>Best for production reliability + built-in eval</td><td>Loses to <strong>Haystack</strong></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <strong>For Attapol's MuleSoft RAG bot specifically:</strong> corpus-centric, retrieval-heavy, 2–4 tools at most, production-conscious. <strong>LlamaIndex's <code>FunctionAgent</code> is a clean fit.</strong> Pair with Phoenix from day one, pin the version, lean on <code>compact</code> response mode. Maintainable production system in a fraction of the time it would take in LangGraph.
+    <p style="margin-top:0.4rem">When the agent grows beyond docs Q&amp;A and the orchestration becomes the centre of gravity, that's the migration signal — but you'll know because the eval will show retrieval is no longer your bottleneck.</p>
+  </div>
+
+  <h2>Where to verify beyond this doc</h2>
+  <ul>
+    <li><a href="https://discord.com/invite/eN6D2HQ4aX">LlamaIndex Discord</a> — official; bias toward "LlamaIndex is good"</li>
+    <li><a href="https://reddit.com/r/LlamaIndex">r/LlamaIndex</a> · <a href="https://reddit.com/r/LocalLLaMA">r/LocalLLaMA</a> — practitioners; honest about pain points</li>
+    <li><a href="https://github.com/run-llama/llama_index/issues">GitHub issues</a> — search "production", "performance", "0.11 migration" — what people actually complain about</li>
+    <li><a href="https://www.llamaindex.ai/blog">LlamaIndex blog</a> + <a href="https://www.llamaindex.ai/customers">case studies</a> — curated success stories; read with that awareness</li>
+    <li>YouTube — search "LlamaIndex production"; engineering-honest talks come from RAG-shaped shops (legal-tech, fintech, healthcare)</li>
+    <li>Workato, KPMG, Deutsche Telekom case studies — write about real ops constraints</li>
+  </ul>
+
+  <h2>Lessons that touch this</h2>
+  <ul>
+    <li><a href="../lessons/0017-agent-framework-landscape.html">L17 — Agent Framework Landscape</a> — overview of all 9 frameworks including LlamaIndex</li>
+    <li><a href="../lessons/0019-frameworks-side-by-side.html">L19 — Same agent, five frameworks</a> — side-by-side survey including LlamaIndex</li>
+  </ul>
+
+  <div class="footer-links">
+    <a href="../lessons/0017-agent-framework-landscape.html">← Back to L17 — Framework Landscape</a>
+    &nbsp; · &nbsp;
+    <a href="crewai-production-notes.html">CrewAI production notes</a>
+    &nbsp; · &nbsp;
+    <a href="reranker.html">Reranker reference</a>
+    &nbsp; · &nbsp;
+    <a href="../RESOURCES.md">All resources</a>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 3 — Handling Timeouts &amp; Network Errors</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 760px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .var { color: #cdd6f4; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-java { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .tryit { background: #fff; border: 2px dashed #94a3b8; border-radius: 10px; padding: 1.2rem 1.4rem; margin: 1.5rem 0; }
+    .tryit-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-bottom: 0.6rem; }
+
+    .err-table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1.2rem; font-size: 0.9rem; }
+    .err-table th { background: #1a1a1a; color: #fff; padding: 0.5rem 0.8rem; text-align: left; font-size: 0.8rem; letter-spacing: 0.05em; }
+    .err-table td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+    .err-table tr:hover td { background: #f9f8f6; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 3 of ?</p>
+    <h1>Handling Timeouts &amp; Network Errors</h1>
+    <p class="tagline">Stop your script from hanging forever. Catch the right exceptions and fail loudly.</p>
+    <div class="progress">
+      <a href="0001-python-essentials.html"><span class="pill pill-done">Lesson 1 ✓</span></a>
+      <a href="0002-http-apis.html"><span class="pill pill-done">Lesson 2 ✓</span></a>
+      <span class="pill pill-now">Lesson 3 — Timeouts &amp; Errors</span>
+      <span class="pill pill-next">Lesson 4 — Calling Claude</span>
+    </div>
+  </header>
+
+  <h2>Why this matters</h2>
+  <p>By default, <code>requests</code> waits <strong>forever</strong> for a response. If the server hangs, your script hangs. In a RAG system or AI agent — where you might be calling many APIs in sequence — one slow endpoint can freeze the entire pipeline.</p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Connection to your mission</div>
+    Every external call in an agent (vector DB lookup, document fetch, LLM call) needs a timeout. A robust agent never hangs — it fails, logs, and either retries or moves on.
+  </div>
+
+  <!-- ═══ 1. Setting a timeout ═══ -->
+  <h2>1 — Set a timeout on every call</h2>
+  <p>Pass <code>timeout=</code> to any <code>requests</code> call. The number is seconds.</p>
+
+<pre><code><span class="kw">import</span> <span class="var">requests</span>
+
+<span class="cm"># Single number = total max wait (in seconds)</span>
+<span class="var">response</span> <span class="op">=</span> <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(
+    <span class="str">"https://api.example.com/products"</span><span class="op">,</span>
+    <span class="var">timeout</span><span class="op">=</span><span class="num">5</span>      <span class="cm"># raise an exception if no response in 5 seconds</span>
+<span class="op">)</span></code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Better: tuple form</div>
+    A tuple <code>(connect_timeout, read_timeout)</code> separates "how long to wait to <em>start</em> talking to the server" from "how long to wait <em>for data</em>".
+<pre style="margin-top:0.6rem"><code><span class="var">timeout</span><span class="op">=</span>(<span class="num">3</span><span class="op">,</span> <span class="num">10</span>)   <span class="cm"># 3s to connect, 10s for response body</span></code></pre>
+    Use this for slow APIs (like LLMs) where the server is fast to <em>accept</em> but slow to <em>generate</em>.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Common mistake</div>
+    <code>timeout=0</code> doesn't mean "no timeout" — it means "fail immediately". To disable timeouts (don't), use <code>timeout=None</code>. Always prefer a real number.
+  </div>
+
+  <!-- ═══ 2. The exceptions ═══ -->
+  <h2>2 — The exceptions you'll actually catch</h2>
+  <p>All <code>requests</code> exceptions inherit from <code>requests.exceptions.RequestException</code>. The four you'll meet most:</p>
+
+  <table class="err-table">
+    <thead><tr><th>Exception</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>Timeout</code></td>
+        <td>Either connect or read took too long. Server may be slow or down.</td>
+      </tr>
+      <tr>
+        <td><code>ConnectionError</code></td>
+        <td>Couldn't reach the server at all — DNS, network, firewall, or server offline.</td>
+      </tr>
+      <tr>
+        <td><code>HTTPError</code></td>
+        <td>Server returned 4xx/5xx. Only raised by <code>raise_for_status()</code>.</td>
+      </tr>
+      <tr>
+        <td><code>RequestException</code></td>
+        <td>Parent of all the above — catch this if you don't care about the specific cause.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-java">
+    <div class="callout-label">If you know Java</div>
+    Same pattern as <code>SocketTimeoutException</code>, <code>ConnectException</code>, and <code>HttpClientErrorException</code> in Spring/Java. <code>RequestException</code> is the analog of catching <code>IOException</code> as a general fallback.
+  </div>
+
+  <!-- ═══ 3. try/except ═══ -->
+  <h2>3 — try / except: Python's try/catch</h2>
+  <p>Python uses <code>try / except</code> instead of <code>try / catch</code>. Same idea, slightly different syntax.</p>
+
+<pre><code><span class="kw">import</span> <span class="var">requests</span>
+<span class="kw">from</span> <span class="var">requests</span><span class="op">.</span><span class="var">exceptions</span> <span class="kw">import</span> <span class="var">Timeout</span><span class="op">,</span> <span class="var">ConnectionError</span><span class="op">,</span> <span class="var">HTTPError</span>
+
+<span class="kw">try</span><span class="op">:</span>
+    <span class="var">response</span> <span class="op">=</span> <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(
+        <span class="str">"https://api.example.com/products"</span><span class="op">,</span>
+        <span class="var">timeout</span><span class="op">=</span>(<span class="num">3</span><span class="op">,</span> <span class="num">10</span>)
+    <span class="op">)</span>
+    <span class="var">response</span><span class="op">.</span><span class="fn">raise_for_status</span>()
+    <span class="var">data</span> <span class="op">=</span> <span class="var">response</span><span class="op">.</span><span class="fn">json</span>()
+
+<span class="kw">except</span> <span class="var">Timeout</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">"⏱  The server took too long to respond."</span>)
+
+<span class="kw">except</span> <span class="var">ConnectionError</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">"🔌 Could not reach the server. Check the URL or network."</span>)
+
+<span class="kw">except</span> <span class="var">HTTPError</span> <span class="kw">as</span> <span class="var">e</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">f"❌ Server returned {e.response.status_code}: {e.response.text}"</span>)
+
+<span class="kw">except</span> <span class="var">requests</span><span class="op">.</span><span class="var">exceptions</span><span class="op">.</span><span class="var">RequestException</span> <span class="kw">as</span> <span class="var">e</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">f"💥 Unexpected request error: {e}"</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Order matters</div>
+    Catch <strong>specific exceptions first</strong>, then more general ones. Python checks <code>except</code> blocks top-to-bottom — if you put <code>RequestException</code> first, it would swallow everything before <code>Timeout</code> ever ran.
+  </div>
+
+  <!-- ═══ 4. Real example ═══ -->
+  <h2>4 — Put it together: a robust API call</h2>
+  <p>This is a small but production-shaped function. You'll see this exact shape in agent code.</p>
+
+<pre><code><span class="cm"># robust_call.py</span>
+<span class="kw">import</span> <span class="var">requests</span>
+<span class="kw">from</span> <span class="var">requests</span><span class="op">.</span><span class="var">exceptions</span> <span class="kw">import</span> <span class="var">Timeout</span><span class="op">,</span> <span class="var">ConnectionError</span><span class="op">,</span> <span class="var">HTTPError</span>
+
+<span class="kw">def</span> <span class="fn">fetch_posts</span>(<span class="var">user_id</span>)<span class="op">:</span>
+    <span class="str">"""Fetch posts for a user. Returns [] on failure, never crashes."""</span>
+    <span class="kw">try</span><span class="op">:</span>
+        <span class="var">response</span> <span class="op">=</span> <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(
+            <span class="str">"https://jsonplaceholder.typicode.com/posts"</span><span class="op">,</span>
+            <span class="var">params</span><span class="op">=</span><span class="op">{</span><span class="str">"userId"</span><span class="op">:</span> <span class="var">user_id</span><span class="op">},</span>
+            <span class="var">timeout</span><span class="op">=</span>(<span class="num">3</span><span class="op">,</span> <span class="num">10</span>)
+        <span class="op">)</span>
+        <span class="var">response</span><span class="op">.</span><span class="fn">raise_for_status</span>()
+        <span class="kw">return</span> <span class="var">response</span><span class="op">.</span><span class="fn">json</span>()
+
+    <span class="kw">except</span> <span class="var">Timeout</span><span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"Timeout fetching posts for user {user_id}"</span>)
+    <span class="kw">except</span> <span class="var">ConnectionError</span><span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"Network error fetching posts for user {user_id}"</span>)
+    <span class="kw">except</span> <span class="var">HTTPError</span> <span class="kw">as</span> <span class="var">e</span><span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">f"API returned {e.response.status_code}"</span>)
+
+    <span class="kw">return</span> <span class="op">[]</span>   <span class="cm"># safe fallback</span>
+
+<span class="cm"># Test the happy path</span>
+<span class="fn">print</span>(<span class="fn">len</span>(<span class="fn">fetch_posts</span>(<span class="num">1</span>)))   <span class="cm"># 10</span>
+
+<span class="cm"># Test the failure path — bogus host triggers ConnectionError fast</span>
+<span class="kw">def</span> <span class="fn">fetch_from_bad_host</span>()<span class="op">:</span>
+    <span class="kw">try</span><span class="op">:</span>
+        <span class="kw">return</span> <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(
+            <span class="str">"https://this-host-does-not-exist-xyz.invalid"</span><span class="op">,</span>
+            <span class="var">timeout</span><span class="op">=</span>(<span class="num">2</span><span class="op">,</span> <span class="num">2</span>)
+        <span class="op">)</span>
+    <span class="kw">except</span> <span class="var">ConnectionError</span><span class="op">:</span>
+        <span class="fn">print</span>(<span class="str">"Caught it — host is unreachable."</span>)
+
+<span class="fn">fetch_from_bad_host</span>()</code></pre>
+
+  <!-- ═══ 5. Simulating a timeout ═══ -->
+  <h2>5 — Simulate a real timeout</h2>
+  <p>Hard to test a timeout without a slow server. <a href="https://httpbin.org/" target="_blank">httpbin.org</a> has a <code>/delay/&lt;seconds&gt;</code> endpoint that holds the response for the number of seconds you ask for. Set your timeout shorter than the delay to force a <code>Timeout</code> exception.</p>
+
+<pre><code><span class="kw">import</span> <span class="var">requests</span>
+<span class="kw">from</span> <span class="var">requests</span><span class="op">.</span><span class="var">exceptions</span> <span class="kw">import</span> <span class="var">Timeout</span>
+
+<span class="kw">try</span><span class="op">:</span>
+    <span class="cm"># Server holds for 5s, we'll only wait 2s</span>
+    <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(<span class="str">"https://httpbin.org/delay/5"</span><span class="op">,</span> <span class="var">timeout</span><span class="op">=</span><span class="num">2</span>)
+<span class="kw">except</span> <span class="var">Timeout</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">"Got a timeout, exactly as expected!"</span>)</code></pre>
+
+  <div class="tryit">
+    <div class="tryit-label">Try it yourself</div>
+    <ol>
+      <li>Save the snippet above as <code>test_timeout.py</code> and run it.</li>
+      <li>Change <code>timeout=2</code> to <code>timeout=10</code> — does the script wait, then succeed?</li>
+      <li>Combine with <code>fetch_posts()</code> from section 4: change the URL to <code>https://httpbin.org/delay/5</code> and confirm your <code>except Timeout:</code> branch fires.</li>
+      <li><strong>Challenge:</strong> Add a retry loop — if a <code>Timeout</code> happens, try up to 3 times before giving up. (Hint: a <code>for</code> loop with <code>range(3)</code> and <code>break</code> on success.)</li>
+    </ol>
+  </div>
+
+  <!-- ═══ Quiz ═══ -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q1.</strong> What does <code>requests.get(url)</code> do by default if the server never responds?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Times out after 30 seconds</li>
+        <li data-i="1">Times out after 60 seconds</li>
+        <li data-i="2">Waits forever</li>
+        <li data-i="3">Raises a <code>Timeout</code> exception immediately</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q2.</strong> What's the difference between <code>timeout=10</code> and <code>timeout=(3, 10)</code>?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">No difference — both wait 10 seconds total</li>
+        <li data-i="1">The tuple sets <em>connect</em> and <em>read</em> timeouts separately</li>
+        <li data-i="2">The tuple retries 3 times with a 10-second timeout</li>
+        <li data-i="3">The tuple is invalid syntax</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q3.</strong> You wrote this code, but the <code>Timeout</code> branch never runs — even when timeouts happen. Why?</p>
+<pre style="margin-top:0.4rem"><code><span class="kw">try</span><span class="op">:</span>
+    <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(<span class="var">url</span><span class="op">,</span> <span class="var">timeout</span><span class="op">=</span><span class="num">2</span>)
+<span class="kw">except</span> <span class="var">requests</span><span class="op">.</span><span class="var">exceptions</span><span class="op">.</span><span class="var">RequestException</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">"Generic error"</span>)
+<span class="kw">except</span> <span class="var">Timeout</span><span class="op">:</span>
+    <span class="fn">print</span>(<span class="str">"Timeout!"</span>)</code></pre>
+      <ul class="options" data-answer="0">
+        <li data-i="0">The general <code>RequestException</code> catches the timeout first — specific exceptions must come before general ones</li>
+        <li data-i="1"><code>Timeout</code> isn't a subclass of <code>RequestException</code></li>
+        <li data-i="2"><code>requests.get()</code> doesn't raise <code>Timeout</code> — only <code>HTTPError</code></li>
+        <li data-i="3">You can't have two <code>except</code> blocks in Python</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q4.</strong> Which exception fires when DNS can't resolve the hostname (e.g. you typed <code>foo.invalid</code>)?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0"><code>Timeout</code></li>
+        <li data-i="1"><code>ConnectionError</code></li>
+        <li data-i="2"><code>HTTPError</code></li>
+        <li data-i="3"><code>ValueError</code></li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ═══ Reference card ═══ -->
+  <h2>Cheat sheet</h2>
+  <p>The minimum every external call should have:</p>
+
+<pre><code><span class="kw">try</span><span class="op">:</span>
+    <span class="var">r</span> <span class="op">=</span> <span class="var">requests</span><span class="op">.</span><span class="fn">get</span>(<span class="var">url</span><span class="op">,</span> <span class="var">timeout</span><span class="op">=</span>(<span class="num">3</span><span class="op">,</span> <span class="num">10</span>))
+    <span class="var">r</span><span class="op">.</span><span class="fn">raise_for_status</span>()
+    <span class="var">data</span> <span class="op">=</span> <span class="var">r</span><span class="op">.</span><span class="fn">json</span>()
+<span class="kw">except</span> <span class="var">requests</span><span class="op">.</span><span class="var">exceptions</span><span class="op">.</span><span class="var">RequestException</span> <span class="kw">as</span> <span class="var">e</span><span class="op">:</span>
+    <span class="cm"># log and decide: retry, fall back, or re-raise</span>
+    <span class="fn">print</span>(<span class="str">f"call failed: {e}"</span>)</code></pre>
+
+  <h2>What's next</h2>
+  <p>You now have all the HTTP fundamentals you need. <strong>Lesson 4</strong> introduces the <strong>Anthropic Python SDK</strong> — your first real call to Claude.</p>
+
+  <div class="callout callout-tip" style="margin-top:2.5rem">
+    <div class="callout-label">Ask your teacher</div>
+    Run <code>/teach</code> for follow-ups. Examples:
+    <ul style="margin-top:0.4rem">
+      <li>"Show me a retry with exponential backoff"</li>
+      <li>"How does this differ when calling a streaming LLM endpoint?"</li>
+      <li>"What's a good logging pattern for these errors?"</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0002-http-apis.html">← Lesson 2 — Calling HTTP APIs</a>
+      <a href="0004-calling-gemini.html">Lesson 4 — Calling Gemini →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · Mission: Build AI agents and a RAG system · <a href="../RESOURCES.md">Resources</a></p>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    0: { ok: "Correct! No timeout = wait forever. Always set one explicitly.", err: "Not quite. requests has NO default timeout — it waits indefinitely unless you set timeout=." },
+    1: { ok: "Correct! (connect, read) — separate budgets for opening the socket vs. receiving data.", err: "Not quite. The tuple form is (connect_timeout, read_timeout) — useful for slow APIs that connect fast but generate slowly." },
+    2: { ok: "Correct! Order specific → general. Python matches the first except block that fits.", err: "Not quite. Python checks except blocks top-to-bottom; the more general parent class will catch first if listed first." },
+    3: { ok: "Correct! ConnectionError covers DNS failures, refused connections, and unreachable hosts.", err: "Not quite. DNS failures = ConnectionError. Timeout means the connection started but took too long." },
+  };
+
+  document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {
+    const opts = qBlock.querySelectorAll('.options li');
+    const answer = parseInt(qBlock.querySelector('.options').dataset.answer);
+    const fb = qBlock.querySelector('.feedback');
+    let answered = false;
+
+    opts.forEach(li => {
+      li.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+        const chosen = parseInt(li.dataset.i);
+        if (chosen === answer) {
+          li.classList.add('correct');
+          fb.textContent = '✓ ' + FEEDBACK[qi].ok;
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          opts[answer].classList.add('correct');
+          fb.textContent = '✗ ' + FEEDBACK[qi].err;
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

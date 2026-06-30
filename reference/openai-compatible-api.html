@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — OpenAI-compatible API</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 880px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.4rem 0 0.4rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.15rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      overflow-x: auto;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      margin: 0.4rem 0 0.7rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .pr  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.35rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout { border-radius: 6px; padding: 0.6rem 0.8rem; margin: 0.6rem 0; border-left: 3px solid; font-size: 0.85rem; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-info { background: #eff6ff; border-color: #3b82f6; }
+
+    .diagram {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 0.7rem 1rem;
+      margin: 0.5rem 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .footer-links { margin-top: 1.4rem; padding-top: 0.8rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+
+    @media print {
+      body { padding: 0.5rem; }
+      .page { max-width: 100%; }
+      pre { font-size: 0.7rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Python for AI/ML</p>
+    <h1>OpenAI-compatible API</h1>
+    <p class="tagline">The de facto lingua franca for LLM HTTP — a JSON shape that ~100 providers speak. Like USB-C, but for chat.</p>
+  </header>
+
+  <h2>One-line summary</h2>
+  <p>
+    "OpenAI-compatible" means the HTTP server accepts the exact same JSON request shape as OpenAI's <code>/v1/chat/completions</code> endpoint and returns the same response shape. Existing OpenAI client code works against it by changing only <code>base_url</code> and <code>api_key</code>.
+  </p>
+
+  <h2>What it actually is — and is not</h2>
+  <table>
+    <thead><tr><th>It is</th><th>It is not</th></tr></thead>
+    <tbody>
+      <tr><td>A de facto JSON wire format</td><td>A formal standard or RFC</td></tr>
+      <tr><td>Free to implement — anyone can</td><td>Owned, licensed, or partnered</td></tr>
+      <tr><td>The most-supported shape across LLM providers</td><td>A guarantee that features match — most providers cover 70–90% of the spec</td></tr>
+      <tr><td>Convenient for switching providers via <code>base_url</code></td><td>A replacement for testing each provider end-to-end</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The request shape</h2>
+  <pre><code><span class="pr">POST</span> /v1/chat/completions
+<span class="kw">Authorization</span>: Bearer YOUR_KEY
+<span class="kw">Content-Type</span>: application/json
+
+{
+  <span class="str">"model"</span>: <span class="str">"gpt-4o-mini"</span>,
+  <span class="str">"messages"</span>: [
+    {<span class="str">"role"</span>: <span class="str">"system"</span>,    <span class="str">"content"</span>: <span class="str">"You are terse."</span>},
+    {<span class="str">"role"</span>: <span class="str">"user"</span>,      <span class="str">"content"</span>: <span class="str">"Hello"</span>}
+  ],
+  <span class="str">"temperature"</span>: <span class="num">0.7</span>,
+  <span class="str">"max_tokens"</span>: <span class="num">200</span>,
+  <span class="str">"stream"</span>: <span class="kw">false</span>,
+  <span class="str">"tools"</span>: [<span class="cm">/* optional */</span>],
+  <span class="str">"tool_choice"</span>: <span class="str">"auto"</span>,
+  <span class="str">"response_format"</span>: { <span class="str">"type"</span>: <span class="str">"json_object"</span> }
+}</code></pre>
+
+  <h3>Common fields you'll send</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>model</code></td><td>string</td><td>Provider-specific model name. The only field that's <em>not</em> portable.</td></tr>
+      <tr><td><code>messages</code></td><td>array</td><td>The conversation. See "the messages array" below.</td></tr>
+      <tr><td><code>temperature</code></td><td>0.0–2.0</td><td>Randomness. Lower = more deterministic.</td></tr>
+      <tr><td><code>max_tokens</code></td><td>int</td><td>Cap on output length.</td></tr>
+      <tr><td><code>top_p</code></td><td>0.0–1.0</td><td>Nucleus sampling. Use <em>or</em> temperature, not both.</td></tr>
+      <tr><td><code>stream</code></td><td>bool</td><td>If true, server sends SSE chunks instead of one response.</td></tr>
+      <tr><td><code>tools</code></td><td>array</td><td>Function-calling schema definitions.</td></tr>
+      <tr><td><code>tool_choice</code></td><td>string / obj</td><td><code>"auto"</code>, <code>"none"</code>, or force a specific tool.</td></tr>
+      <tr><td><code>response_format</code></td><td>obj</td><td><code>{"type":"json_object"}</code> or full JSON schema.</td></tr>
+      <tr><td><code>seed</code></td><td>int</td><td>Best-effort reproducibility (OpenAI only fully honours it).</td></tr>
+      <tr><td><code>stop</code></td><td>str / array</td><td>Stop sequences.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The <code>messages</code> array</h2>
+  <p>Each message is an object with <code>role</code> and <code>content</code>:</p>
+
+  <table>
+    <thead><tr><th>Role</th><th>Used for</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>"system"</code></td><td>Instructions to the model</td><td>Usually only one, at index 0. Some providers append it to the first user message internally.</td></tr>
+      <tr><td><code>"user"</code></td><td>Human input</td><td>The thing the user typed.</td></tr>
+      <tr><td><code>"assistant"</code></td><td>Model's prior replies</td><td>You append these so the model has context for the next turn.</td></tr>
+      <tr><td><code>"tool"</code></td><td>Result of a tool call</td><td>Must include <code>tool_call_id</code> matching the call that produced this result.</td></tr>
+    </tbody>
+  </table>
+
+  <p><code>content</code> is usually a string, but for multimodal input it's an array of typed parts:</p>
+
+  <pre><code>{
+  <span class="str">"role"</span>: <span class="str">"user"</span>,
+  <span class="str">"content"</span>: [
+    {<span class="str">"type"</span>: <span class="str">"text"</span>,      <span class="str">"text"</span>: <span class="str">"What's in this image?"</span>},
+    {<span class="str">"type"</span>: <span class="str">"image_url"</span>, <span class="str">"image_url"</span>: {<span class="str">"url"</span>: <span class="str">"data:image/jpeg;base64,..."</span>}}
+  ]
+}</code></pre>
+
+  <h2>The response shape</h2>
+  <pre><code>{
+  <span class="str">"id"</span>: <span class="str">"chatcmpl-abc123"</span>,
+  <span class="str">"object"</span>: <span class="str">"chat.completion"</span>,
+  <span class="str">"created"</span>: <span class="num">1718900000</span>,
+  <span class="str">"model"</span>: <span class="str">"gpt-4o-mini"</span>,
+  <span class="str">"choices"</span>: [
+    {
+      <span class="str">"index"</span>: <span class="num">0</span>,
+      <span class="str">"message"</span>: {
+        <span class="str">"role"</span>: <span class="str">"assistant"</span>,
+        <span class="str">"content"</span>: <span class="str">"Hi."</span>,
+        <span class="str">"tool_calls"</span>: [<span class="cm">/* optional */</span>]
+      },
+      <span class="str">"finish_reason"</span>: <span class="str">"stop"</span>
+    }
+  ],
+  <span class="str">"usage"</span>: {
+    <span class="str">"prompt_tokens"</span>: <span class="num">12</span>,
+    <span class="str">"completion_tokens"</span>: <span class="num">4</span>,
+    <span class="str">"total_tokens"</span>: <span class="num">16</span>
+  }
+}</code></pre>
+
+  <h3>What you actually read</h3>
+  <table>
+    <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>choices[0].message.content</code></td><td>The assistant's text answer. May be <code>null</code> if the model called a tool instead of replying.</td></tr>
+      <tr><td><code>choices[0].message.tool_calls</code></td><td>Array of tool-call requests when the model wants to use a function.</td></tr>
+      <tr><td><code>choices[0].finish_reason</code></td><td><code>"stop"</code> (done), <code>"length"</code> (hit <code>max_tokens</code>), <code>"tool_calls"</code> (wants tools), <code>"content_filter"</code> (refused).</td></tr>
+      <tr><td><code>usage</code></td><td>Token counts for billing / observability.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Tool calling — the exact shape</h2>
+
+  <p><strong>You send</strong> (in the request):</p>
+  <pre><code><span class="str">"tools"</span>: [
+  {
+    <span class="str">"type"</span>: <span class="str">"function"</span>,
+    <span class="str">"function"</span>: {
+      <span class="str">"name"</span>: <span class="str">"get_weather"</span>,
+      <span class="str">"description"</span>: <span class="str">"Get current weather for a city"</span>,
+      <span class="str">"parameters"</span>: {
+        <span class="str">"type"</span>: <span class="str">"object"</span>,
+        <span class="str">"properties"</span>: {
+          <span class="str">"city"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>}
+        },
+        <span class="str">"required"</span>: [<span class="str">"city"</span>]
+      }
+    }
+  }
+]</code></pre>
+
+  <p><strong>The model returns</strong> (in <code>choices[0].message</code>):</p>
+  <pre><code>{
+  <span class="str">"role"</span>: <span class="str">"assistant"</span>,
+  <span class="str">"content"</span>: <span class="kw">null</span>,
+  <span class="str">"tool_calls"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="str">"call_xyz"</span>,
+      <span class="str">"type"</span>: <span class="str">"function"</span>,
+      <span class="str">"function"</span>: {
+        <span class="str">"name"</span>: <span class="str">"get_weather"</span>,
+        <span class="str">"arguments"</span>: <span class="str">"{\"city\":\"Singapore\"}"</span>   <span class="cm"># string, you JSON.parse it</span>
+      }
+    }
+  ]
+}</code></pre>
+
+  <p><strong>You send back</strong> (next request, in <code>messages</code>):</p>
+  <pre><code>{
+  <span class="str">"role"</span>: <span class="str">"tool"</span>,
+  <span class="str">"tool_call_id"</span>: <span class="str">"call_xyz"</span>,
+  <span class="str">"content"</span>: <span class="str">"{\"temp_c\": 31, \"condition\": \"humid\"}"</span>
+}</code></pre>
+
+  <div class="callout callout-info">
+    <strong>Compare to the native Gemini SDK</strong> (used in <a href="../lessons/0018-native-sdk-agent.html">L18</a>): Gemini returns <code>response.function_calls</code> and tool results are <code>types.Part.from_function_response(...)</code>. Different field names, same loop. See <a href="llm-sdk-comparison.html">SDK comparison</a> for the side-by-side.
+  </div>
+
+  <h2>Streaming output (SSE)</h2>
+  <p>With <code>"stream": true</code>, the server sends Server-Sent Events. Each event is a partial chunk:</p>
+
+  <pre><code><span class="kw">data:</span> {<span class="str">"choices"</span>:[{<span class="str">"delta"</span>:{<span class="str">"role"</span>:<span class="str">"assistant"</span>},<span class="str">"index"</span>:<span class="num">0</span>}]}
+<span class="kw">data:</span> {<span class="str">"choices"</span>:[{<span class="str">"delta"</span>:{<span class="str">"content"</span>:<span class="str">"Hi"</span>},<span class="str">"index"</span>:<span class="num">0</span>}]}
+<span class="kw">data:</span> {<span class="str">"choices"</span>:[{<span class="str">"delta"</span>:{<span class="str">"content"</span>:<span class="str">" there"</span>},<span class="str">"index"</span>:<span class="num">0</span>}]}
+<span class="kw">data:</span> {<span class="str">"choices"</span>:[{<span class="str">"delta"</span>:{},<span class="str">"finish_reason"</span>:<span class="str">"stop"</span>,<span class="str">"index"</span>:<span class="num">0</span>}]}
+<span class="kw">data:</span> [DONE]</code></pre>
+
+  <p>Your code accumulates the <code>delta.content</code> strings to reconstruct the full answer. The OpenAI SDK does this for you when you iterate the stream object.</p>
+
+  <h2>Who speaks this shape</h2>
+  <table>
+    <thead><tr><th>Category</th><th>Examples</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>The original</td><td>OpenAI</td><td>Defines the spec — always the reference implementation.</td></tr>
+      <tr><td>Cloud providers</td><td>Azure OpenAI, Mistral, Together AI, Groq, Fireworks, DeepSeek, Cerebras, xAI Grok</td><td>Drop-in compatible. Different <code>base_url</code>, different model names.</td></tr>
+      <tr><td>Google Gemini</td><td><code>generativelanguage.googleapis.com/v1beta/openai/</code></td><td>Native Gemini SDK is more ergonomic — use this only for portability.</td></tr>
+      <tr><td>Anthropic</td><td>OpenAI-compatible endpoint (newer)</td><td>Spec coverage is partial; native SDK still preferred.</td></tr>
+      <tr><td>Local runners</td><td>Ollama, llama.cpp server, vLLM, LM Studio, LocalAI, TGI</td><td>Run open models on your laptop with the same client code.</td></tr>
+      <tr><td>Routers / gateways</td><td>OpenRouter, LiteLLM, Portkey, vLLM gateway</td><td>Translate to/from many providers but expose the OpenAI shape outward.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The "switch in one line" trick</h2>
+  <p>The whole point. Same client, three different backends:</p>
+
+  <pre><code><span class="kw">from</span> openai <span class="kw">import</span> OpenAI
+
+<span class="cm"># Local Ollama (no API key needed but the SDK requires one)</span>
+ollama <span class="op">=</span> OpenAI(base_url<span class="op">=</span><span class="str">"http://localhost:11434/v1"</span>, api_key<span class="op">=</span><span class="str">"ollama"</span>)
+
+<span class="cm"># Groq — same code, very fast inference</span>
+groq <span class="op">=</span> OpenAI(base_url<span class="op">=</span><span class="str">"https://api.groq.com/openai/v1"</span>,
+              api_key<span class="op">=</span>os.environ[<span class="str">"GROQ_API_KEY"</span>])
+
+<span class="cm"># Gemini via its OpenAI-compat endpoint</span>
+gemini <span class="op">=</span> OpenAI(
+    base_url<span class="op">=</span><span class="str">"https://generativelanguage.googleapis.com/v1beta/openai/"</span>,
+    api_key<span class="op">=</span>os.environ[<span class="str">"GEMINI_API_KEY"</span>],
+)
+
+<span class="cm"># Calling code below is identical for all three:</span>
+r <span class="op">=</span> gemini.chat.completions.create(
+    model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>,
+    messages<span class="op">=</span>[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"Hello"</span>}],
+)</code></pre>
+
+  <h2>Where it leaks — "compatible" ≠ "identical"</h2>
+  <p>Most providers cover the basics. Edges where you will get bitten:</p>
+
+  <div class="callout callout-warn">
+    <ul style="margin:0">
+      <li><strong>Tool calling.</strong> Many providers — especially small local models — produce malformed <code>tool_calls</code> (invalid JSON in <code>arguments</code>, mismatched <code>tool_call_id</code>). Test before trusting.</li>
+      <li><strong>JSON mode / <code>response_format</code>.</strong> OpenAI honours strict JSON schema. Most others honour <code>{"type":"json_object"}</code> as a hint only.</li>
+      <li><strong>Streaming edge cases.</strong> Empty deltas, finish reasons during tool calls, and the <code>[DONE]</code> sentinel are handled differently by some servers.</li>
+      <li><strong>System prompts.</strong> Some models silently concatenate the system message into the first user message; behaviour drifts.</li>
+      <li><strong>Parallel tool calls.</strong> Spec allows <code>tool_calls</code> to be an array of multiple calls. Some providers return only one per turn.</li>
+      <li><strong>Vision / audio parts.</strong> The typed <code>content</code> array is least portable — image URLs, base64 prefixes, and MIME types vary.</li>
+      <li><strong><code>seed</code> reproducibility.</strong> Only OpenAI takes it seriously. Others ignore it.</li>
+      <li><strong>Model names.</strong> The one field that's <em>never</em> portable. Centralise it behind a config var.</li>
+    </ul>
+  </div>
+
+  <h2>When to use it vs the native SDK</h2>
+  <table>
+    <thead><tr><th>Situation</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td>You're committed to one provider, want best ergonomics</td><td>Native SDK (e.g. <code>google-genai</code> for Gemini)</td></tr>
+      <tr><td>You want to swap models for cost/latency comparison</td><td>OpenAI client + <code>base_url</code> per provider</td></tr>
+      <tr><td>You want to test local models alongside cloud ones</td><td>OpenAI client → Ollama / vLLM</td></tr>
+      <tr><td>You're building a multi-provider production app</td><td>LiteLLM / OpenRouter as a gateway, expose OpenAI shape internally</td></tr>
+      <tr><td>You rely on a provider-specific feature (Gemini's auto-schema-from-Python-fn, Anthropic's <code>cache_control</code>)</td><td>Native SDK — those features don't translate</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The MuleSoft analogue</h2>
+  <div class="callout callout-tip">
+    <strong>This is the same pattern as exposing a System API and switching backends.</strong> Define one stable contract (OpenAI shape) and put a routing layer in front. Callers don't change when the backend changes. LiteLLM / OpenRouter are essentially a "System API for LLMs" — the same role you'd build a Mule app to play if you wanted vendor-portable AI inside an enterprise integration stack.
+  </div>
+
+  <h2>Mental models</h2>
+  <div class="callout callout-tip">
+    <strong>USB-C for LLMs.</strong> Not owned by anyone, but everyone agreed to make their plug fit the same hole. The cable works; the device behind it might still have quirks.
+  </div>
+  <div class="callout callout-tip">
+    <strong>SQL standard, in spirit.</strong> Like ANSI SQL — every database "supports" it, but Postgres, MySQL, and SQLite all have dialect-level differences. You can write portable queries if you stay on the common subset.
+  </div>
+
+  <h2>Quick checklist before relying on compatibility</h2>
+  <ol>
+    <li>Does the provider's docs explicitly say "OpenAI-compatible"?</li>
+    <li>Which version of the OpenAI spec do they target? (most cover Chat Completions, fewer cover Responses or Assistants)</li>
+    <li>Does tool calling work end-to-end? Send a real tool call and parse the response.</li>
+    <li>Does <code>response_format: {"type": "json_object"}</code> actually produce parseable JSON?</li>
+    <li>Does streaming finish cleanly? Watch for hangs at <code>[DONE]</code>.</li>
+    <li>Are token-count fields populated in <code>usage</code>? Some local servers leave this empty.</li>
+  </ol>
+
+  <h2>Lessons that touch this</h2>
+  <ul>
+    <li><a href="../lessons/0018-native-sdk-agent.html">L18 — Native SDK Agent</a> — uses Gemini's native SDK; this doc explains the portable alternative</li>
+    <li><a href="../lessons/0019-frameworks-side-by-side.html">L19 — Frameworks survey</a> — frameworks often normalise to this shape internally</li>
+    <li><a href="llm-sdk-comparison.html">SDK comparison reference</a> — the three native SDKs (Gemini / OpenAI / Anthropic) side-by-side</li>
+  </ul>
+
+  <h2>Going deeper</h2>
+  <ul>
+    <li><a href="https://platform.openai.com/docs/api-reference/chat">OpenAI Chat Completions API reference</a> — the canonical spec</li>
+    <li><a href="https://docs.litellm.ai/">LiteLLM docs</a> — open-source gateway translating to/from ~100 providers</li>
+    <li><a href="https://openrouter.ai/docs">OpenRouter docs</a> — hosted gateway with OpenAI-compatible API</li>
+    <li><a href="https://ai.google.dev/gemini-api/docs/openai">Gemini's OpenAI-compatible endpoint</a></li>
+    <li><a href="https://github.com/ollama/ollama/blob/main/docs/openai.md">Ollama's OpenAI compatibility docs</a></li>
+  </ul>
+
+  <div class="footer-links">
+    <a href="../lessons/0018-native-sdk-agent.html">← Back to L18 — Native SDK Agent</a>
+    &nbsp; · &nbsp;
+    <a href="llm-sdk-comparison.html">SDK comparison reference</a>
+    &nbsp; · &nbsp;
+    <a href="../RESOURCES.md">All resources</a>
+  </div>
+
+</div>
+</body>
+</html>
