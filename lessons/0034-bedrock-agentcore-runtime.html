@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 34 — Bedrock AgentCore Runtime: hand your agent to AWS</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 34 &nbsp;·&nbsp; Strands mini-series (3 of 6)</p>
+    <h1>Bedrock AgentCore Runtime: hand your agent to AWS</h1>
+    <p class="tagline">Your L32/L33 agent runs on your laptop. Fine for learning; not a story you tell a customer. This lesson introduces <strong>AgentCore Runtime</strong> — AWS's managed serverless container for any Python agent — and lets you deploy the same code without touching Kubernetes, ECS, or a Dockerfile.</p>
+    <div class="progress">
+      <a href="0018-native-sdk-agent.html"><span class="pill pill-done">L18 ✓</span></a>
+      <a href="0031-adk-deploy-agent-engine.html"><span class="pill pill-done">L31 ADK ✓</span></a>
+      <a href="0032-strands-basics.html"><span class="pill pill-done">L32 ✓</span></a>
+      <a href="0033-strands-model-switch.html"><span class="pill pill-done">L33 ✓</span></a>
+      <span class="pill pill-now">L34 — AgentCore runtime</span>
+      <span class="pill pill-next">L35 — Memory + sessions</span>
+      <span class="pill pill-next">L36 — Multi-agent</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    From <a href="../MISSION.md">MISSION.md</a>: agents you can actually demo to enterprise customers. "It runs on my laptop" is where every prototype starts and where every prototype dies. When the customer asks <em>"OK, how do we operationalise this in <strong>our</strong> AWS account?"</em> — that's what this lesson answers.
+  </p>
+  <p>
+    In the Google ADK series, <a href="0031-adk-deploy-agent-engine.html">L31</a> answered the same question with <em>Vertex Agent Engine</em>. AWS's equivalent is <strong>Bedrock AgentCore</strong> — a family of managed services for agents, of which <strong>Runtime</strong> is the "just host it for me" piece. That's what we cover here. The other pieces (Memory, Identity, Gateway, Observability, Browser, Code Interpreter) come later or on-demand.
+  </p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — read this first</div>
+    Bedrock AgentCore was announced at AWS re:Invent 2024, went through preview in 2025, and became GA in late 2025. As of <strong>early 2026</strong>, this is one of the fastest-moving pieces of AWS's agent story. The <em>concepts</em> in this lesson are stable. The <em>exact function names, CLI flags, and IAM policies</em> may have shifted since I wrote it. Before deploying anything, cross-check against the current <a href="https://docs.aws.amazon.com/bedrock-agentcore/">AWS Bedrock AgentCore docs</a>.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>What AgentCore actually is — the mental model</h2>
+  <p>The biggest mistake is treating AgentCore as one thing. It's <strong>seven managed primitives</strong>. You use only the ones you need. All are framework-agnostic — they work with Strands, LangGraph, CrewAI, ADK-in-a-container, or a hand-rolled Python script.</p>
+
+  <table>
+    <thead>
+      <tr><th>Primitive</th><th>What it does</th><th>Covered in</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Runtime</strong></td><td>Serverless container to <em>host</em> your Python agent. HTTP endpoint, autoscaling, per-session isolation. Framework-agnostic.</td><td><strong>This lesson</strong></td></tr>
+      <tr><td><strong>Memory</strong></td><td>Managed session + long-term memory store for conversation history. You <code>put</code>/<code>get</code> by session ID.</td><td>L35</td></tr>
+      <tr><td><strong>Identity</strong></td><td>OAuth/IAM sessions per <em>end user</em>. Agent can call downstream APIs on behalf of a signed-in user.</td><td>L37 (deploy)</td></tr>
+      <tr><td><strong>Gateway</strong></td><td>Turns existing REST/OpenAPI/Lambda endpoints into MCP-shaped tools consumable by any agent.</td><td>L36 (multi-agent + tools)</td></tr>
+      <tr><td><strong>Observability</strong></td><td>Traces, metrics, and logs to CloudWatch + X-Ray. OpenTelemetry-native — no glue code.</td><td>L37</td></tr>
+      <tr><td><strong>Browser</strong></td><td>Sandboxed, VM-isolated headless browser your agent can drive.</td><td>Out of scope for this series</td></tr>
+      <tr><td><strong>Code Interpreter</strong></td><td>Sandboxed Python execution environment for agent-generated code.</td><td>Out of scope for this series</td></tr>
+    </tbody>
+  </table>
+
+  <p>This lesson uses <strong>Runtime only</strong>. You're going to take your <code>strands_hello.py</code> and turn it into a deployable AgentCore Runtime app in about twenty new lines.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The two new syntax constructs</h2>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · BedrockAgentCoreApp()</div>
+    <code>BedrockAgentCoreApp</code> is the runtime SDK's <em>app object</em>. Think of it the way you think of Flask's <code>app = Flask(__name__)</code> or FastAPI's <code>app = FastAPI()</code>: it's the container that AgentCore Runtime will serve. You instantiate one at module top level, decorate one or more functions as entrypoints, and end with <code>app.run()</code> for local testing. The <code>agentcore</code> CLI reads this object to know what to package up when you deploy.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · @app.entrypoint</div>
+    <code>@app.entrypoint</code> is a decorator (<a href="0015-enterprise-rag-eval.html">L15</a> covered the <code>@decorator</code> pattern) that registers the function below it as <em>the callable AgentCore invokes on each request</em>. The function receives a <code>payload</code> dict (the HTTP request body, parsed as JSON) and returns whatever should go back to the caller (typically another dict or a string). Whatever your agent does inside — Strands, LangGraph, native SDK, doesn't matter — AgentCore doesn't care. Same shape as an AWS Lambda handler, if you've written one of those.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Prerequisites — what you need before <code>pip install</code></h2>
+
+  <ol>
+    <li><strong>AWS creds working</strong> — from <a href="0032-strands-basics.html">L32</a>. <code>aws sts get-caller-identity</code> should still succeed.</li>
+    <li><strong>Bedrock model access</strong> for Haiku (from L32) and Sonnet (from L33) in <code>us-east-1</code>.</li>
+    <li><strong>IAM permissions for AgentCore.</strong> Your user/role needs to be able to create AgentCore Runtimes and pass a service role. Easiest for a demo: attach the AWS-managed policy <code>BedrockAgentCoreFullAccess</code> (name may vary in your region — check the current console).</li>
+    <li><strong>An AgentCore execution role</strong> — the role AWS assumes to run your container. AgentCore creates one on demand via the CLI; you don't need to hand-craft it for a first deploy.</li>
+    <li><strong>Install the runtime SDK:</strong>
+      <pre style="margin:0.5rem 0"><code>pip install bedrock-agentcore</code></pre>
+      This gives you the <code>BedrockAgentCoreApp</code> class and the <code>agentcore</code> CLI.
+    </li>
+  </ol>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Cost heads-up</div>
+    Runtime bills for container invocation time <em>and</em> Bedrock token usage. For a hello-world with one query, expect single-digit US cents. Set a billing alert before you deploy for the first time — same discipline as L32.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn — wrap the L32 agent</h2>
+  <p>Create a new file <code>~/ai/claude/projects/python/scripts/agentcore_hello.py</code>. This file <em>reuses</em> everything you wrote for <code>strands_hello.py</code> — same tools, same system prompt, same <code>Agent</code>. All you're adding is the outer AgentCore wrapper.</p>
+
+  <div class="todo">
+<span class="todo-label">SKELETON — fill in the 4 TODOs</span>
+
+<span class="cm"># agentcore_hello.py</span>
+<span class="cm"># AgentCore Runtime wrapper around your L32 Strands agent.</span>
+
+<span class="kw">from</span> bedrock_agentcore <span class="kw">import</span> BedrockAgentCoreApp
+<span class="kw">from</span> strands <span class="kw">import</span> Agent, tool
+<span class="kw">from</span> strands.models <span class="kw">import</span> BedrockModel
+
+
+<span class="cm"># --- Copy verbatim from L32 (or better, import from strands_hello.py): ---</span>
+<span class="cm"># @tool def search_docs(query: str) -&gt; str: ...</span>
+<span class="cm"># @tool def get_anypoint_org_status(org_id: str) -&gt; dict: ...</span>
+<span class="cm"># SYSTEM = "You are a MuleSoft platform assistant. ..."</span>
+
+
+<span class="cm"># TODO 1 — Build the agent (same shape as L32).</span>
+<span class="cm">#          agent = Agent(</span>
+<span class="cm">#              model=BedrockModel(</span>
+<span class="cm">#                  model_id="anthropic.claude-haiku-4-5-20251001-v1:0",</span>
+<span class="cm">#                  region_name="us-east-1",</span>
+<span class="cm">#              ),</span>
+<span class="cm">#              tools=[search_docs, get_anypoint_org_status],</span>
+<span class="cm">#              system_prompt=SYSTEM,</span>
+<span class="cm">#          )</span>
+
+
+<span class="cm"># TODO 2 — Instantiate the AgentCore app at module top level.</span>
+<span class="cm">#          app = BedrockAgentCoreApp()</span>
+
+
+<span class="cm"># TODO 3 — Define the entrypoint. Signature: def invoke(payload: dict) -&gt; dict.</span>
+<span class="cm">#          Decorate with @app.entrypoint. Inside:</span>
+<span class="cm">#            1. Extract the user's prompt: prompt = payload.get("prompt", "")</span>
+<span class="cm">#            2. Guard against empty prompt (return an error dict if empty)</span>
+<span class="cm">#            3. Call your agent: result = agent(prompt)</span>
+<span class="cm">#            4. Return {"reply": result.message}</span>
+
+
+<span class="cm"># TODO 4 — Local-run entrypoint. Under if __name__ == "__main__":</span>
+<span class="cm">#          call app.run(). This starts a local HTTP server on port 8080</span>
+<span class="cm">#          so you can curl it BEFORE deploying to AWS.</span>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Verification — the four-step ladder</h2>
+  <p>Test <em>locally</em> before touching the cloud. This is the single most useful habit for AgentCore work.</p>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Rung 1 · Import test</div>
+    <code>python -c "import agentcore_hello"</code> exits with no error. If it fails, the SDK isn't installed or a Strands import broke.
+  </div>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Rung 2 · Local server</div>
+    Run <code>python agentcore_hello.py</code>. You should see a startup log mentioning port <code>8080</code>. In another terminal:
+    <pre style="margin:0.5rem 0 0"><code>curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "How do I rotate a Connected App secret?"}'</code></pre>
+    You should get a JSON reply with the same content you got in L32. If the local server won't start, port 8080 is probably occupied — <code>lsof -i :8080</code> will show you what's holding it.
+  </div>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Rung 3 · Deploy</div>
+    From your project directory:
+    <pre style="margin:0.5rem 0 0"><code>agentcore configure --entrypoint agentcore_hello.py
+agentcore launch</code></pre>
+    The CLI builds a container image, pushes to ECR, provisions a Runtime, and gives you back an ARN plus an invoke URL. Read every line of the output — the ARN is what you'll pass to callers later.
+    <br><br>
+    <em>Exact CLI verbs and flags may differ in your version — <code>agentcore --help</code> is the source of truth.</em>
+  </div>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Rung 4 · Cloud invoke</div>
+    <pre style="margin:0.5rem 0 0"><code>agentcore invoke '{"prompt": "How do I rotate a Connected App secret?"}'</code></pre>
+    Same reply as the local run. If not, look at <strong>CloudWatch logs</strong> in the AWS console — AgentCore streams your container's stdout/stderr there automatically. This is the payoff for using a managed runtime.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>What just happened, architecturally</h2>
+  <ol>
+    <li>The <code>agentcore</code> CLI built a container image from your Python file + requirements.</li>
+    <li>Pushed the image to Amazon ECR under an AgentCore-managed repository.</li>
+    <li>Created an AgentCore Runtime resource in the AWS control plane — pointing at that image, using the execution role, with autoscaling defaults.</li>
+    <li>Exposed an invocation endpoint. Every call to <code>agentcore invoke</code> (or the SDK, or a signed HTTPS request) launches a container instance (or reuses a warm one), calls your <code>@app.entrypoint</code> function, streams the response back.</li>
+    <li>Each session gets an <em>isolated</em> microVM. That's the built-in security model — sessions can't leak state to each other.</li>
+  </ol>
+
+  <p>Compare that to what you'd write yourself: Dockerfile, ECR repo, ECS task definition, ALB listener, IAM role, CloudWatch log group, autoscaling config, session isolation. AgentCore is that whole stack, but you filled in one Python file.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>Compare to L31 — same problem, different cloud</h2>
+  <p>You built the Google-side equivalent in <a href="0031-adk-deploy-agent-engine.html">L31</a>. The mental model is the same; the surface differs.</p>
+
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>Google — Vertex Agent Engine (L31)</th><th>AWS — Bedrock AgentCore Runtime (this lesson)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Framework coupling</td><td>ADK-native (best fit); other frameworks work via LiteLLM adapter</td><td>Framework-agnostic — Strands, LangGraph, CrewAI, ADK, raw script all deploy the same way</td></tr>
+      <tr><td>Deploy verb</td><td><code>adk deploy agent_engine ...</code></td><td><code>agentcore configure</code> + <code>agentcore launch</code></td></tr>
+      <tr><td>Entry pattern</td><td>The <code>agent</code> folder <em>is</em> the deployable</td><td>An <code>@app.entrypoint</code> function inside a <code>BedrockAgentCoreApp()</code></td></tr>
+      <tr><td>Session persistence</td><td>Auto-wired <code>VertexAiSessionService</code></td><td>Separate AgentCore Memory service (L35)</td></tr>
+      <tr><td>Trace / observability</td><td>Cloud Trace, out of the box</td><td>CloudWatch + X-Ray, OpenTelemetry-native</td></tr>
+      <tr><td>Session isolation</td><td>Managed, per-user</td><td>Managed, per-session microVM</td></tr>
+      <tr><td>Auth / identity for users</td><td>IAM + Vertex IAM policies</td><td>AgentCore Identity primitive (L37)</td></tr>
+      <tr><td>On-prem story</td><td>Container on GKE / Anthos / air-gapped (L31 callout)</td><td>Runtime container is portable — deploy to ECS / EKS if you skip AgentCore</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle — the full AWS story</div>
+    Now you can complete the sentence for an AWS-committed customer:
+    <blockquote style="border-left:3px solid #a855f7; padding-left:0.8rem; margin:0.6rem 0; color:#555">
+      "The agent code is Python, framework-agnostic. It runs on <strong>Bedrock AgentCore Runtime</strong> — inside your AWS account, in your region. Models are <strong>Bedrock</strong> — your existing model-access policies and quotas apply. Traffic to the agent hits an <strong>Anypoint Flex Gateway</strong> policy first, which handles authN/authZ. Tool calls into your existing systems go through your <strong>MuleSoft System APIs</strong>, so we're not creating a second integration layer. CloudWatch has the traces. One AWS bill."
+    </blockquote>
+    That's the pitch. Everything in it is now something you've actually done, at least in miniature.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where the abstraction leaks</h2>
+  <p>Same discipline as L33 — name the leaks up front so you're not embarrassed by them in a customer meeting.</p>
+
+  <ul>
+    <li><strong>Cold-start latency.</strong> First invocation after idle spins up a microVM. Milliseconds-to-seconds range depending on image size. Warm invocations are fast.</li>
+    <li><strong>Container size affects deploy time.</strong> A heavy dependencies file (LangChain + LlamaIndex + Haystack + Strands in one image) will make each <code>agentcore launch</code> slow. Keep the deployable minimal.</li>
+    <li><strong>Runtime is not free-tier.</strong> Unlike EC2's free tier, AgentCore Runtime bills from the first invocation. Cheap, but not free.</li>
+    <li><strong>Region availability.</strong> AgentCore rolls out region-by-region. If your customer needs a specific region, check the current availability page before promising anything.</li>
+    <li><strong>The AWS docs are the source of truth.</strong> If a code sample here doesn't run, the API almost certainly moved — this is by far the fastest-evolving corner of AWS's AI stack.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <h2>What's coming next — L35</h2>
+  <p>Your deployed agent forgets everything between invocations. That's fine for one-shot Q&amp;A, useless for a real assistant. <a href="0035-agentcore-memory.html">L35</a> introduces <strong>AgentCore Memory</strong> — the managed session + long-term memory primitive — and wires it into your L34 Runtime. Same pattern as ADK's <code>Session.state</code> from <a href="0028-adk-state-memory-sessions.html">L28</a>, different cloud.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> What is Bedrock AgentCore, in one sentence?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">A specific agent framework — you rewrite your Strands agent into AgentCore syntax to use it</li>
+        <li data-i="1">A family of framework-agnostic AWS-managed primitives (Runtime, Memory, Identity, Gateway, Observability, Browser, Code Interpreter) — you pick the ones you need, not the whole set</li>
+        <li data-i="2">AWS's answer to LangGraph — a graph-based agent runtime</li>
+        <li data-i="3">A managed vector database for agents</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Which AgentCore primitive did this lesson cover, and what does it do?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Memory — stores conversation history for each session</li>
+        <li data-i="1">Gateway — turns existing REST APIs into agent tools</li>
+        <li data-i="2">Runtime — serverless container that hosts any Python agent, framework-agnostic, with per-session isolation</li>
+        <li data-i="3">Browser — sandboxed headless browser the agent can drive</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Your L32 <code>strands_hello.py</code> works locally. You copied the tools + system prompt into <code>agentcore_hello.py</code> and wrapped it in <code>BedrockAgentCoreApp()</code>. What's the smallest verification step you should run <em>before</em> <code>agentcore launch</code>?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Run <code>python agentcore_hello.py</code> locally and <code>curl -X POST http://localhost:8080/invocations</code> — same code path as production, no cloud costs, fast feedback</li>
+        <li data-i="1">Skip local testing — <code>agentcore launch</code> is fast enough</li>
+        <li data-i="2">Deploy to a staging AWS account first</li>
+        <li data-i="3">Run the unit test suite for AgentCore itself</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> How is AgentCore Runtime different from Vertex Agent Engine (L31) from a <em>framework</em> point of view?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Both are framework-specific — Vertex only runs ADK, AgentCore only runs Strands</li>
+        <li data-i="1">Vertex Agent Engine is designed around ADK (best fit; others via adapters), while AgentCore Runtime is framework-agnostic — Strands, LangGraph, CrewAI, ADK-in-a-container, or a raw script all deploy the same way</li>
+        <li data-i="2">Both are framework-agnostic — no difference</li>
+        <li data-i="3">Both only accept containers built from a specific base image published by the cloud</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> An AWS-committed customer asks: <em>"If we build our agent on AgentCore, how portable is it if we want to run it on our own ECS cluster later?"</em> Most honest answer?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Not portable — AgentCore locks you in</li>
+        <li data-i="1">Fully portable — just <code>docker pull</code> the image and run it anywhere</li>
+        <li data-i="2">The <em>Python agent code</em> (Strands + tools + prompt) is fully portable. The AgentCore wrapper (<code>BedrockAgentCoreApp</code>, <code>@app.entrypoint</code>) would need to be replaced with something like FastAPI. You'd also lose the managed session isolation, autoscaling, and observability wiring — but the core agent moves cleanly.</li>
+        <li data-i="3">Portable only if you use LangGraph instead of Strands</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Anything unclear — how AgentCore Runtime differs from Lambda, when to skip it and go straight to ECS, how session isolation via microVMs actually works, which parts of <code>bedrock-agentcore</code> the CLI packages vs which parts run in the cloud — just ask.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0033-strands-model-switch.html">← L33 — Strands model switch</a>
+      <a href="0031-adk-deploy-agent-engine.html">L31 — ADK Deploy (Google side of this)</a>
+      <a href="0017-agent-framework-landscape.html">L17 — Framework landscape</a>
+      <a href="../MISSION.md">Mission</a>
+    </div>
+    <p style="margin-top:1rem">L35 (coming next) — AgentCore Memory: wire managed sessions into the L34 Runtime so your agent remembers who it's talking to. Same pattern as ADK's Session.state from L28, different cloud.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 35 — AgentCore Memory: your agent remembers who it's talking to</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 35 &nbsp;·&nbsp; Strands mini-series (4 of 6)</p>
+    <h1>AgentCore Memory: your agent remembers who it's talking to</h1>
+    <p class="tagline">The L34 deployment forgets everything between invocations. Fine for one-shot Q&amp;A, useless for a real assistant. This lesson wires managed <strong>AgentCore Memory</strong> into your Runtime — short-term session history and long-term facts, both on-tap from AWS.</p>
+    <div class="progress">
+      <a href="0028-adk-state-memory-sessions.html"><span class="pill pill-done">L28 ADK memory ✓</span></a>
+      <a href="0032-strands-basics.html"><span class="pill pill-done">L32 ✓</span></a>
+      <a href="0033-strands-model-switch.html"><span class="pill pill-done">L33 ✓</span></a>
+      <a href="0034-bedrock-agentcore-runtime.html"><span class="pill pill-done">L34 ✓</span></a>
+      <span class="pill pill-now">L35 — Memory</span>
+      <span class="pill pill-next">L36 — Multi-agent</span>
+      <span class="pill pill-next">L37 — Deploy end-to-end</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    Your L34 agent is live on AWS. Great — but try this: send it <em>"I'm working on org 12345, any known issues?"</em>, then follow up with <em>"what org did I say?"</em>. It has no idea. Every call to <code>@app.entrypoint</code> starts from a blank slate.
+  </p>
+  <p>
+    Every real assistant needs at least a <strong>working memory</strong> of the current conversation, and often a <strong>long-term memory</strong> of who this user is and what they care about. AWS's answer is <strong>AgentCore Memory</strong> — a managed store you can query on each invocation. Same problem <a href="0028-adk-state-memory-sessions.html">L28</a> solved for ADK; this is the AWS side.
+  </p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty</div>
+    AgentCore Memory GA'd in late 2025. The <em>concepts</em> (short-term events, long-term strategies) are stable; the <em>exact API method names</em> may have drifted. Cross-check with the current <a href="https://docs.aws.amazon.com/bedrock-agentcore/">AWS AgentCore docs</a> before wiring this into anything a customer will see.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Two kinds of memory — the mental model</h2>
+  <p>The mistake newcomers make is treating "memory" as one thing. AgentCore Memory offers two distinct capabilities that solve two distinct problems.</p>
+
+  <table>
+    <thead>
+      <tr><th></th><th>Short-term (event history)</th><th>Long-term (extracted strategies)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>What it stores</strong></td>
+        <td>Raw turn-by-turn conversation events for one session</td>
+        <td>Extracted facts / preferences / summaries derived <em>from</em> the raw events</td>
+      </tr>
+      <tr>
+        <td><strong>Scope</strong></td>
+        <td>One session (one <code>session_id</code>)</td>
+        <td>One <em>actor</em> (user) — spans all their sessions</td>
+      </tr>
+      <tr>
+        <td><strong>Write path</strong></td>
+        <td>Your code writes each turn via <code>create_event</code></td>
+        <td>AgentCore extracts asynchronously, on its schedule, using strategies you configured up front</td>
+      </tr>
+      <tr>
+        <td><strong>Read path</strong></td>
+        <td><code>list_events(session_id=...)</code> returns the recent turns</td>
+        <td><code>retrieve_memories(actor_id=..., query=...)</code> — semantic search over extracted memories</td>
+      </tr>
+      <tr>
+        <td><strong>Latency</strong></td>
+        <td>Fast (list-events is bounded)</td>
+        <td>Slower (semantic search over a vector-backed store)</td>
+      </tr>
+      <tr>
+        <td><strong>Analogy</strong></td>
+        <td>The transcript sitting on your desk</td>
+        <td>The notes you took after the meeting ended</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>For most first assistants, <strong>short-term is enough</strong>. Long-term becomes worth its cost once you have repeat users with recognisable preferences ("Attapol is on <code>us-east-1</code>, prefers concise answers, works with MuleSoft").</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three new syntax constructs</h2>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · MemoryClient</div>
+    <code>MemoryClient</code> (from <code>bedrock_agentcore.memory</code>) is the SDK class you use for <em>every</em> memory operation — create the memory resource, save events, retrieve strategies. Think of it as the boto3-style client but for the Memory primitive. You typically construct one at module top-level and reuse it across invocations. It reads AWS creds from the standard chain (same as everything else in L32–L34).
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · strategies at creation time</div>
+    When you call <code>client.create_memory(...)</code>, you pass a list of <strong>strategies</strong> — recipes AgentCore uses to build long-term memories from raw events. Three common built-ins are: <code>SEMANTIC</code> (extracts general facts), <code>USER_PREFERENCE</code> (preferences and settings), and <code>SUMMARIZATION</code> (rolling summaries of long conversations). You can also define custom strategies with your own extraction prompt. The strategies are <em>declared once</em>, then AgentCore runs them asynchronously against every event you write. No batch jobs to schedule — that's the managed part.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · actor_id vs session_id</div>
+    Every memory event has an <code>actor_id</code> (<em>who</em> — usually a stable user ID like an email or IAM sub) and a <code>session_id</code> (<em>which conversation</em>). Short-term memory is scoped to <code>session_id</code>; long-term strategies are scoped to <code>actor_id</code>. This is the same two-level scoping ADK uses (<code>user_id</code> + <code>session_id</code>) — see <a href="0028-adk-state-memory-sessions.html">L28</a>. Get this right on day one, or you'll be migrating memory scopes later.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Prerequisites</h2>
+  <ol>
+    <li>Everything from <a href="0034-bedrock-agentcore-runtime.html">L34</a> still works. Your <code>agentcore_hello.py</code> deploys and responds.</li>
+    <li>IAM permissions cover AgentCore Memory (attaching <code>BedrockAgentCoreFullAccess</code> as in L34 covers this too).</li>
+    <li>No new pip install — <code>bedrock-agentcore</code> already includes the memory client.</li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn — a two-file exercise</h2>
+  <p>Memory works in two phases: <strong>set up once</strong> (create the memory resource), then <strong>read + write on every invocation</strong>. So we split into two files.</p>
+
+  <h3>File 1 — <code>setup_memory.py</code> (run once)</h3>
+  <p>You only create the memory resource once. Running this file twice would create duplicates — real production code checks-then-creates, but for learning, just remember to run it once.</p>
+
+  <div class="todo">
+<span class="todo-label">SETUP SKELETON — fill in the 3 TODOs</span>
+
+<span class="cm"># setup_memory.py — run ONCE. Prints the memory_id you'll paste into agent code.</span>
+
+<span class="kw">from</span> bedrock_agentcore.memory <span class="kw">import</span> MemoryClient
+
+client <span class="op">=</span> MemoryClient(region_name<span class="op">=</span><span class="str">"us-east-1"</span>)
+
+
+<span class="cm"># TODO 1 — Declare the strategies you want AgentCore to run on your events.</span>
+<span class="cm">#          For this lesson, a SEMANTIC strategy is enough — extracts general</span>
+<span class="cm">#          facts. Shape (verify against current SDK):</span>
+<span class="cm">#              strategies = [</span>
+<span class="cm">#                  {"semanticMemoryStrategy": {"name": "mulesoft_facts"}}</span>
+<span class="cm">#              ]</span>
+<span class="cm">#          If USER_PREFERENCE or SUMMARIZATION make sense, add them too.</span>
+
+
+<span class="cm"># TODO 2 — Create the memory resource. Keep the returned memory_id safe.</span>
+<span class="cm">#              memory = client.create_memory(</span>
+<span class="cm">#                  name="mulesoft_helper_memory",</span>
+<span class="cm">#                  strategies=strategies,</span>
+<span class="cm">#                  event_expiry_days=30,   # short-term events auto-expire</span>
+<span class="cm">#              )</span>
+<span class="cm">#          Method name may be create_memory or create_memory_and_wait —</span>
+<span class="cm">#          the "and_wait" variant blocks until strategies are ACTIVE.</span>
+
+
+<span class="cm"># TODO 3 — Print the memory_id (or the full ARN).</span>
+<span class="cm">#              print("MEMORY_ID:", memory["id"])</span>
+<span class="cm">#          You'll paste this into the agent code as an env var or constant.</span>
+  </div>
+
+  <p>Run it once: <code>python setup_memory.py</code>. Save the printed ID somewhere reliable (env var, a comment at the top of your agent file, your notes).</p>
+
+  <h3>File 2 — <code>agentcore_memory.py</code> (the agent, now memory-aware)</h3>
+  <p>This is your L34 <code>agentcore_hello.py</code> with a memory-load-before-invoke and memory-save-after-invoke wrapped around the agent call.</p>
+
+  <div class="todo">
+<span class="todo-label">AGENT SKELETON — fill in the 5 TODOs</span>
+
+<span class="cm"># agentcore_memory.py — L34 wrapper + memory.</span>
+
+<span class="kw">import</span> os
+<span class="kw">from</span> bedrock_agentcore <span class="kw">import</span> BedrockAgentCoreApp
+<span class="kw">from</span> bedrock_agentcore.memory <span class="kw">import</span> MemoryClient
+<span class="kw">from</span> strands <span class="kw">import</span> Agent, tool
+<span class="kw">from</span> strands.models <span class="kw">import</span> BedrockModel
+
+<span class="cm"># Reuse your tools + SYSTEM prompt from L32/L34 (import or paste them in).</span>
+
+MEMORY_ID <span class="op">=</span> os.environ[<span class="str">"MEMORY_ID"</span>]           <span class="cm"># from setup_memory.py</span>
+mem <span class="op">=</span> MemoryClient(region_name<span class="op">=</span><span class="str">"us-east-1"</span>)   <span class="cm"># reused across invocations</span>
+
+app <span class="op">=</span> BedrockAgentCoreApp()
+
+<span class="cm"># TODO 1 — Build the agent (same as L34). Keep it at module scope so it's</span>
+<span class="cm">#          shared across invocations, not re-created on every call.</span>
+
+
+<span class="cm"># TODO 2 — Write a helper to load recent turns for a session:</span>
+<span class="cm">#              def load_history(actor_id, session_id):</span>
+<span class="cm">#                  events = mem.list_events(</span>
+<span class="cm">#                      memory_id=MEMORY_ID,</span>
+<span class="cm">#                      actor_id=actor_id,</span>
+<span class="cm">#                      session_id=session_id,</span>
+<span class="cm">#                      max_results=20,</span>
+<span class="cm">#                  )</span>
+<span class="cm">#                  # events is a list; each has role + content. Return a list</span>
+<span class="cm">#                  # of "role: text" strings you can prepend to the prompt.</span>
+
+
+<span class="cm"># TODO 3 — Write a helper to save one turn (user + assistant) as an event:</span>
+<span class="cm">#              def save_turn(actor_id, session_id, user_text, assistant_text):</span>
+<span class="cm">#                  mem.create_event(</span>
+<span class="cm">#                      memory_id=MEMORY_ID,</span>
+<span class="cm">#                      actor_id=actor_id,</span>
+<span class="cm">#                      session_id=session_id,</span>
+<span class="cm">#                      messages=[</span>
+<span class="cm">#                          {"role": "user",      "content": user_text},</span>
+<span class="cm">#                          {"role": "assistant", "content": assistant_text},</span>
+<span class="cm">#                      ],</span>
+<span class="cm">#                  )</span>
+
+
+<span class="attr">@app.entrypoint</span>
+<span class="kw">def</span> <span class="fn">invoke</span>(payload: <span class="fn">dict</span>) <span class="op">-&gt;</span> <span class="fn">dict</span>:
+    prompt      <span class="op">=</span> payload.get(<span class="str">"prompt"</span>, <span class="str">""</span>)
+    actor_id    <span class="op">=</span> payload.get(<span class="str">"actor_id"</span>,   <span class="str">"demo-user"</span>)
+    session_id  <span class="op">=</span> payload.get(<span class="str">"session_id"</span>, <span class="str">"demo-session"</span>)
+
+    <span class="kw">if</span> <span class="kw">not</span> prompt:
+        <span class="kw">return</span> {<span class="str">"error"</span>: <span class="str">"prompt required"</span>}
+
+    <span class="cm"># TODO 4 — Load history, format into a "prior turns:\n..." preamble,</span>
+    <span class="cm">#          and combine with the new prompt into `contextual_prompt`.</span>
+    <span class="cm">#          If history is empty, contextual_prompt is just the prompt.</span>
+
+    <span class="cm"># Call the agent (same as L34).</span>
+    result <span class="op">=</span> agent(contextual_prompt)
+
+    <span class="cm"># TODO 5 — Save this turn (user prompt + assistant reply).</span>
+    <span class="cm">#          save_turn(actor_id, session_id, prompt, result.message)</span>
+
+    <span class="kw">return</span> {<span class="str">"reply"</span>: result.message}
+
+
+<span class="kw">if</span> __name__ <span class="op">==</span> <span class="str">"__main__"</span>:
+    app.run()
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Hint on prompt formatting</div>
+    A minimal but effective preamble:
+    <pre style="margin:0.5rem 0 0"><code>Recent conversation:
+user: I'm working on org 12345.
+assistant: Got it — I can look that up.
+
+Current message:
+what org did I say?</code></pre>
+    You're just <em>giving the model context it wouldn't otherwise have</em>. Not magic. Strands doesn't need a special API for this — the whole conversation is text.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Verification — the four-part memory check</h2>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Test 1 · Same-session recall (the whole point)</div>
+    Two invocations, same <code>session_id</code>:
+    <pre style="margin:0.5rem 0 0"><code>curl -X POST http://localhost:8080/invocations -H "Content-Type: application/json" \
+  -d '{"session_id":"s1","actor_id":"att","prompt":"I am working on org 12345."}'
+
+curl -X POST http://localhost:8080/invocations -H "Content-Type: application/json" \
+  -d '{"session_id":"s1","actor_id":"att","prompt":"What org did I say?"}'</code></pre>
+    Second reply should include "12345". If it doesn't, your <code>load_history</code> is returning empty or your prompt-preamble formatting is wrong.
+  </div>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Test 2 · Different-session isolation</div>
+    Same <code>actor_id</code>, different <code>session_id</code>. The second session should <em>not</em> know about org 12345 (short-term is per-session). If it does, your scoping is off — you probably passed the wrong ID to <code>list_events</code>.
+  </div>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Test 3 · Long-term extraction (async — be patient)</div>
+    Run five turns in one session mentioning "MuleSoft" and "Anypoint". Wait 1–2 minutes. Then in a <em>new</em> session for the same <code>actor_id</code>, ask "what do you know about me?" and use <code>mem.retrieve_memories(...)</code> to surface strategies. The <code>SEMANTIC</code> strategy should have extracted something. If it hasn't, wait longer — extraction is deliberately async so it doesn't block invocations.
+  </div>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Test 4 · Cloud parity</div>
+    Redeploy with <code>agentcore launch</code> and re-run tests 1 and 2 against the cloud endpoint. Same behaviour. If it works locally but not in the cloud, your Runtime's execution role is missing memory permissions.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where the abstraction leaks</h2>
+  <ul>
+    <li><strong>Long-term extraction is asynchronous.</strong> A memory you write <em>now</em> becomes a retrievable strategy <em>later</em> — seconds to minutes. Don't build UX that assumes immediate long-term recall.</li>
+    <li><strong>Every invocation now makes 2+ extra API calls</strong> (list events, create event). Latency budget: usually low tens of milliseconds each, but they add up. For high-QPS agents, batch or skip on cache hits.</li>
+    <li><strong>Storage bills.</strong> You pay per event stored and per strategy extraction. For a hello-world you'll never notice; for a 10k-user production agent you'd want a retention policy tighter than 30 days.</li>
+    <li><strong>PII is your problem.</strong> AgentCore stores what you send. If users type credit card numbers into the prompt, that's in the memory store. Redact at the ingress, not after.</li>
+    <li><strong>Right-to-delete is your problem too.</strong> AWS gives you delete APIs; wiring them to your app's account-deletion flow is up to you. Enterprise buyers will ask.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <h2>Compare to L28 — the ADK equivalent</h2>
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>ADK <code>Session</code> (L28)</th><th>AgentCore Memory (L35)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Short-term store</td><td><code>Session.state</code> dict; auto-loaded by <code>Runner</code></td><td><code>list_events</code> / <code>create_event</code> — you call them explicitly</td></tr>
+      <tr><td>Persistence backend</td><td>Configurable via <code>SessionService</code> (in-memory / Vertex / custom)</td><td>Managed by AgentCore — one store per memory resource</td></tr>
+      <tr><td>Long-term memory</td><td>Roll-your-own — no built-in strategies</td><td>Built-in: <code>SEMANTIC</code>, <code>USER_PREFERENCE</code>, <code>SUMMARIZATION</code> + custom</td></tr>
+      <tr><td>Scoping</td><td>user_id + session_id</td><td>actor_id + session_id (same two-level idea)</td></tr>
+      <tr><td>Where memory shows up in your code</td><td>Templated into the prompt via <code>{state_key}</code></td><td>You concatenate history into the prompt yourself</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle</div>
+    Every enterprise buyer will ask three memory questions. Have answers ready:
+    <ol style="margin:0.4rem 0">
+      <li><strong>Retention</strong> — "How long do we keep conversation data?" Answer: whatever your <code>event_expiry_days</code> + long-term deletion policy says. Not "forever."</li>
+      <li><strong>Right-to-delete</strong> — "How do we handle a GDPR erasure request?" Answer: call the memory-delete API keyed by <code>actor_id</code> when the user's account is deleted. Show them your wiring.</li>
+      <li><strong>Data residency</strong> — "Where does this data live?" Answer: the AWS region your memory resource was created in. AgentCore doesn't replicate across regions unless you explicitly configure it.</li>
+    </ol>
+    Managed memory doesn't make these questions go away — it just gives you clean APIs to answer them with. Also: if the customer already has a source-of-truth for user preferences (Anypoint DataGraph, Salesforce Data Cloud), sometimes the right answer is <em>"don't use long-term Memory at all — read from your existing system"</em>. Managed features aren't obligations.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>What's coming next — L36</h2>
+  <p>One helpful agent is good. But real integration work often needs <em>several</em> agents collaborating — a router that decides intent, a specialist for MuleSoft docs, a specialist for live Anypoint queries. <a href="0036-strands-multi-agent.html">L36</a> introduces Strands' multi-agent patterns (agent-as-tool, swarm, hand-off) — the AWS equivalents of what <a href="0025-multi-agent-patterns.html">L25</a> did in LangGraph and <a href="0029-adk-declarative-multi-agent.html">L29</a> did in ADK.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> A user says "I'm working on org 12345" in turn 1. In turn 2 of the <em>same session</em>, they ask "what org did I say?" and the agent has no idea. Most likely cause?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">The model is too small — upgrade to Sonnet</li>
+        <li data-i="1">Your <code>invoke</code> function isn't loading events with <code>list_events(session_id=...)</code> before calling the agent, or the loaded history isn't being included in the prompt. Memory doesn't feed itself into the model — you have to do it.</li>
+        <li data-i="2">AgentCore Memory doesn't support recall in the same session</li>
+        <li data-i="3">The <code>SEMANTIC</code> strategy hasn't extracted anything yet</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> What's the difference between short-term and long-term memory in AgentCore?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Short-term is in-memory; long-term is on disk</li>
+        <li data-i="1">Short-term is free; long-term costs money</li>
+        <li data-i="2">Short-term stores raw turn-by-turn events scoped to one <code>session_id</code>. Long-term stores <em>extracted</em> facts/preferences/summaries scoped to one <code>actor_id</code>, built asynchronously by strategies you configured at memory-creation time.</li>
+        <li data-i="3">Short-term is for text, long-term is for embeddings</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Why can't you just use a Python <code>dict</code> at module scope to store conversation history in an AgentCore Runtime?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Because AgentCore Runtime uses per-session microVMs — different invocations may land on different containers, so an in-process dict isn't shared across them. Managed Memory sits <em>outside</em> the containers, which is exactly why it works.</li>
+        <li data-i="1">Python dicts aren't thread-safe</li>
+        <li data-i="2">You can, actually — that's the recommended approach</li>
+        <li data-i="3">A dict can't hold conversation events</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> You wrote five turns to a session mentioning "MuleSoft" and immediately queried <code>retrieve_memories(actor_id=..., query="MuleSoft")</code> in a new session. Nothing comes back. Why?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">You mis-typed the <code>actor_id</code></li>
+        <li data-i="1">The <code>SEMANTIC</code> strategy wasn't included in <code>create_memory</code></li>
+        <li data-i="2">Both of the above are possible — but the most common cause is that long-term extraction is asynchronous. Strategies run seconds-to-minutes after the events are written. Wait, then re-query.</li>
+        <li data-i="3">AgentCore doesn't support cross-session retrieval</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> An enterprise buyer asks: "If a user in the EU exercises their GDPR right-to-erasure, how do we honour that in this agent?" Which answer is most professional?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">"AgentCore handles that automatically — nothing to worry about."</li>
+        <li data-i="1">"AWS gives us delete APIs on the Memory resource keyed by <code>actor_id</code>. We wire those into our account-deletion flow so that when a user is deleted from our system, their memory events and extracted strategies are removed. AgentCore gives us the tools; the wiring is our responsibility. Happy to walk your DPO through the retention policy and delete flow."</li>
+        <li data-i="2">"We'd have to switch to a different platform for GDPR compliance."</li>
+        <li data-i="3">"We keep everything forever — the audit trail is more valuable than compliance."</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Anything unclear — the difference between "event" and "strategy", when to use SUMMARIZATION vs SEMANTIC, how to handle a user who switches devices mid-conversation, how to redact PII before <code>create_event</code> — just ask.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0034-bedrock-agentcore-runtime.html">← L34 — AgentCore Runtime</a>
+      <a href="0028-adk-state-memory-sessions.html">L28 — ADK memory (Google side)</a>
+      <a href="0017-agent-framework-landscape.html">L17 — Framework landscape</a>
+      <a href="../MISSION.md">Mission</a>
+    </div>
+    <p style="margin-top:1rem">L36 (coming next) — Strands multi-agent: agent-as-tool, swarm, and hand-off patterns. AWS equivalent of L25 (LangGraph) and L29 (ADK).</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

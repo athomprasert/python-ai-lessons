@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 32 — Strands basics: your first AWS-native agent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 32 &nbsp;·&nbsp; Strands mini-series (1 of 6)</p>
+    <h1>Strands basics: your first AWS-native agent</h1>
+    <p class="tagline">You've done ADK on Google (L26–L31). Now the same idea, AWS-side: <strong>Strands Agents</strong> — Amazon's open-source, model-driven agent SDK — with <strong>Claude Haiku</strong> on <strong>Amazon Bedrock</strong>.</p>
+    <div class="progress">
+      <a href="0018-native-sdk-agent.html"><span class="pill pill-done">L18 ✓</span></a>
+      <a href="0019-frameworks-side-by-side.html"><span class="pill pill-done">L19 ✓</span></a>
+      <a href="0026-adk-basics-agent-tools-runner.html"><span class="pill pill-done">L26 ADK ✓</span></a>
+      <a href="0031-adk-deploy-agent-engine.html"><span class="pill pill-done">L31 ADK ✓</span></a>
+      <span class="pill pill-now">L32 — Strands basics</span>
+      <span class="pill pill-next">L33 — Model switch</span>
+      <span class="pill pill-next">L34 — AgentCore runtime</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    <a href="../MISSION.md">MISSION.md</a>: <em>agents that talk to integration systems, demoable to customers on their preferred cloud</em>. Half your customers are on AWS. If they've already invested in IAM, VPC, CloudWatch, and Bedrock model access, dropping a Gemini-powered demo on them isn't a great story. This mini-series (L32–L37) gives you the AWS-native alternative.
+  </p>
+  <p>
+    <a href="0017-agent-framework-landscape.html">L17</a> introduced <strong>AWS Strands</strong> as one of the three Tier-2 cloud-vendor-native frameworks (alongside Google ADK and Microsoft AutoGen). It's Apache-2.0 licensed, open-source, and works with any model — but on AWS it's tightly wired into Bedrock and the upcoming <strong>Bedrock AgentCore</strong> runtime.
+  </p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Where this fits</div>
+    L32 (this lesson) — hello-world agent · L33 — swap models to show the abstraction · L34 — AgentCore managed runtime · L35 — memory + sessions · L36 — multi-agent · L37 — deploy end-to-end.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ground rules — same agent you've built four times now</h2>
+  <p>Fair-comparison rules identical to <a href="0018-native-sdk-agent.html">L18</a>, <a href="0019-frameworks-side-by-side.html">L19</a>, and <a href="0026-adk-basics-agent-tools-runner.html">L26</a>:</p>
+
+  <table>
+    <thead><tr><th>Element</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Tool 1</td><td><code>search_docs(query: str) -&gt; str</code> — wraps your <code>rag_chroma.ask()</code> from L9</td></tr>
+      <tr><td>Tool 2</td><td><code>get_anypoint_org_status(org_id: str) -&gt; dict</code> — mocked</td></tr>
+      <tr><td>Model</td><td>Claude Haiku 4.5 on Bedrock — <code>anthropic.claude-haiku-4-5-20251001-v1:0</code></td></tr>
+      <tr><td>Region</td><td><code>us-east-1</code> (largest model catalogue, no cross-region inference profile needed)</td></tr>
+      <tr><td>System prompt</td><td>"You are a MuleSoft platform assistant. Use search_docs for product questions and get_anypoint_org_status for live status. Reject unrelated questions briefly."</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Cost + safety heads-up</div>
+    Bedrock bills per token, per model — Haiku is the cheapest current Claude generation, so the whole lesson should cost a few US cents at most. Still, set a <strong>billing alert</strong> in the AWS console before starting. And do <strong>not</strong> commit <code>.env</code>, <code>~/.aws/credentials</code>, or any file containing an <code>AWS_SECRET_ACCESS_KEY</code> — the standard rules from <a href="0006-system-and-env.html">L6</a> apply.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Prerequisites — the AWS side</h2>
+  <p>Three one-time setup steps. Do these first; the code won't work until they're done.</p>
+
+  <h3>1. AWS credentials on your machine</h3>
+  <p>Strands uses <code>boto3</code> under the hood — same credential chain as any AWS SDK. Either:</p>
+  <ul>
+    <li><strong>Environment variables</strong> — <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>, <code>AWS_REGION=us-east-1</code></li>
+    <li><strong>Or</strong> a named profile in <code>~/.aws/credentials</code> — set <code>AWS_PROFILE=your-profile</code></li>
+  </ul>
+  <p>Quick check from your shell:</p>
+<pre><code>aws sts get-caller-identity <span class="cm"># should print your account ID + IAM ARN, no error</span></code></pre>
+
+  <h3>2. Enable Bedrock model access</h3>
+  <p>Even with valid credentials, Bedrock refuses to serve a model until you explicitly grant your account access to it. This is a one-time click:</p>
+  <ol>
+    <li>Open the <strong>Bedrock console</strong> in <code>us-east-1</code></li>
+    <li>Left sidebar → <strong>Model access</strong></li>
+    <li>Click <strong>Enable specific models</strong>, tick <em>Claude Haiku 4.5</em> (Anthropic), submit</li>
+    <li>Wait ~30 seconds. Status should flip to <strong>Access granted</strong>.</li>
+  </ol>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">The #1 gotcha</div>
+    If you get <code>AccessDeniedException: You don't have access to the model...</code> at runtime, this is almost always it — you enabled the model in a different region, or you enabled a different Claude variant. Model access is per-region.
+  </div>
+
+  <h3>3. Install the library</h3>
+<pre><code>pip install strands-agents</code></pre>
+  <p>That's it — no separate SDK for Bedrock, no framework config file. <code>strands-agents</code> pulls <code>boto3</code> transitively.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three new syntax constructs you'll see</h2>
+  <p>Before you write anything, know what to look for. Everything else is plain Python you've already seen.</p>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · @tool decorator</div>
+    <code>@tool</code> is a decorator (we covered <code>@decorator</code> in <a href="0015-enterprise-rag-eval.html">L15</a>) imported from <code>strands</code>. Put it above a plain function and Strands reads the function's <strong>name</strong>, <strong>docstring</strong>, and <strong>type hints</strong> to build the JSON schema the LLM needs to call it. Zero-config schema — same idea as LangGraph's <code>@tool</code> (<a href="0019-frameworks-side-by-side.html">L19</a>) and Pydantic AI's <code>@agent.tool_plain</code>.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · BedrockModel(...)</div>
+    <code>BedrockModel</code> is Strands' <em>provider adapter</em> for Amazon Bedrock. You construct it with a <code>model_id</code> (Bedrock's opaque string ID for a specific model+version) and hand it to the <code>Agent</code>. Strands ships equivalent classes for other providers — <code>OpenAIModel</code>, <code>AnthropicModel</code> (direct API, not Bedrock), <code>LiteLLMModel</code>. Same <code>Agent</code>, swap the <code>model=</code> argument. That's the whole point of the abstraction, and it's what <a href="0033-strands-model-switch.html">L33</a> demonstrates end-to-end.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · agent("prompt") — calling the Agent directly</div>
+    Strands makes <code>Agent</code> instances <strong>callable</strong> (via Python's <code>__call__</code> dunder method). So <code>agent("How do I...?")</code> runs one full agent turn — LLM call, any tool calls, LLM continuation, final text — and returns a result object. Compare this to <a href="0026-adk-basics-agent-tools-runner.html">L26</a>'s ADK, where you needed a <code>Runner</code> and <code>async for event in runner.run_async(...)</code>. Strands is deliberately more minimal at the entry point.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn — write it yourself</h2>
+  <p>I'm not giving you a finished file. Here's a skeleton with numbered TODOs. Fill each one in, then run it. When you get stuck, ask me — that's what I'm here for.</p>
+
+  <p>Create a new file <code>~/ai/claude/projects/python/scripts/strands_hello.py</code> with this scaffold:</p>
+
+  <div class="todo">
+<span class="todo-label">SKELETON — fill in the 5 TODOs</span>
+
+<span class="cm"># strands_hello.py</span>
+<span class="cm"># First Strands agent — MuleSoft helper, Claude Haiku on Bedrock.</span>
+
+<span class="kw">import</span> os
+<span class="kw">from</span> strands <span class="kw">import</span> Agent, tool
+<span class="kw">from</span> strands.models <span class="kw">import</span> BedrockModel
+
+<span class="cm"># TODO 1 — Import your L9 RAG helper. If rag_chroma isn't importable from</span>
+<span class="cm">#          the scripts/ directory, either sys.path-append it OR just paste</span>
+<span class="cm">#          a two-line stub that returns "Rotate secrets via Access Management &gt; Connected Apps."</span>
+<span class="cm">#          Later lessons will assume the real one is wired up.</span>
+
+
+<span class="cm"># TODO 2 — Define search_docs as a @tool.</span>
+<span class="cm">#          Signature: search_docs(query: str) -&gt; str</span>
+<span class="cm">#          Docstring: one line describing what it does. Strands sends this</span>
+<span class="cm">#          docstring to the LLM as the tool's description — make it useful.</span>
+<span class="cm">#          Body: return rag_chroma.ask(query)   (or your stub)</span>
+
+
+<span class="cm"># TODO 3 — Define get_anypoint_org_status as a @tool.</span>
+<span class="cm">#          Signature: get_anypoint_org_status(org_id: str) -&gt; dict</span>
+<span class="cm">#          Docstring: one line — "Live Anypoint org status."</span>
+<span class="cm">#          Body: return a dict with org_id, status="healthy", apps=42.</span>
+
+
+SYSTEM <span class="op">=</span> (
+    <span class="str">"You are a MuleSoft platform assistant. "</span>
+    <span class="str">"Use search_docs for product questions and get_anypoint_org_status "</span>
+    <span class="str">"for live status. Reject unrelated questions briefly."</span>
+)
+
+
+<span class="cm"># TODO 4 — Build the model + agent.</span>
+<span class="cm">#          model = BedrockModel(model_id="anthropic.claude-haiku-4-5-20251001-v1:0",</span>
+<span class="cm">#                               region_name="us-east-1")</span>
+<span class="cm">#          agent = Agent(model=..., tools=[search_docs, get_anypoint_org_status],</span>
+<span class="cm">#                        system_prompt=SYSTEM)</span>
+
+
+<span class="cm"># TODO 5 — Call it three times and print each result. Test queries:</span>
+<span class="cm">#   (a) "How do I rotate a Connected App secret?"    -&gt; should call search_docs</span>
+<span class="cm">#   (b) "What is the status of org 12345?"           -&gt; should call get_anypoint_org_status</span>
+<span class="cm">#   (c) "What is 2 + 2?"                             -&gt; should be rejected briefly, NO tool call</span>
+<span class="cm">#</span>
+<span class="cm"># Strands makes the Agent instance callable — so:</span>
+<span class="cm">#   result = agent("How do I rotate a Connected App secret?")</span>
+<span class="cm">#   print(result.message)</span>
+<span class="cm">#</span>
+<span class="cm"># Bonus: print(result.metrics) after each call — it shows tokens + tool_calls.</span>
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Hint if you get stuck on TODO 1</div>
+    A minimal stub is fine — you're testing Strands, not RAG. Something like:
+    <pre style="margin:0.6rem 0 0"><code><span class="kw">class</span> <span class="fn">RagStub</span>:
+    <span class="kw">def</span> <span class="fn">ask</span>(<span class="kw">self</span>, q): <span class="kw">return</span> <span class="str">"Go to Access Management &gt; Connected Apps &gt; Rotate."</span>
+rag_chroma <span class="op">=</span> RagStub()</code></pre>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Verification — how you know it worked</h2>
+  <p>Run <code>python strands_hello.py</code>. Tick each of these:</p>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Checklist</div>
+    <ol style="margin:0">
+      <li><strong>No import errors.</strong> If <code>from strands import Agent, tool</code> fails, you missed <code>pip install strands-agents</code>.</li>
+      <li><strong>No <code>AccessDeniedException</code>.</strong> If you get one, revisit Prerequisite #2 — model access, in this region.</li>
+      <li><strong>Query (a) triggers a tool call.</strong> The response text mentions Access Management / Connected Apps / rotating. If <code>result.metrics.tool_calls</code> is empty, the LLM decided not to call your tool — usually a docstring problem. Rewrite the docstring to say <em>exactly</em> when to call the tool.</li>
+      <li><strong>Query (b) triggers <code>get_anypoint_org_status</code>.</strong> The response mentions "org 12345", "healthy", and "42 apps". If it hallucinates numbers instead of calling the tool, same fix — sharper docstring.</li>
+      <li><strong>Query (c) is rejected without a tool call.</strong> Something like "I can only help with MuleSoft questions." If it tries to call a tool for arithmetic, your <code>SYSTEM</code> prompt isn't strong enough.</li>
+    </ol>
+  </div>
+
+  <p>If you hit any of these and can't diagnose it, paste the exact error to me and I'll walk you through it.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>What just happened under the hood</h2>
+  <p>Same agent loop as L18, but Strands hides it:</p>
+
+  <ol>
+    <li>You called <code>agent("...")</code>. Strands built a Bedrock <code>Converse</code> API request — messages, tools, system prompt.</li>
+    <li>Bedrock returned either <em>text</em> (done) or <em>tool_use</em> content blocks.</li>
+    <li>If tool_use, Strands looked up your Python function by name, invoked it with the arguments the model produced, sent the result back as a <code>tool_result</code> block, and repeated.</li>
+    <li>When the model returned only text, the loop ended and you got the <code>AgentResult</code>.</li>
+  </ol>
+
+  <p>That's the entire agent loop from L18 — <code>for _ in range(max_steps)</code>, <code>if not response.function_calls</code>, all of it — hidden inside one <code>agent(...)</code> call. The trade-off is the same as every framework you saw in <a href="0019-frameworks-side-by-side.html">L19</a>: fewer lines to write, one more layer to debug through when things go wrong.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>Compare to what you already know</h2>
+  <table>
+    <thead><tr><th>Concept</th><th>L18 native (Gemini)</th><th>L26 ADK (Google)</th><th>L32 Strands (AWS)</th></tr></thead>
+    <tbody>
+      <tr><td>Register tool</td><td>Pass function into <code>tools=[...]</code></td><td>Pass function into <code>tools=[...]</code></td><td>Decorate with <code>@tool</code>, then pass into <code>tools=[...]</code></td></tr>
+      <tr><td>Model selection</td><td><code>model="gemini-2.0-flash"</code> (string)</td><td><code>model="gemini-2.0-flash"</code> (string)</td><td><code>model=BedrockModel(model_id=...)</code> (object)</td></tr>
+      <tr><td>Entry point</td><td><code>chat.send_message(msg)</code> + manual loop</td><td><code>async for event in runner.run_async(...)</code></td><td><code>agent(msg)</code> — direct callable</td></tr>
+      <tr><td>Agent loop</td><td>You write it (~15 lines)</td><td>Hidden inside <code>Runner</code></td><td>Hidden inside <code>Agent.__call__</code></td></tr>
+      <tr><td>Session persistence</td><td>You write it</td><td><code>SessionService</code> (L28)</td><td>Not yet — comes in L35</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle</div>
+    Same pattern you'd wire into an <em>Anypoint Flex Gateway custom policy</em> or a <em>Composer AI-tools flow</em>. Bedrock lives inside the customer's VPC; the Strands agent is just Python, so it deploys next to your Mule workers (EC2, ECS, Lambda). For enterprise demos, this is often the shortest path from "here's a slide" to "here's a working agent on <em>your</em> AWS account" — no cross-cloud data movement to explain to their security team.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> You run <code>python strands_hello.py</code> and get <code>AccessDeniedException: You don't have access to the model with the specified model ID</code>. Most likely cause?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Your <code>pip install</code> didn't complete — reinstall <code>strands-agents</code></li>
+        <li data-i="1">You haven't enabled Claude Haiku 4.5 in the Bedrock <em>Model access</em> page for the region you're calling — model access is per-region, per-model</li>
+        <li data-i="2">Your AWS credentials expired — rotate the keys</li>
+        <li data-i="3">Strands doesn't support Bedrock yet</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> How does Strands build the JSON schema for a tool from a Python function?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">You write it by hand as a dict argument to <code>@tool</code></li>
+        <li data-i="1">You define a Pydantic model and pass it to the tool</li>
+        <li data-i="2">The <code>@tool</code> decorator reads the function's name, docstring, and type hints — same shape as Pydantic AI's <code>@agent.tool_plain</code> and LangGraph's <code>@tool</code></li>
+        <li data-i="3">Strands generates it from the function's source code using AST inspection at import time</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Why is Strands' entry point <code>agent("prompt")</code> shorter than ADK's <code>async for event in runner.run_async(...)</code>?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Strands makes the <code>Agent</code> instance callable via Python's <code>__call__</code> dunder, and returns one final result object — hiding the event stream behind the object's attributes (<code>result.message</code>, <code>result.metrics</code>)</li>
+        <li data-i="1">Strands doesn't stream, so it's less capable</li>
+        <li data-i="2">ADK is slower</li>
+        <li data-i="3">Strands blocks the event loop, which is bad practice</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> Your agent answers "The status is healthy" for query (b) but <code>result.metrics.tool_calls</code> is empty — the model made up the answer. What's the first thing to fix?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Upgrade to Claude Sonnet — Haiku is too small</li>
+        <li data-i="1">Add a retry loop that forces the tool call</li>
+        <li data-i="2">Sharpen the docstring on <code>get_anypoint_org_status</code> — Strands sends it verbatim to the LLM, so a vague docstring means the model doesn't know when to call the tool</li>
+        <li data-i="3">Switch region to <code>us-west-2</code></li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> In L33 (next lesson) we'll swap Bedrock Haiku for a different provider without touching the tools or the system prompt. Which line of your <code>strands_hello.py</code> will change?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">The <code>@tool</code> decorators — each provider has its own decorator</li>
+        <li data-i="1">Just the <code>model=</code> argument on <code>Agent(...)</code> — swap <code>BedrockModel(...)</code> for <code>OpenAIModel(...)</code>, <code>AnthropicModel(...)</code>, or <code>LiteLLMModel(...)</code>. That's the whole abstraction.</li>
+        <li data-i="2">The system prompt has to be rewritten for each provider</li>
+        <li data-i="3">You'd move to a different framework entirely — Strands only supports Bedrock</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Anything unclear — how <code>BedrockModel</code> picks up your AWS creds, what <code>result.metrics</code> contains, why Strands is different from Bedrock's own <em>Agents for Bedrock</em> feature (they're not the same thing) — just ask. I'm your teacher for this.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0031-adk-deploy-agent-engine.html">← L31 — ADK Deploy (end of ADK mini-series)</a>
+      <a href="0019-frameworks-side-by-side.html">L19 — Five frameworks</a>
+      <a href="0017-agent-framework-landscape.html">L17 — Framework landscape</a>
+      <a href="../MISSION.md">Mission</a>
+    </div>
+    <p style="margin-top:1rem">L33 (coming next) — Model switch: run the exact same agent against Bedrock Sonnet, direct Anthropic API, and OpenAI, changing one line. This is how you prove to a customer their model choice isn't a lock-in decision.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

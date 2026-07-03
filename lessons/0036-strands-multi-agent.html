@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 36 — Strands multi-agent: agent-as-tool, swarm, and graph</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 36 &nbsp;·&nbsp; Strands mini-series (5 of 6)</p>
+    <h1>Multi-agent in Strands: three patterns, one problem</h1>
+    <p class="tagline">One agent doing everything ends up mediocre at all of it. Real integration work wants a coordinator plus specialists. Strands ships <strong>three</strong> multi-agent patterns natively — agent-as-tool, swarm, and graph. This lesson teaches you when to reach for each.</p>
+    <div class="progress">
+      <a href="0025-multi-agent-patterns.html"><span class="pill pill-done">L25 LangGraph ✓</span></a>
+      <a href="0029-adk-declarative-multi-agent.html"><span class="pill pill-done">L29 ADK ✓</span></a>
+      <a href="0032-strands-basics.html"><span class="pill pill-done">L32 ✓</span></a>
+      <a href="0033-strands-model-switch.html"><span class="pill pill-done">L33 ✓</span></a>
+      <a href="0034-bedrock-agentcore-runtime.html"><span class="pill pill-done">L34 ✓</span></a>
+      <a href="0035-agentcore-memory.html"><span class="pill pill-done">L35 ✓</span></a>
+      <span class="pill pill-now">L36 — Multi-agent</span>
+      <span class="pill pill-next">L37 — Deploy end-to-end</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    Your L32 agent has two tools: <code>search_docs</code> (retrieval) and <code>get_anypoint_org_status</code> (live API). A user asks <em>"What's the status of org 12345, and what does the runbook say about degraded state?"</em>. One agent, one system prompt, one context window juggling both jobs.
+  </p>
+  <p>
+    That works — until you add a third specialist (billing lookups), then a fourth (log analysis). The system prompt balloons; the model picks the wrong tool; debugging becomes archaeology. The industry answer is the same as any org's answer: <strong>split into specialists, add a coordinator</strong>. Strands supports three flavours of that split, and picking the wrong flavour is the most common multi-agent mistake.
+  </p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three patterns, at a glance</h2>
+  <table>
+    <thead>
+      <tr><th></th><th>Agent-as-tool</th><th>Swarm</th><th>Graph</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Mental model</strong></td>
+        <td>Outer agent calls specialists like it calls any other tool</td>
+        <td>Peers pass work to each other via hand-off</td>
+        <td>Explicit DAG — nodes are agents, edges are the flow</td>
+      </tr>
+      <tr>
+        <td><strong>Who decides next hop</strong></td>
+        <td>The outer agent's LLM (one at a time)</td>
+        <td>The current agent's LLM (decides <em>who</em> to hand off to)</td>
+        <td>You, at build time — the graph is fixed</td>
+      </tr>
+      <tr>
+        <td><strong>Best for</strong></td>
+        <td>Coordinator + few specialists, tight scope</td>
+        <td>Open-ended tasks where the path can't be predicted</td>
+        <td>Repeatable workflows with predictable stages</td>
+      </tr>
+      <tr>
+        <td><strong>Debuggability</strong></td>
+        <td>Easy — one LLM trace, tool-call nesting</td>
+        <td>Hard — control flow is emergent</td>
+        <td>Very easy — trace matches the graph you drew</td>
+      </tr>
+      <tr>
+        <td><strong>LangGraph parallel</strong></td>
+        <td>Any framework — this is just a nested tool call</td>
+        <td>LangGraph's dynamic hand-off</td>
+        <td>LangGraph's <code>StateGraph</code> from <a href="0025-multi-agent-patterns.html">L25</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Rule of thumb:</strong> start with agent-as-tool. Move to graph when you can draw the workflow on paper. Reach for swarm only when you genuinely can't predict who should act next — and be prepared for harder debugging.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three new syntax constructs</h2>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · agent-as-tool (the wrapper trick)</div>
+    You already know <code>@tool</code> wraps a plain function. The trick: the function body can itself run an <code>Agent</code>. So the "tool" the outer LLM sees is actually a fully-formed specialist. The docstring on that wrapper function is what the outer agent uses to decide when to call it — treat it like a job description, not a comment.
+    <pre style="margin:0.5rem 0 0"><code>@tool
+def docs_specialist(question: str) -> str:
+    """Answer MuleSoft documentation questions. Use this when the user asks
+    how something works, best practices, or configuration details."""
+    return docs_agent(question).message</code></pre>
+    No new import, no new class — <code>@tool</code> from L32 does all the work.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · Swarm from strands.multiagent</div>
+    <code>Swarm(nodes=[agent_a, agent_b, ...])</code> creates a group where each agent can call a built-in <em>hand-off</em> tool to pass control to a named peer. You invoke the swarm with a prompt; the first agent runs, decides whether to answer or hand off, and so on. Termination is either "an agent produced a final answer" or a hop-count safety limit.
+    <pre style="margin:0.5rem 0 0"><code>from strands.multiagent import Swarm
+
+swarm = Swarm(nodes=[triager, docs_expert, ops_expert])
+result = swarm("What's the status of org 12345 and what does the runbook say?")
+print(result.final_message)</code></pre>
+    The critical detail: each agent's system prompt must <em>name</em> its peers ("hand off to <code>docs_expert</code> for documentation questions") — otherwise the hand-off tool has no signal on where to route.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · GraphBuilder (the DAG)</div>
+    <code>GraphBuilder</code> is a fluent builder for a directed acyclic graph. You <code>.add_node(agent, "name")</code> for each specialist, <code>.add_edge("a", "b")</code> for each transition, <code>.set_entry_point("name")</code>, then <code>.build()</code>. Executing the graph runs nodes in topological order, threading state between them. This is Strands' answer to the LangGraph <code>StateGraph</code> you saw in <a href="0025-multi-agent-patterns.html">L25</a> — same concept, AWS-native.
+    <pre style="margin:0.5rem 0 0"><code>from strands.multiagent import GraphBuilder
+
+graph = (GraphBuilder()
+    .add_node(triager,    "triage")
+    .add_node(docs_expert, "docs")
+    .add_node(ops_expert,  "ops")
+    .add_edge("triage", "docs")
+    .add_edge("triage", "ops")
+    .set_entry_point("triage")
+    .build())
+
+result = graph("What's the status of org 12345 and what does the runbook say?")</code></pre>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ground rules for this lesson</h2>
+  <ul>
+    <li>All three exercises reuse the tools + model from <a href="0032-strands-basics.html">L32</a>. The <em>scaffolding</em> changes, the domain doesn't.</li>
+    <li>Two specialists across all three patterns: <strong>docs_expert</strong> (owns <code>search_docs</code>) and <strong>ops_expert</strong> (owns <code>get_anypoint_org_status</code>).</li>
+    <li>One test query used for every pattern: <em>"What's the status of org 12345, and what does the runbook say about degraded state?"</em> — this deliberately needs both specialists so you can see how each pattern splits the work.</li>
+    <li>Look at the traces. This lesson is about how the patterns <em>differ</em> in execution, not just their code shapes.</li>
+  </ul>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty</div>
+    Strands' <code>strands.multiagent</code> package (Swarm + GraphBuilder) landed in mid-2025 and is still evolving. Method names (<code>.add_node</code> vs <code>.node</code>, <code>Swarm(nodes=)</code> vs <code>Swarm(agents=)</code>) may shift version-to-version. The <em>concepts</em> — coordinator+tool, peer hand-off, DAG — are stable across every agent framework. Verify names against the current <a href="https://strandsagents.com">Strands docs</a> when it matters.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn — three skeletons</h2>
+  <p>Save each as its own file. Run all three against the same test query and compare the traces.</p>
+
+  <!-- ───────────── Pattern 1 ───────────── -->
+  <h3>Pattern 1 — <code>agent_as_tool.py</code></h3>
+
+  <div class="todo">
+<span class="todo-label">SKELETON — 4 TODOs</span>
+
+<span class="kw">from</span> strands <span class="kw">import</span> Agent, tool
+<span class="kw">from</span> strands.models <span class="kw">import</span> BedrockModel
+
+MODEL <span class="op">=</span> BedrockModel(
+    model_id<span class="op">=</span><span class="str">"anthropic.claude-haiku-4-5-20251001-v1:0"</span>,
+    region_name<span class="op">=</span><span class="str">"us-east-1"</span>,
+)
+
+<span class="cm"># Reuse search_docs and get_anypoint_org_status from L32 — import or paste them.</span>
+
+<span class="cm"># TODO 1 — Build docs_agent (only tool: search_docs; system prompt: "You answer</span>
+<span class="cm">#          MuleSoft documentation questions.").</span>
+
+
+<span class="cm"># TODO 2 — Build ops_agent (only tool: get_anypoint_org_status; system prompt:</span>
+<span class="cm">#          "You answer live Anypoint org status questions.").</span>
+
+
+<span class="cm"># TODO 3 — Wrap each specialist as an @tool with a *clear, action-oriented*</span>
+<span class="cm">#          docstring (the outer LLM only reads this to decide when to call):</span>
+<span class="cm">#</span>
+<span class="cm">#              @tool</span>
+<span class="cm">#              def docs_specialist(question: str) -> str:</span>
+<span class="cm">#                  """Answer MuleSoft documentation questions..."""</span>
+<span class="cm">#                  return docs_agent(question).message</span>
+<span class="cm">#</span>
+<span class="cm">#              @tool</span>
+<span class="cm">#              def ops_specialist(question: str) -> str:</span>
+<span class="cm">#                  """Look up live Anypoint org status..."""</span>
+<span class="cm">#                  return ops_agent(question).message</span>
+
+
+<span class="cm"># TODO 4 — Coordinator agent whose ONLY tools are the two specialists.</span>
+<span class="cm">#          System prompt tells it to decompose the request and call whichever</span>
+<span class="cm">#          specialists it needs (possibly both).</span>
+<span class="cm">#</span>
+<span class="cm">#          Then run:</span>
+<span class="cm">#              QUERY = "What's the status of org 12345, and what does the</span>
+<span class="cm">#                       runbook say about degraded state?"</span>
+<span class="cm">#              result = coordinator(QUERY)</span>
+<span class="cm">#              print(result.message)</span>
+<span class="cm">#              print("Tool calls:", result.metrics.tool_calls)</span>
+  </div>
+
+  <!-- ───────────── Pattern 2 ───────────── -->
+  <h3>Pattern 2 — <code>swarm_pattern.py</code></h3>
+
+  <div class="todo">
+<span class="todo-label">SKELETON — 3 TODOs</span>
+
+<span class="kw">from</span> strands <span class="kw">import</span> Agent, tool
+<span class="kw">from</span> strands.models <span class="kw">import</span> BedrockModel
+<span class="kw">from</span> strands.multiagent <span class="kw">import</span> Swarm
+
+<span class="cm"># Reuse the same MODEL, search_docs, get_anypoint_org_status.</span>
+
+<span class="cm"># TODO 1 — Build three specialists. Each system prompt MUST name its peers</span>
+<span class="cm">#          so the built-in handoff tool has routing signal:</span>
+<span class="cm">#</span>
+<span class="cm">#              triager = Agent(name="triager", model=MODEL, tools=[],</span>
+<span class="cm">#                  system_prompt="Route the user's request. If they ask about</span>
+<span class="cm">#                                docs, hand off to docs_expert. If about live</span>
+<span class="cm">#                                Anypoint state, hand off to ops_expert.</span>
+<span class="cm">#                                For mixed requests, hand off to whichever</span>
+<span class="cm">#                                comes first; the peer can hand off again.")</span>
+<span class="cm">#              docs_expert = Agent(name="docs_expert", model=MODEL,</span>
+<span class="cm">#                                  tools=[search_docs], system_prompt="...")</span>
+<span class="cm">#              ops_expert  = Agent(name="ops_expert",  model=MODEL,</span>
+<span class="cm">#                                  tools=[get_anypoint_org_status], ...)</span>
+
+
+<span class="cm"># TODO 2 — Build the swarm:</span>
+<span class="cm">#              swarm = Swarm(nodes=[triager, docs_expert, ops_expert])</span>
+<span class="cm">#          (If the constructor kwarg is agents= in your version, use that.)</span>
+
+
+<span class="cm"># TODO 3 — Run the same QUERY through the swarm and print result.final_message</span>
+<span class="cm">#          plus the sequence of handoffs (available on result.handoffs or</span>
+<span class="cm">#          similar — check the return type in your installed version).</span>
+  </div>
+
+  <!-- ───────────── Pattern 3 ───────────── -->
+  <h3>Pattern 3 — <code>graph_pattern.py</code></h3>
+
+  <div class="todo">
+<span class="todo-label">SKELETON — 4 TODOs</span>
+
+<span class="kw">from</span> strands <span class="kw">import</span> Agent, tool
+<span class="kw">from</span> strands.models <span class="kw">import</span> BedrockModel
+<span class="kw">from</span> strands.multiagent <span class="kw">import</span> GraphBuilder
+
+<span class="cm"># Same MODEL + tools as before.</span>
+
+<span class="cm"># TODO 1 — Build a triager agent whose job is to output a short plan (which</span>
+<span class="cm">#          specialists are needed) as its message. No tools.</span>
+
+
+<span class="cm"># TODO 2 — Build docs_expert and ops_expert exactly like in Pattern 2.</span>
+
+
+<span class="cm"># TODO 3 — Compose the graph:</span>
+<span class="cm">#              graph = (GraphBuilder()</span>
+<span class="cm">#                  .add_node(triager,     "triage")</span>
+<span class="cm">#                  .add_node(docs_expert, "docs")</span>
+<span class="cm">#                  .add_node(ops_expert,  "ops")</span>
+<span class="cm">#                  .add_edge("triage", "docs")</span>
+<span class="cm">#                  .add_edge("triage", "ops")</span>
+<span class="cm">#                  .set_entry_point("triage")</span>
+<span class="cm">#                  .build())</span>
+
+
+<span class="cm"># TODO 4 — Run the same QUERY through the graph and print the final message.</span>
+<span class="cm">#          Look at the trace — every node runs (or doesn't) in a predictable</span>
+<span class="cm">#          topological order. That predictability is the whole point.</span>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Verification — one query, three shapes</h2>
+
+  <div class="callout callout-check">
+    <div class="callout-label">The same question, three traces</div>
+    Run <code>QUERY = "What's the status of org 12345, and what does the runbook say about degraded state?"</code> against each pattern. Expect roughly:
+    <ul style="margin-top:0.5rem">
+      <li><strong>Agent-as-tool</strong> — coordinator's LLM makes two tool calls (<code>ops_specialist</code>, then <code>docs_specialist</code>), then composes a merged answer. One outer trace, two inner traces nested inside it.</li>
+      <li><strong>Swarm</strong> — triager hands off to ops_expert (or docs_expert), which answers part, then hands off to the other, which answers the rest. Trace shows a chain of hand-offs. Order can vary run-to-run — that's the swarm's job.</li>
+      <li><strong>Graph</strong> — triage node runs first, then <em>both</em> docs and ops run (fan-out) because both edges exist. Trace is deterministic and matches the graph you drew.</li>
+    </ul>
+  </div>
+
+  <div class="callout callout-check">
+    <div class="callout-label">The wrong-pattern test</div>
+    Deliberately mis-choose the pattern for a task, then feel it:
+    <ul style="margin-top:0.5rem">
+      <li>Use <strong>swarm</strong> for a task where you already know the answer flow (say, "fetch org, then check runbook, always in that order"). You'll waste tokens on the routing overhead and get non-deterministic ordering.</li>
+      <li>Use <strong>graph</strong> for an open-ended task ("help me investigate this incident"). You'll either need every possible edge or the graph will dead-end.</li>
+    </ul>
+    Doing this once cements <em>why</em> the choice matters more than any table.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where the abstraction leaks</h2>
+  <ul>
+    <li><strong>Token bill multiplies.</strong> Every specialist has its own system prompt, its own context, its own tool descriptions. N agents ≈ N times the input tokens per turn. Don't split for splitting's sake.</li>
+    <li><strong>Latency stacks serially.</strong> Agent-as-tool and swarm hand-offs are inherently sequential — call B waits for call A. Graph fan-out <em>can</em> parallelise, but only if you actually run parallel edges.</li>
+    <li><strong>Swarms loop.</strong> A poorly-prompted swarm can hand off in circles. The hop-count safety limit rescues you, but a burnt-out user rarely comes back. Set the limit; monitor it; alert on hits.</li>
+    <li><strong>Debugging swarms is hard.</strong> Emergent control flow means "why did it pick B?" has no source-of-truth. Prefer graph or agent-as-tool for anything a customer will run.</li>
+    <li><strong>Docstrings are load-bearing.</strong> In agent-as-tool, the outer LLM's only signal for when to call a specialist is that specialist's docstring. Terse or vague docstrings = wrong specialist picked. Treat them like a routing spec.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <h2>Compare across frameworks</h2>
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>LangGraph (L25)</th><th>ADK (L29)</th><th>Strands (L36)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Fixed workflow (DAG)</td><td><code>StateGraph</code></td><td>Declarative <code>agents</code> tree</td><td><code>GraphBuilder</code></td></tr>
+      <tr><td>LLM-decided routing</td><td>Conditional edges</td><td>Sub-agent delegation via prompts</td><td>Agent-as-tool, or Swarm hand-off</td></tr>
+      <tr><td>Peer hand-off</td><td>Hand-crafted with conditional edges</td><td>Sub-agent tree with escalation</td><td>Built-in <code>Swarm</code></td></tr>
+      <tr><td>State between nodes</td><td>Typed <code>State</code> Pydantic model</td><td><code>Session.state</code></td><td>Implicit — message history threaded through</td></tr>
+      <tr><td>Observability</td><td>LangSmith traces</td><td>Vertex Agent Engine traces</td><td>AgentCore Observability (L37 preview)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle</div>
+    Multi-agent is the org-chart pattern applied to LLMs. Which sounds abstract until you notice you've been selling exactly this for years:
+    <ul style="margin-top:0.4rem">
+      <li>An omni-channel <strong>Experience API</strong> (the coordinator) that routes to</li>
+      <li><strong>Process APIs</strong> (the specialists) that orchestrate against</li>
+      <li><strong>System APIs</strong> (the tools) that touch systems of record.</li>
+    </ul>
+    A multi-agent architecture is the same three tiers, with LLMs where you used to have DataWeave. For customers considering their first agent build, that mapping is a strong opener: "you already know how to design this — you've done it in Anypoint. The layer names don't change; only what runs inside each box does." And when a customer asks "can we just make the coordinator smarter and skip the specialists?" — the answer is the same as in API-Led: yes, until scope grows. Then you split.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>What's next — L37 (final Strands lesson)</h2>
+  <p>You've built (L32), swapped models (L33), deployed to Runtime (L34), added Memory (L35), and split into multi-agent (L36). <a href="0037-strands-deploy-end-to-end.html">L37</a> puts the pieces together: a memory-aware, multi-agent MuleSoft assistant deployed on AgentCore Runtime with AgentCore Identity in front of it — the closest thing to a shippable AWS-native agent this course produces.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> Your customer wants an agent that always follows the same pipeline: extract intent → look up the customer → fetch the relevant policy → respond. Best Strands pattern?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Swarm — let the agents figure out the order</li>
+        <li data-i="1">Graph — the workflow is fully predictable, so a DAG gives you deterministic execution, easy debugging, and the fastest onboarding for the next engineer</li>
+        <li data-i="2">Agent-as-tool — always cheapest</li>
+        <li data-i="3">A single monolithic agent — three steps isn't enough to warrant splitting</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> In the agent-as-tool pattern, what does the <em>outer</em> agent's LLM use to decide when to call a specialist?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">The specialist agent's system prompt</li>
+        <li data-i="1">The tools registered on the specialist</li>
+        <li data-i="2">The docstring on the <code>@tool</code>-wrapped function that hosts the specialist call — that docstring is the specialist's job description, and treating it like a comment (or leaving it terse) is the #1 reason routing goes wrong</li>
+        <li data-i="3">A special <code>@specialist</code> decorator</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> You built a Swarm with three agents and their system prompts describe their <em>own</em> job in detail but never mention the other two agents. Runs go in circles or fail to hand off. Why?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Because the built-in hand-off tool routes by name, and each agent's LLM has no signal on <em>who</em> to hand off to unless the system prompt names its peers and their roles</li>
+        <li data-i="1">Because Swarm requires exactly two agents</li>
+        <li data-i="2">Because the model is too small</li>
+        <li data-i="3">Because you didn't set an entry point</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> Which is a valid criticism of the swarm pattern for production agents?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">It only works with Bedrock models</li>
+        <li data-i="1">It's not compatible with AgentCore Runtime</li>
+        <li data-i="2">It doesn't support Python 3</li>
+        <li data-i="3">Its emergent, LLM-driven control flow makes debugging genuinely hard — "why did it pick agent B here?" has no deterministic source-of-truth. That's an acceptable price for open-ended tasks, but often unacceptable for regulated or high-stakes workflows</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> A MuleSoft customer says: "We already have Experience/Process/System APIs. Do we need multi-agent at all?" Which framing is most useful?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">"Yes, always — multi-agent is the future"</li>
+        <li data-i="1">"You already <em>have</em> the multi-agent architecture. Your Experience APIs are coordinators, Process APIs are specialists, System APIs are tools. What we're deciding is whether the coordinator's routing brain should be an LLM (multi-agent) or DataWeave (classic API-Led). Same three tiers; different runtime inside each box. The answer depends on how much fuzzy natural-language routing the request actually needs."</li>
+        <li data-i="2">"No — LLMs are a passing trend"</li>
+        <li data-i="3">"Only if you use AWS — Strands doesn't run on GCP"</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Common questions that come up: how deep can agent-as-tool nest before it's a mess, how to add human-in-the-loop hand-off, whether to mix patterns (a graph with a swarm node inside it — yes, you can, sometimes you should). Ask.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0035-agentcore-memory.html">← L35 — AgentCore Memory</a>
+      <a href="0025-multi-agent-patterns.html">L25 — Multi-agent in LangGraph</a>
+      <a href="0029-adk-declarative-multi-agent.html">L29 — Multi-agent in ADK</a>
+      <a href="../MISSION.md">Mission</a>
+    </div>
+    <p style="margin-top:1rem">L37 (next, final Strands) — Deploy end-to-end: memory-aware, multi-agent MuleSoft assistant on AgentCore Runtime with Identity in front.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

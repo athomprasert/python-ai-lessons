@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 37 — Deploy end-to-end: memory + multi-agent + identity on AgentCore</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.9rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+
+    .capstone {
+      background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+      border: 3px solid #d97706;
+      border-radius: 12px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+      font-weight: 600;
+      color: #78350f;
+    }
+    .capstone-label {
+      display: inline-block;
+      background: #d97706;
+      color: #fff;
+      padding: 0.15rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 37 &nbsp;·&nbsp; Strands mini-series (6 of 6 — final)</p>
+    <h1>Deploy end-to-end: the shippable version</h1>
+    <p class="tagline">You've built the pieces. This lesson wires them together — memory-aware, multi-agent, deployed to AgentCore Runtime, protected by AgentCore Identity, traced by AgentCore Observability. The closest thing to a shippable AWS-native agent this course produces.</p>
+    <div class="progress">
+      <a href="0032-strands-basics.html"><span class="pill pill-done">L32 ✓</span></a>
+      <a href="0033-strands-model-switch.html"><span class="pill pill-done">L33 ✓</span></a>
+      <a href="0034-bedrock-agentcore-runtime.html"><span class="pill pill-done">L34 ✓</span></a>
+      <a href="0035-agentcore-memory.html"><span class="pill pill-done">L35 ✓</span></a>
+      <a href="0036-strands-multi-agent.html"><span class="pill pill-done">L36 ✓</span></a>
+      <span class="pill pill-now">L37 — Ship it</span>
+      <span class="pill pill-next">What's next →</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <div class="capstone">
+    <span class="capstone-label">Capstone</span>
+    This is the Strands mini-series capstone. Every previous lesson has been a piece; here they compose into one deployable service. If you can get this working end-to-end, you can hold a credible technical conversation with an AWS-committed customer about running their first production agent.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    L34 got you a deployed agent that talks to itself. L35 gave it memory. L36 split it into specialists. Each was fine in isolation. But every real agent hits the same three questions before it ships:
+  </p>
+  <ol>
+    <li><strong>Who's calling?</strong> — Your <code>actor_id</code> can't be trusted from a JSON payload. You need <em>verified</em> identity.</li>
+    <li><strong>What happened?</strong> — When it misbehaves at 2am, you need traces, not print statements.</li>
+    <li><strong>Does it still work?</strong> — Composing five primitives is where things quietly break. You need a verification checklist that touches each seam.</li>
+  </ol>
+  <p>This lesson answers those three. Two new AgentCore primitives (<strong>Identity</strong>, <strong>Observability</strong>) join the four you already know (Runtime, Memory, the agent, the model).</p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty</div>
+    AgentCore Identity and Observability configuration is the piece most likely to have drifted since this lesson was written — auth configuration in cloud SDKs turns over fast. The <em>architecture</em> (JWT authorizer verifies token → claims flow to the entrypoint → your code uses the verified sub as <code>actor_id</code>) is timeless. Verify exact API/CLI names against the current <a href="https://docs.aws.amazon.com/bedrock-agentcore/">AWS AgentCore docs</a> before wiring for a customer.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three new syntax constructs</h2>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · request context in @app.entrypoint</div>
+    Until now, <code>invoke(payload)</code> took only the JSON body. The Runtime SDK also gives you the incoming request's <em>context</em> — headers, verified JWT claims, request ID. The signature is <code>invoke(payload, context)</code> (or the SDK may expose it via a decorator argument or module helper — check your installed version). The critical bit: after the Identity authorizer verifies the JWT, its claims are attached to the context. That's where a trustworthy <code>actor_id</code> comes from.
+    <pre style="margin:0.5rem 0 0"><code>@app.entrypoint
+def invoke(payload, context):
+    # context.claims["sub"] came from a verified token, not the payload.
+    actor_id = context.claims["sub"]
+    ...</code></pre>
+    Rule of thumb: <em>never</em> read <code>actor_id</code> from <code>payload</code> in a production build. That's a classic auth-vs-authz mix-up.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · AgentCore Identity resource</div>
+    Identity in AgentCore is a <strong>resource</strong> (not just an SDK call). You create an <code>identity</code> that references an OAuth provider — Cognito user pool, Okta issuer, or a generic OIDC provider (same shape as <a href="https://better-auth.com">better-auth's genericOAuth</a>, which you saw in <code>idp-document-frontend</code>). Then you tell your Runtime to <em>require</em> that identity for incoming requests. Typical CLI flow (exact commands may differ):
+    <pre style="margin:0.5rem 0 0"><code>agentcore identity create --oauth-provider cognito \
+    --user-pool-arn arn:aws:cognito-idp:us-east-1:...:userpool/us-east-1_abc
+agentcore configure --entrypoint agentcore_shippable.py --identity my-agent-identity
+agentcore launch</code></pre>
+    Once launched, <code>/invocations</code> requires <code>Authorization: Bearer &lt;jwt&gt;</code>. No token → 401.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · Observability (managed traces)</div>
+    Observability is turned on <em>per Runtime</em>, not per invocation. Once enabled, every invocation produces a trace visible in the AWS console — nested spans for coordinator → specialist → tool → model. Verbose logs go to CloudWatch; distributed traces go to X-Ray (or the AgentCore-integrated equivalent). Enable it either via <code>agentcore configure --observability enabled</code> or the equivalent flag in your SDK config. No code change in your agent.
+    <pre style="margin:0.5rem 0 0"><code>agentcore configure --entrypoint agentcore_shippable.py \
+    --identity my-agent-identity \
+    --observability enabled</code></pre>
+    This is the difference between "it broke somewhere" and "the ops_expert's <code>get_anypoint_org_status</code> tool call took 8.2s at 02:14:36 UTC".
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Prerequisites</h2>
+  <ol>
+    <li>Your L34 deploy pipeline still works (agent deploys, cloud endpoint responds).</li>
+    <li>Your L35 Memory resource exists — you have the <code>MEMORY_ID</code> in your environment.</li>
+    <li>Your L36 multi-agent code (agent-as-tool variant) is understood — you don't have to have it as a file, but you should remember the shape.</li>
+    <li>An OAuth provider you can test against:
+      <ul>
+        <li><strong>Easiest</strong>: create a Cognito user pool with one test user. AWS-native, single console.</li>
+        <li><strong>Enterprise-realistic</strong>: an Okta dev tenant with an OIDC app (like the one wired up in <code>idp-document-frontend/lib/auth.ts</code>).</li>
+      </ul>
+    </li>
+    <li>A way to obtain a JWT for testing: the Cognito hosted UI, an Okta login flow, or the AWS CLI <code>cognito-idp initiate-auth</code>. Save the access token to a shell variable: <code>export TOKEN=eyJ...</code>.</li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn — one file, six TODOs</h2>
+  <p>This is genuinely assembly work. Every TODO maps back to a previous lesson.</p>
+
+  <h3>File — <code>agentcore_shippable.py</code></h3>
+
+  <div class="todo">
+<span class="todo-label">CAPSTONE SKELETON — 6 TODOs</span>
+
+<span class="cm"># agentcore_shippable.py — memory + multi-agent + identity + observability</span>
+
+<span class="kw">import</span> os
+<span class="kw">from</span> bedrock_agentcore <span class="kw">import</span> BedrockAgentCoreApp
+<span class="kw">from</span> bedrock_agentcore.memory <span class="kw">import</span> MemoryClient
+<span class="kw">from</span> strands <span class="kw">import</span> Agent, tool
+<span class="kw">from</span> strands.models <span class="kw">import</span> BedrockModel
+
+MODEL <span class="op">=</span> BedrockModel(
+    model_id<span class="op">=</span><span class="str">"anthropic.claude-haiku-4-5-20251001-v1:0"</span>,
+    region_name<span class="op">=</span><span class="str">"us-east-1"</span>,
+)
+
+MEMORY_ID <span class="op">=</span> os.environ[<span class="str">"MEMORY_ID"</span>]
+mem <span class="op">=</span> MemoryClient(region_name<span class="op">=</span><span class="str">"us-east-1"</span>)
+
+
+<span class="cm"># TODO 1 — Reuse your L32 tools: search_docs, get_anypoint_org_status.</span>
+<span class="cm">#          Import or paste them here.</span>
+
+
+<span class="cm"># TODO 2 — Build two specialists exactly as in L36 (agent-as-tool pattern):</span>
+<span class="cm">#              docs_agent = Agent(model=MODEL, tools=[search_docs],</span>
+<span class="cm">#                                 system_prompt="You answer MuleSoft docs...")</span>
+<span class="cm">#              ops_agent  = Agent(model=MODEL, tools=[get_anypoint_org_status],</span>
+<span class="cm">#                                 system_prompt="You answer live Anypoint...")</span>
+<span class="cm">#</span>
+<span class="cm">#          Then wrap each in an @tool with a routing-oriented docstring:</span>
+<span class="cm">#              @tool</span>
+<span class="cm">#              def docs_specialist(question: str) -> str:</span>
+<span class="cm">#                  """Answer MuleSoft documentation questions..."""</span>
+<span class="cm">#                  return docs_agent(question).message</span>
+<span class="cm">#</span>
+<span class="cm">#          Then build the coordinator with those two tools.</span>
+
+
+<span class="cm"># TODO 3 — Copy your L35 memory helpers verbatim:</span>
+<span class="cm">#              def load_history(actor_id, session_id): ...</span>
+<span class="cm">#              def save_turn(actor_id, session_id, user_text, assistant_text): ...</span>
+
+
+app <span class="op">=</span> BedrockAgentCoreApp()
+
+
+<span class="attr">@app.entrypoint</span>
+<span class="kw">def</span> <span class="fn">invoke</span>(payload, context):
+    <span class="cm"># TODO 4 — Pull actor_id from the VERIFIED token, not the payload.</span>
+    <span class="cm">#          Attribute name may be context.claims["sub"], context.identity.sub,</span>
+    <span class="cm">#          or similar depending on SDK version. Whatever it is, it must be</span>
+    <span class="cm">#          the value the Identity authorizer wrote — not something you read</span>
+    <span class="cm">#          from payload.</span>
+    <span class="cm">#              actor_id = context.claims["sub"]</span>
+    <span class="cm">#</span>
+    <span class="cm">#          If the caller wants a specific conversation, session_id CAN come</span>
+    <span class="cm">#          from payload — but scope everything under actor_id so users can't</span>
+    <span class="cm">#          read each other's sessions.</span>
+    <span class="cm">#              session_id = payload.get("session_id", "default")</span>
+
+    prompt <span class="op">=</span> payload.get(<span class="str">"prompt"</span>, <span class="str">""</span>)
+    <span class="kw">if</span> <span class="kw">not</span> prompt:
+        <span class="kw">return</span> {<span class="str">"error"</span>: <span class="str">"prompt required"</span>}, <span class="num">400</span>
+
+    <span class="cm"># TODO 5 — Load memory, run the coordinator, save the turn</span>
+    <span class="cm">#          (this is the same shape as L35 — copy it in):</span>
+    <span class="cm">#              history = load_history(actor_id, session_id)</span>
+    <span class="cm">#              contextual = f"{history}\n\nCurrent message:\n{prompt}"</span>
+    <span class="cm">#              result = coordinator(contextual)</span>
+    <span class="cm">#              save_turn(actor_id, session_id, prompt, result.message)</span>
+
+    <span class="cm"># TODO 6 — Return the reply. Include actor_id in the response ONLY during</span>
+    <span class="cm">#          development, so you can verify identity is flowing through — remove</span>
+    <span class="cm">#          before you ship to production (leaks identity into logs/clients).</span>
+    <span class="cm">#              return {"reply": result.message, "actor_id": actor_id}</span>
+
+
+<span class="kw">if</span> __name__ <span class="op">==</span> <span class="str">"__main__"</span>:
+    app.run()
+  </div>
+
+  <h3>Deploy — three CLI steps outside the file</h3>
+  <ol>
+    <li>Create the Identity resource (once): <code>agentcore identity create --oauth-provider &lt;cognito|okta&gt; --...</code></li>
+    <li>Configure with identity and observability: <code>agentcore configure --entrypoint agentcore_shippable.py --identity my-agent-identity --observability enabled</code></li>
+    <li>Launch: <code>agentcore launch</code></li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>Verification — the four-part shipping check</h2>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Check 1 · The 401 test (auth wiring)</div>
+    Hit the deployed endpoint <em>without</em> a token. You should get <code>401 Unauthorized</code>. If you get <code>200</code> with a response, Identity isn't wired — the Runtime is happily accepting anonymous calls and your code is now leaking a real answer to anyone with the URL.
+    <pre style="margin:0.5rem 0 0"><code>curl -X POST https://runtime.bedrock-agentcore.aws/.../invocations \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "hi"}'
+# Expect: HTTP 401</code></pre>
+  </div>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Check 2 · Identity flows through (authz correctness)</div>
+    Same request with <code>Authorization: Bearer $TOKEN</code>. Inspect the response's <code>actor_id</code> — it should match the <code>sub</code> claim of the JWT you sent, not something guessable from the payload. Try tampering: pass <code>{"actor_id": "attacker"}</code> in the body. It must be <em>ignored</em>. If it isn't, you're trusting the payload.
+  </div>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Check 3 · Composed behaviour still works (L35 + L36 didn't break)</div>
+    Two authenticated calls, same <code>session_id</code>: first says "org 12345, degraded state, what does the runbook say?"; second says "what org did I ask about?". Second reply mentions 12345 (memory works) and, if you inspect the trace, the coordinator called both specialists on the first turn (multi-agent works). Both pieces alive after composition.
+  </div>
+
+  <div class="callout callout-check">
+    <div class="callout-label">Check 4 · Read the trace like an SRE</div>
+    Open the AgentCore Observability view in the AWS console. Find the request from Check 3 by <code>request-id</code>. You should see nested spans:
+    <ul style="margin-top:0.4rem">
+      <li>Top span: <code>invoke</code> (your entrypoint)</li>
+      <li>Child: coordinator model call</li>
+      <li>Child: <code>docs_specialist</code> tool call → docs_agent model call → <code>search_docs</code> call</li>
+      <li>Child: <code>ops_specialist</code> tool call → ops_agent model call → <code>get_anypoint_org_status</code> call</li>
+      <li>Child: coordinator's final model call (composing the merged answer)</li>
+      <li>Child: <code>create_event</code> for memory persistence</li>
+    </ul>
+    If you don't see nesting like this, observability isn't fully enabled, or your instrumentation is missing spans. Get this right before shipping — every future 2am incident will start here.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where the abstraction leaks</h2>
+  <ul>
+    <li><strong>Cold start got worse.</strong> Identity token verification + Memory lookup add tens to hundreds of milliseconds to the first cold invocation. Measure it, don't guess. If it matters to UX, provision concurrency or keep a warm pool.</li>
+    <li><strong>Cognito is easy, enterprise is not.</strong> An Okta or Azure AD hookup adds SCIM sync, group-based authz, RBAC mappings, and probably a conversation about SAML vs OIDC. AgentCore Identity accepts the token; <em>using</em> its claims for real authorization is still your job.</li>
+    <li><strong>Observability samples by default.</strong> To keep bills sane, most managed observability samples traces at less than 100%. Great for aggregate signals, painful when the exact failing request isn't sampled. Turn sampling to 100% during rollout and pilot; ease it later.</li>
+    <li><strong>Verbose tool responses eat trace-storage limits.</strong> If your tools return large payloads (a full RAG result set, a big JSON blob from Anypoint), the trace will either be truncated or expensive. Keep tool responses lean; store the big stuff in S3 and pass an S3 URI.</li>
+    <li><strong>"Shippable" is technical, not operational.</strong> You still need SLOs, alarms, an on-call rotation, a rollback playbook, load-test data, cost guardrails, and a red-team pass before this touches a customer. This lesson gets you to the starting line, not past it.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <h2>The capability accumulation — where each piece came from</h2>
+  <table>
+    <thead>
+      <tr><th>Capability</th><th>L32</th><th>L33</th><th>L34</th><th>L35</th><th>L36</th><th>L37</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Agent + tools</td>
+        <td>✓ introduced</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td>
+      </tr>
+      <tr>
+        <td>Model choice</td>
+        <td>Bedrock Haiku</td><td>✓ four providers</td><td>Bedrock</td><td>Bedrock</td><td>Bedrock</td><td>Bedrock</td>
+      </tr>
+      <tr>
+        <td>Deploy target</td>
+        <td>local</td><td>local</td><td>✓ Runtime</td><td>Runtime</td><td>local (any)</td><td>Runtime</td>
+      </tr>
+      <tr>
+        <td>Memory</td>
+        <td>—</td><td>—</td><td>—</td><td>✓ introduced</td><td>—</td><td>✓ inherited</td>
+      </tr>
+      <tr>
+        <td>Routing</td>
+        <td>single agent</td><td>single</td><td>single</td><td>single</td><td>✓ three patterns</td><td>agent-as-tool</td>
+      </tr>
+      <tr>
+        <td>Identity</td>
+        <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>✓ introduced</td>
+      </tr>
+      <tr>
+        <td>Observability</td>
+        <td>print()</td><td>print()</td><td>CloudWatch</td><td>CloudWatch</td><td>print()</td><td>✓ full traces</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle — the AWS-native "first agent" pitch</div>
+    For an AWS-committed customer asking "how do we run our first production agent?", the reference architecture is now:
+    <ul style="margin:0.4rem 0">
+      <li><strong>Bedrock</strong> — the model (Haiku for cost, Sonnet for hard turns)</li>
+      <li><strong>Strands</strong> — the agent framework (Apache 2.0, no vendor lock at the code layer)</li>
+      <li><strong>AgentCore Runtime</strong> — where it runs (framework-agnostic serverless)</li>
+      <li><strong>AgentCore Memory</strong> — conversation state and long-term facts</li>
+      <li><strong>AgentCore Identity</strong> — Cognito/Okta at the front door</li>
+      <li><strong>AgentCore Observability</strong> — traces + CloudWatch metrics</li>
+      <li><strong>Flex Gateway</strong> — rate limits, WAF-style policies, DLP at the edge</li>
+      <li><strong>Anypoint System APIs</strong> — the tools the agent calls (SFDC, SAP, ServiceNow — the systems of record you've been selling to for years)</li>
+    </ul>
+    One AWS bill for the AI layer; existing Anypoint estate for integration. When the customer asks "why not just LangGraph in ECS?" — the answer is: you can, and it's fine, but you'll be building Runtime, Memory, Identity, and Observability yourself. If AWS is already the destination, use their managed versions and spend the saved cycles on the actual business logic.
+    <p style="margin-top:0.6rem"><strong>Contrast for other clouds</strong>: GCP → ADK + Vertex Agent Engine (L26–L31). Multi-cloud / vendor-neutral → LangGraph or Pydantic AI (L19). Azure → AutoGen + AI Foundry (future mini-series).</p>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where to go from here</h2>
+  <p>Strands mini-series done. Reasonable next steps, in rough order of career value:</p>
+  <ol>
+    <li><strong>Evals &amp; guardrails</strong> — how do you know it's <em>getting better</em>, not just "seems fine on the last three prompts"? Worth its own mini-series (offline evals, online A/B, prompt injection defence, PII redaction).</li>
+    <li><strong>AutoGen + Azure AI Foundry mini-series</strong> — the Microsoft parallel to the ADK and Strands arcs. Rounds out the "three big clouds" story.</li>
+    <li><strong>Deep-dives on skipped AgentCore primitives</strong>: Gateway (turn any REST API into an agent tool), Code Interpreter (sandboxed Python execution for the agent), Browser (headless browsing as a tool).</li>
+    <li><strong>Productionising agents at scale</strong> — CI/CD for AgentCore resources (CDK/Terraform), multi-region, cost modelling, canary rollouts.</li>
+    <li><strong>Fine-tuning &amp; distillation</strong> — when prompt engineering plateaus, what's next.</li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> Which is the safest source for <code>actor_id</code> in a production agent behind AgentCore Identity?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0"><code>payload["actor_id"]</code> — the caller tells us who they are</li>
+        <li data-i="1">A UUID generated per invocation</li>
+        <li data-i="2">A verified claim (typically <code>sub</code>) on the request context, populated by the Identity authorizer <em>after</em> it validated the JWT signature and expiry. The payload is untrusted; the context claim is trusted.</li>
+        <li data-i="3">The client IP address</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Same authenticated user, two different sessions. The user reads a note in session B that they only ever mentioned in session A. What went wrong?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">This is expected — short-term memory is per-user</li>
+        <li data-i="1">Your <code>load_history</code> call is scoped only by <code>actor_id</code>, not by both <code>actor_id</code> AND <code>session_id</code>. Short-term memory must be session-scoped or sessions bleed into each other. This is a real production bug pattern, easy to make when copy-pasting.</li>
+        <li data-i="2">AgentCore Memory doesn't isolate sessions</li>
+        <li data-i="3">You used the wrong JWT provider</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> A customer complains: "The agent gave a wrong answer at 02:14 last night." What do you look at first?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">The AgentCore Observability trace for that request-id — you'll see the coordinator's decision, which specialist ran, what tool payload was returned, and where the reasoning went off. Traces are the SRE equivalent of a stack trace for agents.</li>
+        <li data-i="1">Redeploy immediately with a stricter system prompt</li>
+        <li data-i="2">Rotate the Cognito user pool</li>
+        <li data-i="3">Add more RAG documents</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> Managed Observability samples traces at less than 100% by default. When would you turn sampling to 100%?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">Never — 100% is always overkill</li>
+        <li data-i="1">Always — anything less is negligence</li>
+        <li data-i="2">Only when required by regulation</li>
+        <li data-i="3">During rollout, pilot, and any active incident — the marginal cost is small, and losing "just the failing request" is the worst kind of missing data. Ease sampling later when the agent has been stable and every incident isn't the first of its kind.</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> A customer asks "why not just run our LangGraph agent in ECS instead of using AgentCore Runtime?" Best framing?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">"You can't — LangGraph doesn't run on AWS."</li>
+        <li data-i="1">"You absolutely can, and for some teams it's the right call — you keep the framework you already know. The tradeoff is that in ECS you build Runtime, Memory, Identity, and Observability yourself: session microVMs, memory store schema, JWT verification, distributed tracing. AgentCore gives you those managed. If AWS is already the destination and those primitives are on the roadmap, AgentCore saves engineering months. If you're multi-cloud or already have a battle-tested platform, ECS is fine. Not one right answer — a tradeoff to size against your team."</li>
+        <li data-i="2">"AgentCore is always faster than ECS."</li>
+        <li data-i="3">"AgentCore is free."</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Common questions that come up on capstones: how to wire the Cognito hosted-UI login for testing, how to add role-based authz on top of authenticated identity, when it's worth building your own auth-check middleware vs relying on the authorizer, what to log vs what to trace (they're not the same). Ask.</p>
+
+  <!-- ───────────────────────────── -->
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0036-strands-multi-agent.html">← L36 — Multi-agent</a>
+      <a href="0032-strands-basics.html">L32 — Strands basics (mini-series start)</a>
+      <a href="0017-agent-framework-landscape.html">L17 — Framework landscape</a>
+      <a href="0019-frameworks-side-by-side.html">L19 — Frameworks side-by-side</a>
+      <a href="../MISSION.md">Mission</a>
+    </div>
+    <p style="margin-top:1rem"><strong>Strands mini-series complete.</strong> Next topics to pick from: evals &amp; guardrails · AutoGen + Azure mini-series · AgentCore Gateway/Code Interpreter/Browser deep-dives · productionising agents at scale.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
