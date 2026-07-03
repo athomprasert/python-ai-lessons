@@ -128,7 +128,7 @@
   <header class="lesson-header">
     <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 17 of ?</p>
     <h1>The Agent Framework Landscape</h1>
-    <p class="tagline">Nine frameworks worth knowing in 2026, the trade-offs between them, and how to choose before you commit. No agent code — just decisions.</p>
+    <p class="tagline">Ten frameworks in 2026, split into two tiers — <strong>vendor-agnostic</strong> (community-run) and <strong>cloud-vendor-native</strong> (Amazon, Google, Microsoft) — plus native SDK as the foundation. No agent code — just decisions.</p>
     <div class="progress">
       <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
       <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
@@ -166,9 +166,37 @@
   </div>
 
   <!-- ───────────────────────────── -->
-  <h2>The 9 frameworks worth knowing</h2>
+  <h2>Two tiers, then the foundation</h2>
   <p>
-    Each card below has a one-line summary, sweet spot, weakest case, a short style snippet (illustrative — not for teaching), and notable users where verifiable. The style snippets all show the same trivial agent pattern: <em>"call a single tool, return the answer."</em>
+    Every agent framework belongs in one of two tiers, and picking the wrong tier is a much bigger mistake than picking the wrong framework within a tier.
+  </p>
+
+  <table>
+    <thead><tr><th>Tier</th><th>Who runs it</th><th>Runs where</th><th>Best when the customer…</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Vendor-agnostic</strong></td>
+        <td>Independent teams &amp; open-source communities</td>
+        <td>Any LLM, any cloud, any host</td>
+        <td>…is multi-cloud, cloud-neutral, or the framework choice must survive an LLM-provider switch</td>
+      </tr>
+      <tr>
+        <td><strong>Cloud-vendor-native</strong></td>
+        <td>Google (ADK), AWS (Strands), Microsoft (AutoGen)</td>
+        <td>Best inside the parent cloud; usable elsewhere with caveats</td>
+        <td>…is committed to one cloud and wants the managed-runtime story that comes with it</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    Below: <strong>seven vendor-agnostic frameworks</strong>, then <strong>three cloud-vendor frameworks</strong>, then <strong>native SDK</strong> as the foundation every framework sits on. Each card has a one-line summary, sweet spot, weakest case, a short style snippet, and notable users where verifiable. Style snippets all show the same trivial pattern: <em>"call a single tool, return the answer."</em>
+  </p>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <h2 style="border-left-color:#3b82f6; color:#1e40af">Tier 1 — Vendor-agnostic frameworks</h2>
+  <p>
+    These frameworks are backed by independent teams or open-source communities. They work with any LLM provider (Gemini, Claude, GPT, Llama, etc.) and can be deployed anywhere. Choose from this tier when you want the framework decision to be independent of the cloud decision.
   </p>
 
   <!-- 1. LangGraph -->
@@ -227,29 +255,9 @@ result <span class="op">=</span> Crew(agents<span class="op">=</span>[researcher
     <div class="row"><span class="label">Resources</span><span><a href="https://docs.crewai.com/">CrewAI docs</a></span></div>
   </div>
 
-  <!-- 4. AutoGen -->
+  <!-- 4. Pydantic AI -->
   <div class="fw-card">
-    <div class="fw-header"><h3>4. AutoGen (Microsoft)</h3><span class="meta">2023 · multi-LLM · Python &amp; .NET</span></div>
-    <p>Microsoft Research's multi-agent framework. Strong on autonomous agents that can plan, delegate, and execute code. The conversation-driven model (agents talk to each other) is the signature.</p>
-    <div class="row"><span class="label">Sweet spot</span><span>Research-grade multi-agent systems, code-execution agents, autonomous coding workflows.</span></div>
-    <div class="row"><span class="label">Weakest at</span><span>Simple production agents — the conversational abstraction adds complexity for routine tool-calling.</span></div>
-    <div class="row"><span class="label">Style</span></div>
-<pre><code><span class="kw">from</span> autogen_agentchat.agents <span class="kw">import</span> AssistantAgent
-<span class="kw">from</span> autogen_ext.models.google <span class="kw">import</span> GoogleAIChatCompletionClient
-
-agent <span class="op">=</span> AssistantAgent(
-    name<span class="op">=</span><span class="str">"helper"</span>,
-    model_client<span class="op">=</span>GoogleAIChatCompletionClient(model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>),
-    tools<span class="op">=</span>[my_rag_tool],
-)
-result <span class="op">=</span> <span class="kw">await</span> agent.run(task<span class="op">=</span><span class="str">"How do I rotate secrets?"</span>)</code></pre>
-    <div class="row"><span class="label">Notable users</span><span>Microsoft internal, NASA JPL research, several university labs.</span></div>
-    <div class="row"><span class="label">Resources</span><span><a href="https://microsoft.github.io/autogen/">AutoGen docs</a></span></div>
-  </div>
-
-  <!-- 5. Pydantic AI -->
-  <div class="fw-card">
-    <div class="fw-header"><h3>5. Pydantic AI</h3><span class="meta">2024 · multi-LLM · Python</span></div>
+    <div class="fw-header"><h3>4. Pydantic AI</h3><span class="meta">2024 · multi-LLM · Python</span></div>
     <p>Type-safe, minimal, Python-native. Built by the Pydantic team — uses Pydantic models for tool schemas and structured outputs. Feels like FastAPI for agents.</p>
     <div class="row"><span class="label">Sweet spot</span><span>Production code where you want type safety, IDE autocomplete on tool inputs/outputs, and minimal magic.</span></div>
     <div class="row"><span class="label">Weakest at</span><span>Massive ecosystem features — fewer pre-built integrations than LangChain.</span></div>
@@ -265,7 +273,7 @@ result <span class="op">=</span> agent.run_sync(<span class="str">"How do I rota
 
   <!-- 6. Haystack -->
   <div class="fw-card">
-    <div class="fw-header"><h3>6. Haystack (deepset)</h3><span class="meta">2018 · multi-LLM · Python</span></div>
+    <div class="fw-header"><h3>5. Haystack (deepset)</h3><span class="meta">2018 · multi-LLM · Python</span></div>
     <p>The most mature framework here. Started as an open-source NLP/QA pipeline tool from deepset (Berlin), evolved into a production-grade RAG and agent framework. Pipeline-DAG-first; explicit, testable nodes.</p>
     <div class="row"><span class="label">Sweet spot</span><span>Production NLP/RAG systems where reliability, evaluation, and deployment matter more than rapid prototyping. Strong on built-in eval and deployment tooling.</span></div>
     <div class="row"><span class="label">Weakest at</span><span>Cutting-edge agent patterns — the agent layer is solid but newer than the pipeline foundation.</span></div>
@@ -282,28 +290,9 @@ result <span class="op">=</span> agent.run(messages<span class="op">=</span>[{<s
     <div class="row"><span class="label">Resources</span><span><a href="https://docs.haystack.deepset.ai/">Haystack docs</a></span></div>
   </div>
 
-  <!-- 7. Google ADK -->
+  <!-- 6. Smolagents -->
   <div class="fw-card">
-    <div class="fw-header"><h3>7. Google ADK</h3><span class="meta">2024 · Gemini-first (model-agnostic interface) · Python</span></div>
-    <p>Google's Agent Development Kit. Model-agnostic in API but Gemini-native in tooling. Includes session memory, deployment helpers, and tight integration with Vertex AI.</p>
-    <div class="row"><span class="label">Sweet spot</span><span>You're already on Google Cloud, using Gemini, and want a managed deployment path with first-party tooling.</span></div>
-    <div class="row"><span class="label">Weakest at</span><span>Newer — smaller community, evolving API, fewer third-party integrations than LangChain or LlamaIndex.</span></div>
-    <div class="row"><span class="label">Style</span></div>
-<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
-
-agent <span class="op">=</span> Agent(
-    model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>,
-    tools<span class="op">=</span>[my_rag_tool],
-    instruction<span class="op">=</span><span class="str">"You answer from internal docs."</span>,
-)
-result <span class="op">=</span> agent.run(<span class="str">"How do I rotate secrets?"</span>)</code></pre>
-    <div class="row"><span class="label">Notable users</span><span>Early adopters in GCP-native shops; tight Vertex AI integrations.</span></div>
-    <div class="row"><span class="label">Resources</span><span><a href="https://adk.dev/">ADK docs</a> · <a href="https://github.com/google/adk-python">GitHub</a></span></div>
-  </div>
-
-  <!-- 8. Smolagents -->
-  <div class="fw-card">
-    <div class="fw-header"><h3>8. Smolagents (HuggingFace)</h3><span class="meta">2024 · multi-LLM · Python</span></div>
+    <div class="fw-header"><h3>6. Smolagents (HuggingFace)</h3><span class="meta">2024 · multi-LLM · Python</span></div>
     <p>Lightweight, code-first. The agent's "thoughts" are Python code blocks it writes and executes — instead of JSON tool calls, the model writes <code>tool.search("query")</code> directly. Tiny core (~1k LOC).</p>
     <div class="row"><span class="label">Sweet spot</span><span>Agents that primarily generate and run code, ML-flavoured workflows, anyone who wants minimum framework footprint.</span></div>
     <div class="row"><span class="label">Weakest at</span><span>Conservative production environments — code-execution agents have specific safety constraints.</span></div>
@@ -319,9 +308,96 @@ result <span class="op">=</span> agent.run(<span class="str">"How do I rotate se
     <div class="row"><span class="label">Resources</span><span><a href="https://huggingface.co/docs/smolagents/">Smolagents docs</a></span></div>
   </div>
 
-  <!-- 9. Native SDK -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <h2 style="border-left-color:#a855f7; color:#6b21a8">Tier 2 — Cloud-vendor-native frameworks</h2>
+  <p>
+    Each hyperscaler now has its own agent framework, backed by a managed runtime in that cloud. All three (ADK, Strands, AutoGen) are open-source Python libraries — but their strongest story is <em>"deploy to our managed runtime in three commands"</em>, and that story only works inside the parent cloud.
+  </p>
+  <p>
+    Choose from this tier when the cloud decision is already made. If it isn't, choose from Tier 1 first and cross the deploy bridge later.
+  </p>
+
+  <table>
+    <thead><tr><th>Framework</th><th>Cloud</th><th>Managed runtime</th><th>Native LLM</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Google ADK</strong></td><td>GCP</td><td>Vertex Agent Engine (<code>adk deploy agent_engine</code>)</td><td>Gemini (works with others via LiteLLM)</td></tr>
+      <tr><td><strong>AWS Strands Agents</strong></td><td>AWS</td><td>Bedrock AgentCore</td><td>Any (Bedrock, Anthropic, OpenAI, Ollama)</td></tr>
+      <tr><td><strong>Microsoft AutoGen</strong></td><td>Azure</td><td>Azure AI Foundry Agent Service</td><td>Any (Azure OpenAI, OpenAI, others)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 7. Google ADK -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>7. Google ADK</h3><span class="meta">2025 · Gemini-first (works with other models via LiteLLM) · Python</span></div>
+    <p>Google's Agent Development Kit. Model-agnostic in API but Gemini-native in tooling. Includes session memory, deployment helpers, and tight integration with Vertex AI. Covered in depth in the <a href="0026-adk-basics-agent-tools-runner.html">L26–L31 mini-series</a>.</p>
+    <div class="row"><span class="label">Sweet spot</span><span>You're on Google Cloud, using Gemini, and want a managed deployment path (Vertex Agent Engine) with first-party tooling.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Newer — smaller community than LangChain. Off-GCP deployment loses the managed-runtime story.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
+
+agent <span class="op">=</span> Agent(
+    model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>,
+    tools<span class="op">=</span>[my_rag_tool],
+    instruction<span class="op">=</span><span class="str">"You answer from internal docs."</span>,
+)
+result <span class="op">=</span> agent.run(<span class="str">"How do I rotate secrets?"</span>)</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>Early adopters in GCP-native shops; tight Vertex AI integrations.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://adk.dev/">ADK docs</a> · <a href="https://github.com/google/adk-python">GitHub</a></span></div>
+  </div>
+
+  <!-- 8. AWS Strands Agents -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>8. AWS Strands Agents</h3><span class="meta">2025 · multi-LLM · Python</span></div>
+    <p>AWS's answer to ADK. Open-source (Apache 2.0), model-driven agent loop, tool decorators, multi-agent primitives (Swarm, Graph). Runs anywhere but pairs with <strong>Amazon Bedrock AgentCore</strong> — a managed serverless runtime for agents with built-in session management, memory, identity, and observability. AgentCore is also framework-agnostic: it can host a Strands agent, a LangGraph graph, or a CrewAI crew.</p>
+    <div class="row"><span class="label">Sweet spot</span><span>You're on AWS, using Bedrock models (Claude, Nova, Llama). Strands gives you the SDK; AgentCore gives you the managed runtime.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Newest of the three vendor frameworks (GA mid-2025). Smaller ecosystem than ADK today, though its model-agnostic design travels better.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> strands <span class="kw">import</span> Agent, tool
+<span class="kw">from</span> strands.models <span class="kw">import</span> BedrockModel
+
+<span class="op">@</span>tool
+<span class="kw">def</span> <span class="fn">my_rag_tool</span>(question: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">str</span>:
+    <span class="str">"""Search internal docs."""</span>
+    <span class="kw">return</span> <span class="str">"..."</span>
+
+agent <span class="op">=</span> Agent(
+    model<span class="op">=</span>BedrockModel(model_id<span class="op">=</span><span class="str">"anthropic.claude-sonnet-4-5-20250929-v1:0"</span>),
+    tools<span class="op">=</span>[my_rag_tool],
+)
+result <span class="op">=</span> agent(<span class="str">"How do I rotate secrets?"</span>)</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>AWS internal (Q Developer, others), early AWS-native enterprise adopters.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://strandsagents.com/">Strands docs</a> · <a href="https://github.com/strands-agents/sdk-python">GitHub</a> · <a href="https://aws.amazon.com/bedrock/agentcore/">Bedrock AgentCore</a></span></div>
+  </div>
+
+  <!-- 9. AutoGen (Microsoft) -->
+  <div class="fw-card">
+    <div class="fw-header"><h3>9. AutoGen (Microsoft)</h3><span class="meta">2023 · multi-LLM · Python &amp; .NET</span></div>
+    <p>Microsoft Research's multi-agent framework. Strong on autonomous agents that can plan, delegate, and execute code. The conversation-driven model (agents talk to each other) is the signature. The managed-runtime story is <strong>Azure AI Foundry Agent Service</strong> — Azure's answer to Agent Engine and AgentCore.</p>
+    <div class="row"><span class="label">Sweet spot</span><span>You're on Azure. Research-grade multi-agent systems, code-execution agents, autonomous coding workflows.</span></div>
+    <div class="row"><span class="label">Weakest at</span><span>Simple production agents — the conversational abstraction adds complexity for routine tool-calling. The v0.4 rewrite in 2025 also invalidated a lot of pre-existing tutorials.</span></div>
+    <div class="row"><span class="label">Style</span></div>
+<pre><code><span class="kw">from</span> autogen_agentchat.agents <span class="kw">import</span> AssistantAgent
+<span class="kw">from</span> autogen_ext.models.google <span class="kw">import</span> GoogleAIChatCompletionClient
+
+agent <span class="op">=</span> AssistantAgent(
+    name<span class="op">=</span><span class="str">"helper"</span>,
+    model_client<span class="op">=</span>GoogleAIChatCompletionClient(model<span class="op">=</span><span class="str">"gemini-3.5-flash"</span>),
+    tools<span class="op">=</span>[my_rag_tool],
+)
+result <span class="op">=</span> <span class="kw">await</span> agent.run(task<span class="op">=</span><span class="str">"How do I rotate secrets?"</span>)</code></pre>
+    <div class="row"><span class="label">Notable users</span><span>Microsoft internal, NASA JPL research, several university labs.</span></div>
+    <div class="row"><span class="label">Resources</span><span><a href="https://microsoft.github.io/autogen/">AutoGen docs</a> · <a href="https://learn.microsoft.com/en-us/azure/ai-foundry/">Azure AI Foundry</a></span></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <h2 style="border-left-color:#1a1a1a">Foundation — what everything above is built on</h2>
+  <p>
+    Below every framework in both tiers is the LLM provider's native function-calling API. Every framework abstracts this same loop. Knowing it means you can drop down into it when a framework gets in your way.
+  </p>
+
+  <!-- 10. Native SDK -->
   <div class="fw-card" style="border-color:#1a1a1a; background:#fafafa">
-    <div class="fw-header"><h3>9. Native SDK function-calling (the foundation)</h3><span class="meta">always available · vendor-specific (google-genai, openai, anthropic)</span></div>
+    <div class="fw-header"><h3>10. Native SDK function-calling</h3><span class="meta">always available · vendor-specific (google-genai, openai, anthropic, bedrock)</span></div>
     <p>No framework. You implement the agent loop yourself with the LLM provider's native function-calling API. The basis every framework above is built on.</p>
     <div class="row"><span class="label">Sweet spot</span><span>Learning the concept (we'll do this in L18), tiny projects, situations where any framework dependency is unwelcome.</span></div>
     <div class="row"><span class="label">Weakest at</span><span>Anything complex — you reimplement memory, retries, state, observability yourself.</span></div>
@@ -347,11 +423,12 @@ response <span class="op">=</span> chat.send_message(<span class="str">"How do I
       <tr><td>Maximum flexibility, huge ecosystem, complex flows</td><td><strong>LangGraph</strong></td></tr>
       <tr><td>Agent's main job is reasoning over a document corpus</td><td><strong>LlamaIndex</strong></td></tr>
       <tr><td>Multiple specialised agents collaborating with role-play</td><td><strong>CrewAI</strong></td></tr>
-      <tr><td>Research-grade multi-agent or autonomous code-execution</td><td><strong>AutoGen</strong></td></tr>
       <tr><td>Type-safe Python with minimal magic</td><td><strong>Pydantic AI</strong></td></tr>
       <tr><td>Battle-tested production NLP pipelines with eval &amp; deployment built in</td><td><strong>Haystack</strong></td></tr>
-      <tr><td>All-in on GCP + Gemini + Vertex AI managed deployment</td><td><strong>Google ADK</strong></td></tr>
       <tr><td>Code-first agents, minimum framework footprint</td><td><strong>Smolagents</strong></td></tr>
+      <tr><td>All-in on GCP + Gemini + Vertex AI managed deployment</td><td><strong>Google ADK</strong></td></tr>
+      <tr><td>All-in on AWS + Bedrock + AgentCore managed deployment</td><td><strong>AWS Strands</strong></td></tr>
+      <tr><td>All-in on Azure + Azure OpenAI + Azure AI Foundry (or research-grade multi-agent + code-exec)</td><td><strong>AutoGen</strong></td></tr>
       <tr><td>Learning the concept, or building something tiny</td><td><strong>Native SDK</strong></td></tr>
     </tbody>
   </table>
@@ -363,17 +440,22 @@ response <span class="op">=</span> chat.send_message(<span class="str">"How do I
   <h3>Axis 1 — Magic vs Control</h3>
 <div class="axis-diagram">  more magic   ←─────────────────────────────────────→   more control
 
-   CrewAI  LangGraph  AutoGen  Haystack  LlamaIndex  Pydantic AI  Smolagents  Native</div>
+   CrewAI  LangGraph  AutoGen  Haystack  ADK  Strands  LlamaIndex  Pydantic AI  Smolagents  Native</div>
 
   <h3>Axis 2 — Single-agent vs Multi-agent focus</h3>
 <div class="axis-diagram">  single-agent first   ←─────────────────────→   multi-agent first
 
-   Pydantic AI  Native  Smolagents  LlamaIndex  Haystack  ADK  LangGraph  CrewAI  AutoGen</div>
+   Pydantic AI  Native  Smolagents  LlamaIndex  Haystack  Strands  ADK  LangGraph  CrewAI  AutoGen</div>
 
-  <h3>Axis 3 — General purpose vs Specialist</h3>
+  <h3>Axis 3 — Cloud-neutral vs Cloud-vendor-native</h3>
+<div class="axis-diagram">  cloud-neutral (any cloud)   ←─────────────────────→   cloud-vendor-native
+
+   LangGraph  LlamaIndex  Haystack  Pydantic AI  CrewAI  Smolagents  Strands(AWS)  ADK(GCP)  AutoGen(Azure)</div>
+
+  <h3>Axis 4 — General purpose vs Specialist</h3>
 <div class="axis-diagram">  generalist   ←─────────────────────→   specialist
 
-   LangGraph  Pydantic AI  CrewAI  AutoGen  ADK  Haystack(NLP)  LlamaIndex(RAG)  Smolagents(code)</div>
+   LangGraph  Pydantic AI  CrewAI  AutoGen  ADK  Strands  Haystack(NLP)  LlamaIndex(RAG)  Smolagents(code)</div>
 
   <p>These positions are <em>directional</em>, not exact. The point is to recognise that <strong>"best framework"</strong> is a meaningless question — every choice is a position on these axes.</p>
 
@@ -389,7 +471,8 @@ response <span class="op">=</span> chat.send_message(<span class="str">"How do I
       <tr><td>CrewAI</td><td>Mature, fast-growing</td><td>Mid-large, opinionated</td><td>Discord</td></tr>
       <tr><td>AutoGen</td><td>Mature, MS-backed</td><td>Mid, research-heavy</td><td>GitHub, MS Build</td></tr>
       <tr><td>Pydantic AI</td><td>Newer (2024+), growing fast</td><td>Mid, Python-shop adoption</td><td>GitHub Discussions</td></tr>
-      <tr><td>Google ADK</td><td>Newer (2024+)</td><td>Smaller — early</td><td>GCP forums, Discord</td></tr>
+      <tr><td>Google ADK</td><td>Newer (2025 GA)</td><td>Smaller — early</td><td>GCP forums, Discord</td></tr>
+      <tr><td>AWS Strands</td><td>Newest (mid-2025 GA)</td><td>Smallest of the three vendor frameworks — early</td><td>GitHub, AWS re:Invent</td></tr>
       <tr><td>Smolagents</td><td>Newer (2024+)</td><td>Smaller — code-agent niche</td><td>HuggingFace Discord</td></tr>
       <tr><td>Native SDK</td><td>Always available</td><td>n/a — vendor docs</td><td>Each LLM provider's forum</td></tr>
     </tbody>
@@ -573,6 +656,12 @@ agent <span style="color:#89b4fa">=</span> create_react_agent(llm, tools<span st
         <td>Evolving. Seamless inside GCP; weak outside.</td>
       </tr>
       <tr>
+        <td><strong>AWS Strands</strong></td>
+        <td>Bedrock AgentCore Observability + CloudWatch + X-Ray. OTel-native under the hood.</td>
+        <td>Strong — OTel exports to Phoenix, Langfuse, Datadog</td>
+        <td>New (2025). Best inside AWS; portable via OTel.</td>
+      </tr>
+      <tr>
         <td><strong>Smolagents</strong></td>
         <td>None — OpenTelemetry-first by design</td>
         <td>Excellent — pipes to Phoenix, LangFuse, Logfire, anything OTel</td>
@@ -630,10 +719,16 @@ agent <span style="color:#89b4fa">=</span> create_react_agent(llm, tools<span st
       <strong>Lesson 18</strong> — Build an agent in <strong>native Gemini SDK</strong>. No framework. You'll feel exactly what frameworks abstract: the agent loop, tool registration, JSON-call parsing, error handling. <em>~12 minutes.</em>
     </li>
     <li>
-      <strong>Lesson 19</strong> — Re-implement the same agent in <strong>five frameworks side-by-side</strong>: LangGraph, CrewAI, Pydantic AI, LlamaIndex, Haystack. Same mission, same tools, very different code. You'll leave with a strong opinion. <em>~20 minutes.</em>
+      <strong>Lesson 19</strong> — Re-implement the same agent in <strong>five vendor-agnostic frameworks side-by-side</strong>: LangGraph, CrewAI, Pydantic AI, LlamaIndex, Haystack. Same mission, same tools, very different code. <em>~20 minutes.</em>
     </li>
     <li>
-      <strong>After L19</strong> — Pick one framework, go deep. Or stay on native if your project is small.
+      <strong>Lessons 20–25 — LangGraph mini-series.</strong> Deep on the biggest vendor-agnostic framework: state, tools, checkpointing, streaming, HITL, multi-agent patterns.
+    </li>
+    <li>
+      <strong>Lessons 26–31 — Google ADK mini-series.</strong> Same primitives from the cloud-vendor-native side. Deploy to Vertex Agent Engine.
+    </li>
+    <li>
+      <strong>Lessons 32–37 — AWS Strands mini-series</strong> (upcoming). Same again but on Bedrock + AgentCore. After this you'll have built the same MuleSoft helper agent in three frameworks — the demo that closes customer conversations.
     </li>
   </ol>
 
@@ -645,11 +740,12 @@ agent <span style="color:#89b4fa">=</span> create_react_agent(llm, tools<span st
     <ul style="margin-top:0.4rem">
       <li><strong>LangGraph</strong> = MuleSoft Anypoint. Generalist, huge ecosystem, lots of integrations.</li>
       <li><strong>LlamaIndex / Haystack</strong> = a specialised iPaaS focused on document/data flows.</li>
-      <li><strong>CrewAI / AutoGen</strong> = orchestration tools where the unit is a workflow of collaborating actors.</li>
-      <li><strong>ADK</strong> = a vendor-managed platform with deep integration into one ecosystem (think CloudHub-only).</li>
+      <li><strong>CrewAI</strong> = orchestration tool where the unit is a workflow of collaborating actors.</li>
+      <li><strong>ADK / Strands / AutoGen</strong> = a vendor-managed platform with deep integration into one ecosystem (think CloudHub-only, but for each hyperscaler). Same shape, different cloud.</li>
       <li><strong>Native SDK</strong> = writing the integration in raw Java/Python without any iPaaS — full control, all the work yours.</li>
     </ul>
     The lock-in vs ergonomics, vendor-neutrality vs managed-convenience trade-offs are isomorphic. You already have the architect's instincts for this; just apply them.
+    <p style="margin-top:0.6rem"><strong>Customer conversation shortcut:</strong> ask "which cloud is the customer already committed to?" That single question narrows Tier 2 to one option. If they say "we're multi-cloud" or "we haven't decided," start from Tier 1 instead.</p>
   </div>
 
   <!-- ───────────────────────────── -->
@@ -710,6 +806,28 @@ agent <span style="color:#89b4fa">=</span> create_react_agent(llm, tools<span st
       </ul>
       <p class="feedback" id="fb4"></p>
     </div>
+
+    <div class="quiz-question" id="q5">
+      <p><strong>Q6.</strong> A MuleSoft customer is deeply invested in AWS. Bedrock is their default LLM provider. Which framework do you reach for first?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Google ADK — it's the most polished vendor framework</li>
+        <li data-i="1">LangGraph — biggest ecosystem</li>
+        <li data-i="2">AWS Strands — Tier-2 framework designed for AWS, with Bedrock AgentCore as the managed runtime</li>
+        <li data-i="3">Native SDK — no framework needed</li>
+      </ul>
+      <p class="feedback" id="fb5"></p>
+    </div>
+
+    <div class="quiz-question" id="q6">
+      <p><strong>Q7.</strong> What's the honest reason to prefer a Tier-1 (vendor-agnostic) framework over a Tier-2 (cloud-vendor-native) one?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Tier-1 frameworks always have better performance</li>
+        <li data-i="1">Tier-1 frameworks are always cheaper to run</li>
+        <li data-i="2">Tier-1 protects you when the cloud choice isn't made, might change, or is multi-cloud. Tier-2's biggest value (managed runtime) is only realised inside the parent cloud.</li>
+        <li data-i="3">Tier-2 frameworks are not production-ready</li>
+      </ul>
+      <p class="feedback" id="fb6"></p>
+    </div>
   </div>
 
   <!-- ───────────────────────────── -->
@@ -740,6 +858,8 @@ agent <span style="color:#89b4fa">=</span> create_react_agent(llm, tools<span st
     2: { ok: "Correct! Multi-vendor frameworks are insurance against provider lock-in — switch reasons range from cost to capability to regional rollouts. Worth paying a small ergonomic cost for that flexibility.", err: "Not quite. The reason multi-vendor matters is portability — when (not if) you reach for a different model for cost, capability, or availability reasons, you don't want to rewrite the whole agent." },
     3: { ok: "Correct! CrewAI's role-based 'crew' abstraction is its signature — it makes multi-agent collaboration readable in a way other frameworks don't.", err: "Not quite. CrewAI is opinionated around multi-agent role-play. Single-agent type-safety is Pydantic AI; flexible graphs is LangGraph; Vertex deployment is ADK." },
     4: { ok: "Correct! The right framework depends on your job. The lesson's value is the axes, not a verdict.", err: "Not quite. The honest answer is that 'best' depends on context — single vs multi-agent, generalist vs specialist, magic vs control. The lesson teaches the axes so you can choose for your context." },
+    5: { ok: "Correct! Strands + Bedrock AgentCore is the AWS-native story. On AWS with Bedrock as the LLM, Strands is what ADK is to GCP — the framework built for that cloud's managed runtime.", err: "Not quite. When a customer is committed to one cloud, the Tier-2 framework for that cloud is the obvious first pick — ADK for GCP, Strands for AWS, AutoGen for Azure. Cross-cloud picks are for cloud-neutral customers." },
+    6: { ok: "Correct! Tier-1 = insurance against the cloud choice. Tier-2 = leverage when the cloud choice is already made. Neither is universally better — the customer's cloud commitment is the deciding input.", err: "Not quite. Tier-1 and Tier-2 aren't ranked by quality — they represent different bets. Tier-1 survives cloud switches; Tier-2 gets the managed-runtime story only inside its parent cloud." },
   };
 
   document.querySelectorAll('.quiz-question').forEach((qBlock, qi) => {

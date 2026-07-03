@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lesson 19 — The Same Agent in Five Frameworks</title>
+  <title>Lesson 19 — The Same Agent in Five Vendor-Agnostic Frameworks</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 17px; }
@@ -132,8 +132,8 @@
 
   <header class="lesson-header">
     <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 19 of ?</p>
-    <h1>The Same Agent in Five Frameworks</h1>
-    <p class="tagline">You built it raw in L18. Now see what frameworks <em>actually</em> buy you — the same agent, five times, on equal footing.</p>
+    <h1>The Same Agent in Five Vendor-Agnostic Frameworks</h1>
+    <p class="tagline">You built it raw in L18. Now see what frameworks <em>actually</em> buy you — the same agent, five times, on equal footing. Cloud-vendor-native frameworks (ADK, Strands, AutoGen) each get their own mini-series.</p>
     <div class="progress">
       <a href="0001-python-essentials.html"><span class="pill pill-done">L1 ✓</span></a>
       <a href="0002-http-apis.html"><span class="pill pill-done">L2 ✓</span></a>
@@ -170,6 +170,17 @@
   <div class="callout callout-warn">
     <div class="callout-label">Source honesty</div>
     The code blocks below are <strong>realistic shapes</strong> based on each framework's official quickstarts, not a working repo I've personally run end-to-end for this lesson. The mental model is what to take away. Before adopting any of these in production, verify against the current docs — agent frameworks move fast and APIs shift between minor versions.
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Scope — five vendor-agnostic frameworks only</div>
+    <p style="margin:0 0 0.4rem">L17 laid out <strong>ten</strong> frameworks in two tiers. This lesson head-to-heads the <strong>five Tier-1 vendor-agnostic</strong> ones — the community-run frameworks that treat every cloud as a plug-in provider. That's the honest comparison, because they fight each other on <em>ergonomics + ecosystem</em>, not on <em>which cloud you're on</em>.</p>
+    <p style="margin:0 0 0.4rem">The <strong>Tier-2 cloud-vendor-native</strong> frameworks each get their own dedicated mini-series, where deployment story matters more than API shape:</p>
+    <ul style="margin-top:0.2rem">
+      <li><strong>Google ADK</strong> → <a href="0026-adk-basics-agent-tools-runner.html">L26</a>–<a href="0031-adk-deploy-agent-engine.html">L31</a> (complete)</li>
+      <li><strong>AWS Strands + Bedrock AgentCore</strong> → L32–L37 (in progress)</li>
+      <li><strong>Microsoft AutoGen + Azure AI Foundry</strong> → future mini-series</li>
+    </ul>
   </div>
 
   <!-- ───────────────────────────── -->
@@ -232,49 +243,68 @@ chat <span class="op">=</span> client.chats.create(
   <!-- ───────────────────────────── -->
   <h2>The five contenders, in order of "distance from L18"</h2>
   <ol>
-    <li><strong>Google ADK</strong> — same SDK, more sugar. Smallest jump.</li>
+    <li><strong>Pydantic AI</strong> — one <code>Agent</code> object, functions become tools, Pythonic. Smallest jump.</li>
     <li><strong>LangChain + LangGraph</strong> — graph-based, explicit state machine.</li>
-    <li><strong>CrewAI</strong> — role/task/crew abstraction. Biggest reframing.</li>
+    <li><strong>CrewAI</strong> — role/task/crew abstraction. Biggest reframing for a single agent.</li>
     <li><strong>LlamaIndex</strong> — retrieval-native; the agent is a special index.</li>
     <li><strong>Haystack</strong> — pipeline-based; agent is a component in a flow.</li>
   </ol>
 
-  <!-- ─────────── FRAMEWORK 1 — GOOGLE ADK ─────────── -->
+  <!-- ─────────── FRAMEWORK 1 — PYDANTIC AI ─────────── -->
   <div class="framework">
     <div class="fw-title">
       <span class="fw-num">FRAMEWORK 1</span>
-      <span class="fw-name">Google ADK</span>
-      <span class="fw-vendor">Agent Development Kit · by Google</span>
+      <span class="fw-name">Pydantic AI</span>
+      <span class="fw-vendor">by the Pydantic team</span>
     </div>
-    <p class="fw-tagline">First-party Gemini agent kit. Looks like L18 with the loop hidden and sessions/eval/deploy bolted on.</p>
+    <p class="fw-tagline">From the same team that wrote Pydantic (the type/validation library half of Python uses). One <code>Agent</code> object, plain functions become tools, structured outputs by Pydantic model — the closest thing to "L18 with the loop hidden and a type checker attached."</p>
 
-<pre><code><span class="cm"># pip install google-adk</span>
-<span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
-<span class="kw">from</span> google.adk.runners <span class="kw">import</span> Runner
-<span class="kw">from</span> google.adk.sessions <span class="kw">import</span> InMemorySessionService
+<pre><code><span class="cm"># pip install pydantic-ai</span>
+<span class="kw">from</span> pydantic_ai <span class="kw">import</span> Agent, RunContext
 
-<span class="kw">def</span> <span class="fn">search_docs</span>(query: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">dict</span>:
-    <span class="str">"""Search MuleSoft docs and return an answer with citations."""</span>
-    <span class="kw">return</span> {<span class="str">"answer"</span>: rag_chroma.ask(query)}
+<span class="cm"># The Agent is one object — model + system prompt + tools all attached to it.</span>
+agent <span class="op">=</span> Agent(
+    <span class="str">"google-gla:gemini-2.0-flash"</span>,     <span class="cm"># provider:model string</span>
+    system_prompt<span class="op">=</span>SYSTEM,
+)
 
+<span class="cm"># Tools are decorated methods on the agent. The decorator reads the</span>
+<span class="cm"># function signature + docstring and builds the JSON schema for the LLM.</span>
+<span class="attr">@agent.tool_plain</span>
+<span class="kw">def</span> <span class="fn">search_docs</span>(query: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">str</span>:
+    <span class="str">"""Search MuleSoft docs and return an answer."""</span>
+    <span class="kw">return</span> rag_chroma.ask(query)
+
+<span class="attr">@agent.tool_plain</span>
 <span class="kw">def</span> <span class="fn">get_anypoint_org_status</span>(org_id: <span class="fn">str</span>) <span class="op">-&gt;</span> <span class="fn">dict</span>:
     <span class="str">"""Live Anypoint org status."""</span>
-    <span class="kw">return</span> {<span class="str">"org_id"</span>: org_id, <span class="str">"status"</span>: <span class="str">"healthy"</span>, <span class="str">"apps"</span>: <span class="num">42</span>}
+    <span class="kw">return</span> {<span class="str">"org_id"</span>: org_id, <span class="str">"status"</span>: <span class="str">"healthy"</span>}
 
-agent <span class="op">=</span> Agent(
-    name<span class="op">=</span><span class="str">"mulesoft_helper"</span>,
-    model<span class="op">=</span><span class="str">"gemini-2.0-flash"</span>,
-    instruction<span class="op">=</span>SYSTEM,
-    tools<span class="op">=</span>[search_docs, get_anypoint_org_status],
+<span class="cm"># Synchronous entry point — no async required for a hello-world.</span>
+result <span class="op">=</span> agent.run_sync(<span class="str">"How do I rotate a Connected App secret?"</span>)
+<span class="fn">print</span>(result.output)
+</code></pre>
+
+    <div class="callout callout-syntax">
+      <div class="callout-label">New syntax · <code>@agent.tool_plain</code></div>
+      <code>@agent.tool_plain</code> is a decorator (see <a href="0015-enterprise-rag-eval.html">L15</a> for the pattern) that takes your plain Python function and registers it as a tool on <em>this specific</em> <code>agent</code> — reading the signature and docstring to build the schema, exactly like Gemini's SDK did automatically in L18. Use <code>@agent.tool</code> (no <code>_plain</code>) if the tool needs access to the <code>RunContext</code> (state, deps, retry info).
+    </div>
+
+    <p><strong>Structured output — the Pydantic-native superpower.</strong> Say you want the agent's final answer to be a typed object, not free text:</p>
+<pre><code><span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel
+
+<span class="kw">class</span> <span class="fn">OrgSummary</span>(BaseModel):
+    org_id: <span class="fn">str</span>
+    healthy: <span class="fn">bool</span>
+    action_needed: <span class="fn">str</span> <span class="op">|</span> <span class="kw">None</span>
+
+typed_agent <span class="op">=</span> Agent(
+    <span class="str">"google-gla:gemini-2.0-flash"</span>,
+    output_type<span class="op">=</span>OrgSummary,       <span class="cm"># <-- validated by Pydantic before you see it</span>
+    system_prompt<span class="op">=</span>SYSTEM,
 )
-runner <span class="op">=</span> Runner(agent<span class="op">=</span>agent, session_service<span class="op">=</span>InMemorySessionService())
-
-<span class="kw">async for</span> event <span class="kw">in</span> runner.run_async(
-    user_id<span class="op">=</span><span class="str">"att"</span>, session_id<span class="op">=</span><span class="str">"s1"</span>,
-    new_message<span class="op">=</span><span class="str">"How do I rotate a Connected App secret?"</span>,
-):
-    <span class="kw">if</span> event.is_final_response():
-        <span class="fn">print</span>(event.content.parts[<span class="num">0</span>].text)
+result <span class="op">=</span> typed_agent.run_sync(<span class="str">"Check org 12345 and tell me if action is needed."</span>)
+<span class="fn">print</span>(result.output.healthy)  <span class="cm"># typed bool, not a string</span>
 </code></pre>
 
     <div class="pros-cons">
@@ -282,21 +312,21 @@ runner <span class="op">=</span> Runner(agent<span class="op">=</span>agent, ses
         <h5>What it removes</h5>
         <ul>
           <li>The manual <code>for step in range(max_steps)</code> loop</li>
-          <li>Session lifecycle (history, user, multi-session — pluggable storage)</li>
-          <li>Built-in evals + tracing + Vertex Agent Engine deploy path</li>
+          <li>Manual JSON-parsing of "structured" outputs — Pydantic validates for you</li>
+          <li>Provider lock-in — same code targets OpenAI, Anthropic, Gemini, Ollama, Bedrock via provider strings</li>
         </ul>
       </div>
       <div class="cons">
         <h5>What it costs</h5>
         <ul>
-          <li>Async-first API — <code>async for</code> isn't optional</li>
-          <li>Tied to Google ecosystem (best with Vertex AI / Gemini)</li>
-          <li>Newer (2024) — smaller community than LangChain/LlamaIndex</li>
+          <li>Newest of the five (2024) — smaller community, fewer Stack Overflow hits</li>
+          <li>Sessions/persistence layer is thinner than LangGraph or LlamaIndex</li>
+          <li>Multi-agent orchestration is do-it-yourself compared to CrewAI</li>
         </ul>
       </div>
     </div>
     <div class="verdict">
-      <strong>Verdict:</strong> Pick this if you're already all-in on Gemini/Vertex and want the loop hidden without leaving Google's runtime. Best "smallest jump from L18."
+      <strong>Verdict:</strong> Pick this if you already lean on Pydantic in the rest of your Python code and want types + validation at the edges of the agent. Best "smallest jump from L18" among the vendor-agnostic five.
     </div>
   </div>
 
@@ -599,12 +629,13 @@ pipe.connect(<span class="str">"retriever.documents"</span>, <span class="str">"
       <tr><th>If your priority is…</th><th>Pick</th><th>Why</th></tr>
     </thead>
     <tbody>
-      <tr><td>Smallest leap from native Gemini, same runtime</td><td>Google ADK</td><td>You stay inside Google's SDK, just with the loop hidden and sessions/eval added.</td></tr>
+      <tr><td>Smallest leap from L18; typed outputs; Python-native feel</td><td>Pydantic AI</td><td>One <code>Agent</code>, plain functions become tools, Pydantic models validate structured outputs at the edges.</td></tr>
       <tr><td>Production-grade persistence + checkpointing</td><td>LangGraph</td><td><code>MemorySaver</code> / Postgres / Redis checkpointers; resume mid-conversation; the most operationally mature.</td></tr>
-      <tr><td>Provider portability (Gemini ↔ OpenAI ↔ Anthropic)</td><td>LangGraph</td><td>Largest model adapter library; swap LLM with a one-line change.</td></tr>
+      <tr><td>Provider portability (Gemini ↔ OpenAI ↔ Anthropic)</td><td>LangGraph or Pydantic AI</td><td>Both swap LLM providers with a one-line change; LangGraph has the largest adapter library, Pydantic AI has the cleanest syntax.</td></tr>
       <tr><td>Multi-agent collaboration (researcher + writer + reviewer)</td><td>CrewAI</td><td>Role/task/crew is the right frame for this — overkill for a single helper.</td></tr>
       <tr><td>Agent whose primary job is querying lots of indexes</td><td>LlamaIndex</td><td>Retrieval is first-class; advanced patterns from <a href="0013-advanced-retrieval-patterns.html">L13</a> are native.</td></tr>
       <tr><td>End-to-end document pipeline (search → rank → agent → validate)</td><td>Haystack</td><td>Pipeline DAG is the unit of work; strong typing on component wiring.</td></tr>
+      <tr><td>You're on one specific cloud and want that cloud's opinionated stack</td><td>See mini-series</td><td>ADK (Google) → <a href="0026-adk-basics-agent-tools-runner.html">L26–L31</a>; Strands (AWS) → L32–L37; AutoGen (Azure) → future.</td></tr>
       <tr><td>Lowest dependency footprint, total control</td><td>Native L18</td><td>Don't adopt a framework yet. See "when to stay native" below.</td></tr>
     </tbody>
   </table>
@@ -613,10 +644,11 @@ pipe.connect(<span class="str">"retriever.documents"</span>, <span class="str">"
   <div class="callout callout-mule">
     <div class="callout-label">For your day job</div>
     <ul style="margin:0">
-      <li><strong>Customer demo / Salesforce stack alignment</strong> — Google ADK fits because Salesforce+MuleSoft is increasingly Gemini-aligned via Agentforce. One Google story.</li>
+      <li><strong>Vendor-neutral proof of concept</strong> (one you can rehost on any cloud) — <strong>Pydantic AI</strong> for a small, typed helper; <strong>LangGraph</strong> once you need persistence.</li>
       <li><strong>Internal "ask MuleSoft docs" assistant</strong> — LangGraph or LlamaIndex. Both have battle-tested retrieval. LangGraph wins on persistence.</li>
       <li><strong>Multi-step integration ops bot</strong> (look up org → check apps → propose fix → ask approval) — LangGraph for graph control, or CrewAI if the steps map to distinct personas.</li>
       <li><strong>Document-extraction-style enterprise pipeline</strong> (like the IDP frontend you're building) — Haystack is genuinely the strongest fit here.</li>
+      <li><strong>Customer is committed to one cloud</strong> — skip Tier-1 entirely, use that cloud's native framework. Google → <a href="0026-adk-basics-agent-tools-runner.html">ADK (L26–L31)</a>. AWS → Strands (L32–L37). Azure → AutoGen (upcoming). One vendor story, native billing/observability.</li>
     </ul>
   </div>
 
@@ -641,19 +673,19 @@ pipe.connect(<span class="str">"retriever.documents"</span>, <span class="str">"
 
   <table>
     <thead>
-      <tr><th>Feature</th><th>L18 native</th><th>ADK</th><th>LangGraph</th><th>CrewAI</th><th>LlamaIndex</th><th>Haystack</th></tr>
+      <tr><th>Feature</th><th>L18 native</th><th>Pydantic AI</th><th>LangGraph</th><th>CrewAI</th><th>LlamaIndex</th><th>Haystack</th></tr>
     </thead>
     <tbody>
       <tr><td>Agent loop hidden</td><td>·</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
-      <tr><td>Auto-schema from Python fn</td><td>✓</td><td>✓</td><td>✓ (@tool)</td><td>✓ (@tool)</td><td>✓ (FunctionTool)</td><td>✓ (@tool)</td></tr>
-      <tr><td>Multi-provider LLM swap</td><td>·</td><td>·</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
-      <tr><td>Sessions / persistent state</td><td>·</td><td>✓</td><td>✓</td><td>·</td><td>✓</td><td>·</td></tr>
+      <tr><td>Auto-schema from Python fn</td><td>✓</td><td>✓ (@tool_plain)</td><td>✓ (@tool)</td><td>✓ (@tool)</td><td>✓ (FunctionTool)</td><td>✓ (@tool)</td></tr>
+      <tr><td>Multi-provider LLM swap</td><td>·</td><td>✓ (provider strings)</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><td>Typed / validated output</td><td>·</td><td>✓ (primary — Pydantic)</td><td>(via schema tool)</td><td>·</td><td>(via output cls)</td><td>·</td></tr>
+      <tr><td>Sessions / persistent state</td><td>·</td><td>(thin)</td><td>✓</td><td>·</td><td>✓</td><td>·</td></tr>
       <tr><td>Checkpointing (resume mid-run)</td><td>·</td><td>·</td><td>✓</td><td>·</td><td>·</td><td>·</td></tr>
-      <tr><td>Built-in eval harness</td><td>·</td><td>✓</td><td>(LangSmith)</td><td>·</td><td>·</td><td>·</td></tr>
-      <tr><td>Multi-agent orchestration</td><td>·</td><td>✓</td><td>✓</td><td>✓ (primary)</td><td>(workflows)</td><td>·</td></tr>
+      <tr><td>Multi-agent orchestration</td><td>·</td><td>(DIY)</td><td>✓</td><td>✓ (primary)</td><td>(workflows)</td><td>·</td></tr>
       <tr><td>Retrieval primitives</td><td>·</td><td>·</td><td>(adapters)</td><td>·</td><td>✓ (primary)</td><td>✓ (primary)</td></tr>
       <tr><td>Pipeline DAG</td><td>·</td><td>·</td><td>✓ (graph)</td><td>·</td><td>·</td><td>✓ (primary)</td></tr>
-      <tr><td>OTel-style tracing</td><td>·</td><td>✓</td><td>(LangSmith)</td><td>(AgentOps)</td><td>(Phoenix)</td><td>(Langfuse)</td></tr>
+      <tr><td>OTel-style tracing</td><td>·</td><td>✓ (Logfire, native)</td><td>(LangSmith)</td><td>(AgentOps)</td><td>(Phoenix)</td><td>(Langfuse)</td></tr>
     </tbody>
   </table>
 
@@ -667,8 +699,8 @@ pipe.connect(<span class="str">"retriever.documents"</span>, <span class="str">"
 
   <ol>
     <li><strong>What's your honest use case for the next 3 months?</strong> A demo? A side project? A production internal tool?</li>
-    <li><strong>Which constraint hurts most today?</strong> Boilerplate (any framework helps), provider portability (LangGraph), persistence (LangGraph/ADK), multiple specialised agents (CrewAI), retrieval depth (LlamaIndex), pipeline shape (Haystack)?</li>
-    <li><strong>Are you optimising for "learn it deeply" or "ship it fast"?</strong> Learn-deeply favours LangGraph (largest mental surface area, most transferable). Ship-fast favours ADK (smallest jump from what you already know).</li>
+    <li><strong>Which constraint hurts most today?</strong> Boilerplate (any framework helps), provider portability (LangGraph or Pydantic AI), persistence (LangGraph), typed outputs (Pydantic AI), multiple specialised agents (CrewAI), retrieval depth (LlamaIndex), pipeline shape (Haystack)?</li>
+    <li><strong>Are you optimising for "learn it deeply" or "ship it fast"?</strong> Learn-deeply favours LangGraph (largest mental surface area, most transferable). Ship-fast favours Pydantic AI (smallest jump from L18, feels like plain Python with types).</li>
   </ol>
 
   <div class="callout callout-tip">
@@ -680,11 +712,11 @@ pipe.connect(<span class="str">"retriever.documents"</span>, <span class="str">"
     <h3>Quick check</h3>
 
     <div class="quiz-question" id="q0">
-      <p><strong>Q1.</strong> Which framework is the smallest jump from L18's native Gemini SDK agent?</p>
+      <p><strong>Q1.</strong> Among the <em>five vendor-agnostic frameworks</em> in this lesson, which is the smallest jump from L18's native SDK agent — one <code>Agent</code> object, plain Python functions become tools, sync entry point?</p>
       <ul class="options" data-answer="2">
         <li data-i="0">LangChain (deprecated <code>AgentExecutor</code>)</li>
         <li data-i="1">LangGraph</li>
-        <li data-i="2">Google ADK</li>
+        <li data-i="2">Pydantic AI</li>
         <li data-i="3">Haystack</li>
       </ul>
       <p class="feedback" id="fb0"></p>
@@ -705,7 +737,7 @@ pipe.connect(<span class="str">"retriever.documents"</span>, <span class="str">"
       <p><strong>Q3.</strong> You need a single agent that answers MuleSoft questions using your RAG. Which framework is <em>overkill</em>?</p>
       <ul class="options" data-answer="0">
         <li data-i="0">CrewAI — its role/task/crew abstraction is designed for multiple collaborating agents</li>
-        <li data-i="1">Google ADK — too lightweight</li>
+        <li data-i="1">Pydantic AI — too lightweight</li>
         <li data-i="2">LangGraph — too simple</li>
         <li data-i="3">All five are perfectly suited for a single agent</li>
       </ul>
@@ -727,11 +759,22 @@ pipe.connect(<span class="str">"retriever.documents"</span>, <span class="str">"
       <p><strong>Q5.</strong> Your agent's main job is querying many indexed documents and you want sub-question decomposition and recursive retrieval baked in. Best fit?</p>
       <ul class="options" data-answer="2">
         <li data-i="0">CrewAI</li>
-        <li data-i="1">Google ADK</li>
+        <li data-i="1">Pydantic AI</li>
         <li data-i="2">LlamaIndex — built around retrieval, with advanced patterns from L13 as first-class primitives</li>
         <li data-i="3">Haystack</li>
       </ul>
       <p class="feedback" id="fb4"></p>
+    </div>
+
+    <div class="quiz-question" id="q5">
+      <p><strong>Q6.</strong> A customer is fully committed to AWS — they want billing, IAM, and observability to stay inside their AWS account. Which framework should you show them, and where is it covered in this curriculum?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Pydantic AI — vendor-agnostic, works everywhere, covered here in L19</li>
+        <li data-i="1">AWS Strands + Bedrock AgentCore — a Tier-2 cloud-vendor-native framework, covered in the upcoming L32–L37 mini-series (not this lesson)</li>
+        <li data-i="2">Haystack — because it's a pipeline framework</li>
+        <li data-i="3">CrewAI — because it has "AI" in the name</li>
+      </ul>
+      <p class="feedback" id="fb5"></p>
     </div>
   </div>
 
