@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 38 — AutoGen basics: your first agent on Azure OpenAI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 38 &nbsp;·&nbsp; AutoGen + Azure AI Foundry mini-series (1 of 6)</p>
+    <h1>AutoGen basics: your first agent on Azure OpenAI</h1>
+    <p class="tagline">Third cloud, same journey. You've built the MuleSoft assistant in Google's ADK (L26–L31) and AWS's Strands (L32–L37). This lesson opens the Microsoft chapter — Microsoft's <strong>AutoGen</strong> agent framework, calling Azure OpenAI, following the exact teach-don't-build shape you know.</p>
+    <div class="progress">
+      <a href="0032-strands-basics.html"><span class="pill pill-done">L32 Strands ✓</span></a>
+      <a href="0026-adk-basics-agent-tools-runner.html"><span class="pill pill-done">L26 ADK ✓</span></a>
+      <span class="pill pill-now">L38 — AutoGen basics</span>
+      <span class="pill pill-next">L39 — Model switch</span>
+      <span class="pill pill-next">L40 — Foundry Agents</span>
+      <span class="pill pill-next">L41 — Threads</span>
+      <span class="pill pill-next">L42 — Multi-agent</span>
+      <span class="pill pill-next">L43 — Deploy capstone</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    <strong>AutoGen</strong> is Microsoft Research's open-source (Apache 2.0) agent framework. Same idea as Strands or LangGraph — write agents in Python, wire tools, orchestrate multi-agent workflows — but shaped around Microsoft's assumptions: async-first, actor-model core, deep Azure OpenAI integration. Big v0.4 rewrite in late 2024 rearranged the packages; ignore any L3-year-old tutorial that imports <code>autogen</code> at the top level.
+  </p>
+  <p>
+    You already know the drill. Build the same MuleSoft assistant you built in L18 (native), L26 (ADK), L32 (Strands) — one system prompt, two tools (<code>search_docs</code>, <code>get_anypoint_org_status</code>), a handful of test queries. What changes is the framework's shape.
+  </p>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty</div>
+    AutoGen v0.4 (the async-first rewrite) is the current major line as of 2025. Package names are <code>autogen-core</code>, <code>autogen-agentchat</code>, <code>autogen-ext</code>. If you find yourself typing <code>from autogen import ...</code> you're on the pre-v0.4 API and your tutorial is stale. Cross-check with the current <a href="https://microsoft.github.io/autogen/">AutoGen docs</a>.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three new syntax constructs</h2>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · AssistantAgent</div>
+    The high-level building block is <code>AssistantAgent</code> from <code>autogen_agentchat.agents</code>. You give it a name, a model client, a list of tools (plain Python functions with type hints work directly — no decorator needed), and a system message. Unlike Strands' <code>agent("prompt")</code> shortcut, AutoGen is async-first: you call <code>await agent.on_messages([...], cancellation_token)</code>.
+    <pre style="margin:0.5rem 0 0"><code>from autogen_agentchat.agents import AssistantAgent
+
+agent = AssistantAgent(
+    name="mulesoft_helper",
+    model_client=client,
+    tools=[search_docs, get_anypoint_org_status],
+    system_message="You are a MuleSoft platform assistant...",
+)</code></pre>
+    "Plain Python functions as tools" is the ergonomic surprise here — no <code>@tool</code>, no schema declaration. AutoGen introspects your type hints and docstring.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · AzureOpenAIChatCompletionClient</div>
+    Model clients live in <code>autogen_ext.models.openai</code>. For Azure OpenAI, you use <code>AzureOpenAIChatCompletionClient</code> — takes your Azure endpoint, API version, and a <em>deployment name</em> (not a model ID). Deployment name is Azure's abstraction: you deploy <code>gpt-4o</code> under whatever name you want (e.g. <code>my-gpt4o-prod</code>), and code references that name.
+    <pre style="margin:0.5rem 0 0"><code>from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
+
+client = AzureOpenAIChatCompletionClient(
+    azure_deployment="my-gpt4o-deployment",
+    model="gpt-4o",                # informational, for token counting
+    api_version="2024-06-01",
+    azure_endpoint="https://my-resource.openai.azure.com/",
+    api_key="...",                 # or use azure_ad_token_provider
+)</code></pre>
+    Deployment name ≠ model ID is the #1 confusion when starting on Azure OpenAI. Get it wrong and you get a 404 that looks like an auth issue.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · async / await + on_messages</div>
+    AutoGen is <strong>async-first</strong>. Every framework you've used so far had a synchronous shortcut (<code>agent.run_sync</code>, <code>agent("prompt")</code>). AutoGen doesn't — you write async code, or you wrap it in <code>asyncio.run(...)</code>. Invocation is <code>await agent.on_messages(messages, cancellation_token)</code>:
+    <pre style="margin:0.5rem 0 0"><code>import asyncio
+from autogen_agentchat.messages import TextMessage
+from autogen_core import CancellationToken
+
+async def main():
+    response = await agent.on_messages(
+        [TextMessage(content="How do I rotate a Connected App secret?",
+                     source="user")],
+        cancellation_token=CancellationToken(),
+    )
+    print(response.chat_message.content)
+
+asyncio.run(main())</code></pre>
+    <strong>New Python syntax if you've never seen it</strong>: <code>async def</code> declares a coroutine (a function whose body is paused when it hits <code>await</code>). <code>await x</code> pauses until <code>x</code> completes. <code>asyncio.run(main())</code> starts an event loop and runs the top-level coroutine. If you've written Node.js or C#, this shape is familiar.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Prerequisites</h2>
+  <ol>
+    <li>An <strong>Azure subscription</strong> and access to Azure OpenAI in your region (some regions require an application).</li>
+    <li>Create an Azure OpenAI resource, then a <strong>deployment</strong> (e.g. deploy <code>gpt-4o-mini</code>, name it <code>gpt4o-mini-dev</code>).</li>
+    <li>Get the endpoint URL, API version, and either an API key (for testing) or configure Entra ID auth (better for production; deferred to L43).</li>
+    <li>Install packages: <code>pip install autogen-agentchat autogen-ext[openai,azure]</code></li>
+    <li>Environment variables recommended:
+      <ul>
+        <li><code>AZURE_OPENAI_ENDPOINT</code></li>
+        <li><code>AZURE_OPENAI_API_KEY</code></li>
+        <li><code>AZURE_OPENAI_DEPLOYMENT</code></li>
+        <li><code>AZURE_OPENAI_API_VERSION</code> (e.g. <code>2024-06-01</code>)</li>
+      </ul>
+    </li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn</h2>
+  <p>Create <code>autogen_hello.py</code>. Same domain, same tools you've been reusing — this is the fourth time you've built this assistant, so the domain is muscle memory. Focus on the framework shape.</p>
+
+  <div class="todo">
+<span class="todo-label">SKELETON — fill in the 5 TODOs</span>
+
+<span class="cm"># autogen_hello.py — first AutoGen agent on Azure OpenAI</span>
+
+<span class="kw">import</span> asyncio
+<span class="kw">import</span> os
+<span class="kw">from</span> autogen_agentchat.agents <span class="kw">import</span> AssistantAgent
+<span class="kw">from</span> autogen_agentchat.messages <span class="kw">import</span> TextMessage
+<span class="kw">from</span> autogen_core <span class="kw">import</span> CancellationToken
+<span class="kw">from</span> autogen_ext.models.openai <span class="kw">import</span> AzureOpenAIChatCompletionClient
+
+
+<span class="cm"># TODO 1 — Import rag_chroma helper (or stub it) so search_docs has something</span>
+<span class="cm">#          to call. Same helper from L09/L18/L26/L32 — reuse if you have it.</span>
+
+
+<span class="cm"># TODO 2 — Plain function, NO decorator. AutoGen introspects the signature</span>
+<span class="cm">#          and docstring to build the tool schema:</span>
+<span class="cm">#              def search_docs(query: str) -&gt; str:</span>
+<span class="cm">#                  """Search MuleSoft docs and return an answer.</span>
+<span class="cm"># </span>
+<span class="cm">#                  Args:</span>
+<span class="cm">#                      query: The natural-language question.</span>
+<span class="cm">#                  """</span>
+<span class="cm">#                  return rag_chroma.ask(query)</span>
+
+
+<span class="cm"># TODO 3 — Second tool. Return a dict — AutoGen serialises it to JSON for you.</span>
+<span class="cm">#              def get_anypoint_org_status(org_id: str) -&gt; dict:</span>
+<span class="cm">#                  """Look up the live status of an Anypoint org.</span>
+<span class="cm"># </span>
+<span class="cm">#                  Args:</span>
+<span class="cm">#                      org_id: The Anypoint organisation ID.</span>
+<span class="cm">#                  """</span>
+<span class="cm">#                  return {"org_id": org_id, "status": "healthy"}</span>
+
+
+SYSTEM <span class="op">=</span> <span class="str">"""You are a MuleSoft platform assistant. Use search_docs for</span>
+<span class="str">documentation questions and get_anypoint_org_status for live org state.</span>
+<span class="str">Cite the tool you used."""</span>
+
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    <span class="cm"># TODO 4 — Build the model client and the agent.</span>
+    <span class="cm">#              client = AzureOpenAIChatCompletionClient(</span>
+<span class="cm">#                  azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],</span>
+<span class="cm">#                  model="gpt-4o-mini",</span>
+<span class="cm">#                  api_version=os.environ["AZURE_OPENAI_API_VERSION"],</span>
+<span class="cm">#                  azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],</span>
+<span class="cm">#                  api_key=os.environ["AZURE_OPENAI_API_KEY"],</span>
+<span class="cm">#              )</span>
+<span class="cm">#              agent = AssistantAgent(</span>
+<span class="cm">#                  name="mulesoft_helper",</span>
+<span class="cm">#                  model_client=client,</span>
+<span class="cm">#                  tools=[search_docs, get_anypoint_org_status],</span>
+<span class="cm">#                  system_message=SYSTEM,</span>
+<span class="cm">#              )</span>
+
+
+    <span class="cm"># TODO 5 — Run three test queries. Each call is awaited.</span>
+    queries <span class="op">=</span> [
+        <span class="str">"How do I rotate a Connected App secret?"</span>,
+        <span class="str">"What's the status of org 12345?"</span>,
+        <span class="str">"Give me both — status of org 12345 AND the runbook for degraded state."</span>,
+    ]
+    <span class="kw">for</span> q <span class="kw">in</span> queries:
+        response <span class="op">=</span> <span class="kw">await</span> agent.on_messages(
+            [TextMessage(content<span class="op">=</span>q, source<span class="op">=</span><span class="str">"user"</span>)],
+            cancellation_token<span class="op">=</span>CancellationToken(),
+        )
+        <span class="fn">print</span>(<span class="str">"Q:"</span>, q)
+        <span class="fn">print</span>(<span class="str">"A:"</span>, response.chat_message.content)
+        <span class="fn">print</span>(<span class="str">"---"</span>)
+
+
+<span class="kw">if</span> __name__ <span class="op">==</span> <span class="str">"__main__"</span>:
+    asyncio.run(main())
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Verification</h2>
+  <div class="callout callout-check">
+    <div class="callout-label">Five checks</div>
+    <ol style="margin:0.5rem 0">
+      <li>File runs without an import error → your v0.4 packages are installed correctly.</li>
+      <li>First query returns a docs answer → <code>search_docs</code> was invoked; check the trace to confirm.</li>
+      <li>Second query returns "healthy" for org 12345 → <code>get_anypoint_org_status</code> was invoked.</li>
+      <li>Third query invokes <em>both</em> tools in one turn → the model is deciding, not hard-coded.</li>
+      <li>Inspect <code>response.chat_message</code> — you'll see the final assistant message. To see the tool-call trace, look at <code>response.inner_messages</code> (v0.4 exposes intermediate messages).</li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Compare to what you know</h2>
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>L18 native</th><th>L26 ADK</th><th>L32 Strands</th><th>L38 AutoGen</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Tool declaration</td><td>Manual JSON schema</td><td>Plain function, folder convention</td><td><code>@tool</code></td><td>Plain function, docstring introspection</td></tr>
+      <tr><td>Invocation</td><td>Loop yourself</td><td><code>Runner.run_async</code></td><td><code>agent("prompt")</code> sync</td><td><code>await agent.on_messages(...)</code></td></tr>
+      <tr><td>Async story</td><td>Sync</td><td>Async by default</td><td>Sync helper on top of async</td><td>Async-first, no sync shortcut</td></tr>
+      <tr><td>Model provider</td><td>Direct Gemini/Anthropic SDK</td><td>Vertex / any LiteLLM model</td><td>Bedrock, direct, LiteLLM</td><td>Azure OpenAI, OpenAI, others via extensions</td></tr>
+      <tr><td>Cloud fit</td><td>—</td><td>GCP</td><td>AWS</td><td>Azure</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle</div>
+    Azure-committed customers — often the same ones running Dynamics 365, Fabric, or a heavy Microsoft ISV stack — will ask "what's the Microsoft-native agent story?" AutoGen (open source) + Azure AI Foundry (managed platform) is the honest answer, and it's a symmetric story to Bedrock+AgentCore and Gemini+Vertex. This lesson gets you to "I can hold a first credible AutoGen conversation with an Azure-native architect." L43 gets you to "I've deployed one end-to-end."
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where the abstraction leaks</h2>
+  <ul>
+    <li><strong>Deployment name ≠ model ID.</strong> Azure OpenAI's abstraction. Two devs will hit the same bug in the first hour. Set it via env var.</li>
+    <li><strong>API version pins matter.</strong> New Azure OpenAI features (structured outputs, streaming variants) ship in specific API versions. If your call silently ignores a param, check the version.</li>
+    <li><strong>Async everywhere.</strong> If your calling code is a Flask sync route, wrap with <code>asyncio.run</code> or use a sync web framework. Mixing sync/async without care leads to blocked event loops.</li>
+    <li><strong>Tool introspection is best-effort.</strong> Skip the docstring, and the model sees a poorly-described tool. Type hints are load-bearing — <code>str</code>, <code>int</code>, <code>dict</code>, Pydantic models all fine; <code>Any</code> defeats the schema.</li>
+    <li><strong>Regional model availability.</strong> gpt-4o might be in East US 2 but not Southeast Asia. Check availability before quoting timelines.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> You call <code>AzureOpenAIChatCompletionClient(model="gpt-4o-mini", ...)</code> with a valid endpoint and API key, but get a 404. Most likely cause?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">gpt-4o-mini doesn't exist</li>
+        <li data-i="1">You passed the model ID as <code>azure_deployment</code>. Azure OpenAI routes by <em>deployment name</em>, not model ID — the model ID is informational (mostly for token counting). Set <code>azure_deployment</code> to the name you gave your deployment in the Azure portal.</li>
+        <li data-i="2">Your API key is expired</li>
+        <li data-i="3">AutoGen doesn't support Azure</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Why does AutoGen introspect your function signature instead of asking you to write a JSON schema?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Python is slow at parsing JSON</li>
+        <li data-i="1">JSON schemas aren't compatible with OpenAI</li>
+        <li data-i="2">Because a type-hinted Python function <em>is</em> a schema. Parameter names + types + docstring already describe everything an LLM needs to call the tool. Making the developer write both is redundancy that causes drift. Same reason FastAPI works.</li>
+        <li data-i="3">To lock you into using AutoGen</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> A colleague copies your <code>autogen_hello.py</code> into a Flask sync route and it hangs the server. Why?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">AutoGen is async-first and expects an event loop. Calling <code>asyncio.run</code> inside an already-running loop, or blocking sync code inside an async context, deadlocks. Fix: use an async web framework (FastAPI, Litestar) or run AutoGen work in a background task with proper loop management.</li>
+        <li data-i="1">Flask isn't compatible with tools</li>
+        <li data-i="2">Azure OpenAI blocks Flask</li>
+        <li data-i="3">Nothing — that always works</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> You import <code>from autogen import AssistantAgent</code>. Your IDE finds it, but the API you're calling looks nothing like the docs. Why?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">The docs are wrong</li>
+        <li data-i="1">The package is corrupted</li>
+        <li data-i="2">You need to reinstall Python</li>
+        <li data-i="3">You have the pre-v0.4 package installed alongside v0.4. AutoGen split into <code>autogen-core</code>, <code>autogen-agentchat</code>, <code>autogen-ext</code> in v0.4. Uninstall the old top-level <code>autogen</code> or check <code>pip list</code> for the confusion.</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> An Azure-committed customer asks "what's the AutoGen advantage over just calling Azure OpenAI directly with the openai SDK?" Best framing?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">"AutoGen is faster"</li>
+        <li data-i="1">"AutoGen is required for Azure"</li>
+        <li data-i="2">"You can absolutely call Azure OpenAI directly for single-turn tasks. AutoGen earns its keep when you need the agent loop (tool calls, retries), multi-agent orchestration, structured message passing, or clean handoffs between specialists. Below that complexity threshold, the raw SDK is fine and simpler."</li>
+        <li data-i="3">"AutoGen replaces Azure OpenAI"</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Common questions: how to switch to Entra ID auth instead of API key (deferred to L43), how to stream tokens, how to use Pydantic models as tool params (they work), how to inspect tool-call traces without the console. Ask.</p>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0037-strands-deploy-end-to-end.html">← L37 — Strands capstone</a>
+      <a href="0026-adk-basics-agent-tools-runner.html">L26 — ADK equivalent</a>
+      <a href="0032-strands-basics.html">L32 — Strands equivalent</a>
+      <a href="0017-agent-framework-landscape.html">L17 — Framework landscape</a>
+    </div>
+    <p style="margin-top:1rem">Next (L39) — Model switch in AutoGen: Azure OpenAI vs OpenAI direct vs Anthropic on Foundry vs LiteLLM. Where the abstraction leaks.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

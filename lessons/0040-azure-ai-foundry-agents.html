@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 40 — Azure AI Foundry Agents Service: the managed runtime</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .arch {
+      background: #fff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.85rem;
+      line-height: 1.55;
+      margin: 1rem 0 1.5rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 40 &nbsp;·&nbsp; AutoGen + Azure AI Foundry mini-series (3 of 6)</p>
+    <h1>Azure AI Foundry Agents Service: the managed runtime</h1>
+    <p class="tagline">L34 was Bedrock AgentCore Runtime. L31 was Vertex Agent Engine. This is the Azure equivalent — <strong>Foundry Agents Service</strong>, the managed platform that owns identity, threads, tool execution, tracing, and content safety so you don't have to.</p>
+    <div class="progress">
+      <a href="0038-autogen-basics.html"><span class="pill pill-done">L38 ✓</span></a>
+      <a href="0039-autogen-model-switch.html"><span class="pill pill-done">L39 ✓</span></a>
+      <span class="pill pill-now">L40 — Foundry Agents</span>
+      <span class="pill pill-next">L41 — Threads / memory</span>
+      <span class="pill pill-next">L42 — Multi-agent</span>
+      <span class="pill pill-next">L43 — Deploy capstone</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    You've been running AutoGen locally: your Python process is the agent. That's fine for a lesson. In production, "my laptop" is not the answer to "where does the agent run." Foundry Agents Service is Microsoft's answer — a managed agent runtime that lives inside your Azure AI Foundry project alongside your models, evaluations, and content-safety filters.
+  </p>
+
+  <p>The mental model shift, same as L34: <strong>your Python code stops being the runtime and becomes the client to a runtime.</strong> You <em>create</em> an agent as an Azure resource. You <em>invoke</em> it via a thread. Azure owns state, retries, and tool execution.</p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Why this lesson exists</div>
+    Every Azure-committed customer will ask "where does this thing run in prod?" Answering "AutoGen in a container on AKS" is a valid answer but not the Microsoft-preferred one. Foundry Agents is what Microsoft points customers at — content safety, evaluations, and tracing are wired in without extra code. This lesson gets you fluent in the alternative shape.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty</div>
+    Foundry Agents Service is evolving rapidly. Package names <code>azure-ai-agents</code> and <code>azure-ai-projects</code> are what shipped GA in 2025; the earlier "Azure AI Assistants" surface is deprecated. Always cross-check against the current Microsoft Learn page — "Azure AI Foundry Agent Service."
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Architecture</h2>
+
+<div class="arch">┌─────────────────────────────────────────────────────┐
+│  Your Python client                                 │
+│    • project client (from AZURE_AI_PROJECT_CONN)    │
+│    • credential (DefaultAzureCredential preferred)  │
+└──────────────┬──────────────────────────────────────┘
+               │  HTTPS
+               ▼
+┌─────────────────────────────────────────────────────┐
+│  Azure AI Foundry Project                           │
+│    Agents Service                                   │
+│      ├─ Agent  (definition: model + tools + prompt) │
+│      ├─ Thread (conversation state, server-managed) │
+│      └─ Run    (one turn — tool loop lives here)    │
+│    Model Catalog · Evaluations · Content Safety     │
+│    Traces → Application Insights                    │
+└─────────────────────────────────────────────────────┘</div>
+
+  <p>Three server-side resources: <strong>Agent</strong>, <strong>Thread</strong>, <strong>Run</strong>. You never see a request-loop again — Foundry drives the tool loop for you and streams events back.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The four new syntax constructs</h2>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · AIProjectClient</div>
+    Entry point for everything. Connects to your Foundry project via connection string or endpoint.
+    <pre style="margin:0.5rem 0 0"><code>from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential
+
+project = AIProjectClient.from_connection_string(
+    conn_str=os.environ["AZURE_AI_PROJECT_CONN"],
+    credential=DefaultAzureCredential(),
+)</code></pre>
+    <strong>DefaultAzureCredential</strong> is Azure's identity-negotiation chain — tries <code>az login</code>, managed identity, env vars, in order. In prod on Azure infra, this "just works." Locally, run <code>az login</code> first.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · agents.create_agent</div>
+    Create an Agent resource. This is a persistent object in Foundry — same as an ADK Agent Engine deployment or AgentCore Runtime.
+    <pre style="margin:0.5rem 0 0"><code>agent = project.agents.create_agent(
+    model="gpt-4o-mini",  # deployment name in your project
+    name="mulesoft-helper",
+    instructions="You are a MuleSoft platform assistant...",
+    tools=[
+        {"type": "function", "function": {
+            "name": "get_anypoint_org_status",
+            "description": "Look up the live status of an Anypoint org.",
+            "parameters": {"type": "object",
+                           "properties": {"org_id": {"type": "string"}},
+                           "required": ["org_id"]}
+        }}
+    ],
+)</code></pre>
+    Tool schemas here are declarative JSON — different shape from AutoGen's function-introspection. Foundry doesn't run your Python; it emits tool-call requests and expects <em>you</em> to run the function and submit the output.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · Thread + create_message + create_run</div>
+    A <strong>thread</strong> is server-managed conversation state — the Foundry equivalent of Bedrock AgentCore's Memory session or ADK's <code>Session.state</code>.
+    <pre style="margin:0.5rem 0 0"><code>thread = project.agents.threads.create()
+project.agents.messages.create(
+    thread_id=thread.id, role="user",
+    content="Status of org 12345?"
+)
+run = project.agents.runs.create_and_process(
+    thread_id=thread.id, agent_id=agent.id
+)</code></pre>
+    <code>create_and_process</code> is the "wait for completion" convenience. If you need to handle tool calls yourself (functions Foundry can't call, e.g. anything on your VNet), use <code>create</code> + poll and submit <code>tool_outputs</code> in the requires_action state.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · requires_action loop</div>
+    For tools Foundry can't execute (private code), your run pauses in status <code>requires_action</code> with a list of tool calls. You run them, then submit outputs:
+    <pre style="margin:0.5rem 0 0"><code>while run.status in ("queued", "in_progress", "requires_action"):
+    if run.status == "requires_action":
+        outputs = []
+        for call in run.required_action.submit_tool_outputs.tool_calls:
+            args = json.loads(call.function.arguments)
+            if call.function.name == "get_anypoint_org_status":
+                result = get_anypoint_org_status(**args)
+                outputs.append({"tool_call_id": call.id,
+                                "output": json.dumps(result)})
+        run = project.agents.runs.submit_tool_outputs(
+            thread_id=thread.id, run_id=run.id, tool_outputs=outputs
+        )
+    else:
+        run = project.agents.runs.get(thread_id=thread.id, run_id=run.id)
+        time.sleep(0.5)</code></pre>
+    This is the biggest shape difference from AutoGen. AutoGen owns the agent loop in your process. Foundry owns the loop server-side and calls back for tools it can't run.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Prerequisites</h2>
+  <ol>
+    <li>An <strong>Azure AI Foundry</strong> project (create one in Azure portal or via <code>az</code> CLI).</li>
+    <li>A model deployed in that project (<code>gpt-4o-mini</code> is cheapest for testing).</li>
+    <li>The project's <strong>connection string</strong> from Foundry → Project Settings. Set as <code>AZURE_AI_PROJECT_CONN</code>.</li>
+    <li>Signed in via <code>az login</code>, or an assigned managed identity in prod.</li>
+    <li>Install: <code>pip install azure-ai-projects azure-ai-agents azure-identity</code></li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn</h2>
+  <p>Create <code>foundry_agent.py</code>. Same tools, same system prompt as L38 — but the runtime moves off your machine.</p>
+
+  <div class="todo">
+<span class="todo-label">SKELETON — fill in the 5 TODOs</span>
+
+<span class="cm"># foundry_agent.py — MuleSoft helper on Azure AI Foundry Agents Service</span>
+
+<span class="kw">import</span> json
+<span class="kw">import</span> os
+<span class="kw">import</span> time
+<span class="kw">from</span> azure.ai.projects <span class="kw">import</span> AIProjectClient
+<span class="kw">from</span> azure.identity <span class="kw">import</span> DefaultAzureCredential
+
+<span class="cm"># Reuse the tool implementation from L38 — it's still just a plain Python fn.</span>
+<span class="kw">from</span> autogen_hello <span class="kw">import</span> get_anypoint_org_status
+
+
+<span class="cm"># TODO 1 — Connect to your Foundry project.</span>
+<span class="cm">#     project = AIProjectClient.from_connection_string(</span>
+<span class="cm">#         conn_str=os.environ["AZURE_AI_PROJECT_CONN"],</span>
+<span class="cm">#         credential=DefaultAzureCredential(),</span>
+<span class="cm">#     )</span>
+
+
+<span class="cm"># TODO 2 — Create (or reuse) an Agent. In real code, create once and save the</span>
+<span class="cm">#          agent.id. For the exercise, create fresh each run then delete at end.</span>
+<span class="cm">#     agent = project.agents.create_agent(</span>
+<span class="cm">#         model=os.environ["AZURE_OPENAI_DEPLOYMENT"],</span>
+<span class="cm">#         name="mulesoft-helper",</span>
+<span class="cm">#         instructions="You are a MuleSoft platform assistant. "</span>
+<span class="cm">#                      "Use get_anypoint_org_status for live org state.",</span>
+<span class="cm">#         tools=[{...}],   # JSON schema for get_anypoint_org_status</span>
+<span class="cm">#     )</span>
+
+
+<span class="cm"># TODO 3 — Create a thread and post the user message.</span>
+<span class="cm">#     thread = project.agents.threads.create()</span>
+<span class="cm">#     project.agents.messages.create(thread_id=thread.id, role="user",</span>
+<span class="cm">#                                    content="What's the status of org 12345?")</span>
+
+
+<span class="cm"># TODO 4 — Start the run and drive the requires_action loop.</span>
+<span class="cm">#     run = project.agents.runs.create(thread_id=thread.id, agent_id=agent.id)</span>
+<span class="cm">#     while run.status in ("queued", "in_progress", "requires_action"):</span>
+<span class="cm">#         if run.status == "requires_action":</span>
+<span class="cm">#             outputs = []</span>
+<span class="cm">#             for call in run.required_action.submit_tool_outputs.tool_calls:</span>
+<span class="cm">#                 args = json.loads(call.function.arguments)</span>
+<span class="cm">#                 if call.function.name == "get_anypoint_org_status":</span>
+<span class="cm">#                     result = get_anypoint_org_status(**args)</span>
+<span class="cm">#                     outputs.append({"tool_call_id": call.id,</span>
+<span class="cm">#                                     "output": json.dumps(result)})</span>
+<span class="cm">#             run = project.agents.runs.submit_tool_outputs(</span>
+<span class="cm">#                 thread_id=thread.id, run_id=run.id, tool_outputs=outputs)</span>
+<span class="cm">#         else:</span>
+<span class="cm">#             time.sleep(0.5)</span>
+<span class="cm">#             run = project.agents.runs.get(thread_id=thread.id, run_id=run.id)</span>
+
+
+<span class="cm"># TODO 5 — Read the final assistant message from the thread, print it,</span>
+<span class="cm">#          then delete the agent so you don't leak test agents in Foundry.</span>
+<span class="cm">#     msgs = project.agents.messages.list(thread_id=thread.id)</span>
+<span class="cm">#     for m in msgs:</span>
+<span class="cm">#         if m.role == "assistant":</span>
+<span class="cm">#             print(m.content[0].text.value)</span>
+<span class="cm">#             break</span>
+<span class="cm">#     project.agents.delete_agent(agent.id)</span>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Verification</h2>
+  <div class="callout callout-check">
+    <div class="callout-label">Five checks</div>
+    <ol style="margin:0.5rem 0">
+      <li>Foundry portal → your project → Agents shows a new agent while the run is executing.</li>
+      <li>Threads view shows one thread with the user message and the assistant reply.</li>
+      <li>Run status transitions <code>queued → in_progress → requires_action → in_progress → completed</code>.</li>
+      <li>Tracing pane shows the tool call with args and output (if Application Insights is wired to the project).</li>
+      <li>After delete_agent runs, the agent no longer appears in the portal. If it does, you left orphan agents from earlier runs — clean them up.</li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Compare to what you know</h2>
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>L31 Vertex Agent Engine</th><th>L34 AgentCore Runtime</th><th>L40 Foundry Agents Service</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Managed by</td><td>Google</td><td>AWS</td><td>Microsoft</td></tr>
+      <tr><td>State store</td><td>Managed sessions</td><td>Session events</td><td>Threads (server-managed)</td></tr>
+      <tr><td>Loop lives</td><td>Server-side (framework running there)</td><td>Server-side (framework running there)</td><td>Server-side (Foundry drives)</td></tr>
+      <tr><td>Tool execution</td><td>In your deployed code</td><td>In your deployed code</td><td>In your client (requires_action callback), or Foundry-hosted for built-ins</td></tr>
+      <tr><td>Where your Python runs</td><td>In a container Google runs</td><td>In a container AWS runs</td><td>On your side — Foundry drives the loop remotely</td></tr>
+      <tr><td>Built-in tools</td><td>Google Search, code exec</td><td>Code Interpreter, Browser, Gateway (managed MCP)</td><td>File Search, Code Interpreter, Bing grounding, Fabric, MCP</td></tr>
+      <tr><td>Content safety</td><td>Vertex safety filters</td><td>Bedrock Guardrails</td><td>Foundry Content Safety (opt-in filters)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle</div>
+    Foundry Agents' <em>requires_action</em> pattern is a gift for MuleSoft positioning. Your Python client is the callback point — the natural place to sit an Anypoint call is right there. Foundry orchestrates, MuleSoft integrates. Two clean layers. For customers who want Foundry to manage everything with MCP built-in tools, MuleSoft MCP endpoints plug into Foundry's MCP tool support directly. Either shape works.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where the abstraction leaks</h2>
+  <ul>
+    <li><strong>Agent objects persist.</strong> If you create one every run and never delete, you accumulate orphans that show up in the portal and count against project quotas. Create once in real code, save the ID.</li>
+    <li><strong>Tool JSON schemas are not Python function introspection.</strong> You lose AutoGen's "function is the schema" ergonomics. Consider generating the schema from your function via <code>pydantic.TypeAdapter</code> or similar.</li>
+    <li><strong>Threads are billed storage.</strong> They persist until deleted. Have a cleanup policy — Foundry doesn't auto-expire threads.</li>
+    <li><strong>DefaultAzureCredential fails silently in weird ways.</strong> If you're getting 401s, run <code>az account show</code> and verify. Confirm your identity has the "Azure AI Developer" (or higher) role on the project.</li>
+    <li><strong>Region + model availability.</strong> Foundry Agents may be GA in some regions and preview in others. Check before quoting SLAs.</li>
+    <li><strong>Foundry's tool loop ≠ AutoGen's tool loop.</strong> Behaviour under retries, timeouts, and content-safety blocks differs. Don't assume identical semantics.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> What's the practical difference between AutoGen locally and Foundry Agents Service?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Foundry is faster</li>
+        <li data-i="1">AutoGen's agent loop runs in your Python process. Foundry runs the loop server-side inside your Azure project — it manages agent definitions, threads, and runs as Azure resources, and calls back to your code only for tools it can't execute. Different runtime model, not different capability.</li>
+        <li data-i="2">Foundry doesn't support tools</li>
+        <li data-i="3">They're the same thing</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Your run gets stuck in <code>requires_action</code>. Why?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Foundry outage</li>
+        <li data-i="1">Wrong model</li>
+        <li data-i="2">Your client hasn't submitted tool outputs. Foundry has paused the run and is waiting for you to run the function and call <code>submit_tool_outputs</code>. Either your loop doesn't handle that status, or the tool call threw before submission.</li>
+        <li data-i="3">Content safety blocked it</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Why doesn't Foundry just introspect your Python function like AutoGen does?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">Microsoft doesn't like Python</li>
+        <li data-i="1">Type hints aren't reliable</li>
+        <li data-i="2">Performance</li>
+        <li data-i="3">Foundry never sees your function — the agent lives server-side, your function lives in your client. It only sees the JSON schema you registered. That's why you have to declare the schema explicitly (or generate it from your function via a helper).</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> When would you keep AutoGen local instead of moving to Foundry Agents?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">When you need heavy multi-agent orchestration with tight in-process communication (Foundry's model is single-agent-per-thread; complex handoffs across agents live better in the framework), or when data must not leave your VNet, or when you need to stay portable across clouds.</li>
+        <li data-i="1">Always keep it local</li>
+        <li data-i="2">Only for demos</li>
+        <li data-i="3">Never — Foundry is always better</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> Best deployment pattern for a MuleSoft customer running Foundry Agents?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Rewrite everything in Foundry</li>
+        <li data-i="1">Only use Bing grounding</li>
+        <li data-i="2">Foundry drives the run; your tool functions call Anypoint APIs. Foundry gets managed identity + evaluations + content safety. Anypoint gets connector library + DataWeave + governance. Clean separation, no rebuilding either side.</li>
+        <li data-i="3">Skip MuleSoft entirely</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Common questions: how AutoGen agents map onto Foundry Agents (the two surfaces are related but distinct — AutoGen v0.4 has adapters), how to use Foundry-hosted tools (File Search, Code Interpreter, MCP) alongside your custom function tools, how tracing lands in Application Insights. Ask.</p>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0039-autogen-model-switch.html">← L39 — Model switch</a>
+      <a href="0031-adk-deploy-agent-engine.html">L31 — Vertex Agent Engine equivalent</a>
+      <a href="0034-bedrock-agentcore-runtime.html">L34 — AgentCore Runtime equivalent</a>
+    </div>
+    <p style="margin-top:1rem">Next (L41) — Threads &amp; state. Foundry's server-managed conversation memory, the parallel to L28 (ADK) and L35 (AgentCore).</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

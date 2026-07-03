@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 39 — AutoGen model switch: Azure OpenAI vs OpenAI vs Anthropic on Foundry</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 39 &nbsp;·&nbsp; AutoGen + Azure AI Foundry mini-series (2 of 6)</p>
+    <h1>AutoGen model switch: Azure OpenAI, OpenAI direct, Anthropic on Foundry</h1>
+    <p class="tagline">Same agent, four backends. This is L33 for Azure — the "swap the model client, keep the agent" drill that proves the abstraction actually earns its keep.</p>
+    <div class="progress">
+      <a href="0038-autogen-basics.html"><span class="pill pill-done">L38 ✓</span></a>
+      <span class="pill pill-now">L39 — Model switch</span>
+      <span class="pill pill-next">L40 — Foundry Agents</span>
+      <span class="pill pill-next">L41 — Threads</span>
+      <span class="pill pill-next">L42 — Multi-agent</span>
+      <span class="pill pill-next">L43 — Deploy capstone</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    Customers ask "can you use Claude on Azure?" and "do we have to be locked into OpenAI?" every single week. In AutoGen v0.4, the answer is a one-line client swap — but each provider has small differences that matter for real deployments. You'll build the same agent from L38 four times, swapping only the model client.
+  </p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Why this lesson exists</div>
+    In L33 you did this drill for Strands (Bedrock, Anthropic direct, LiteLLM). In L05 you saw the Vertex/direct split for Google. AutoGen's story is different again — its model-client abstraction is the cleanest of the three, and Azure AI Foundry's <em>Model Catalog</em> means Claude, Mistral, Llama, and Cohere are all first-class citizens in your Azure account.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The four clients</h2>
+
+  <table>
+    <thead>
+      <tr><th>Backend</th><th>Client class</th><th>Auth</th><th>Where it lives</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Azure OpenAI</td><td><code>AzureOpenAIChatCompletionClient</code></td><td>API key or Entra ID</td><td><code>autogen_ext.models.openai</code></td></tr>
+      <tr><td>OpenAI direct</td><td><code>OpenAIChatCompletionClient</code></td><td>OpenAI API key</td><td><code>autogen_ext.models.openai</code></td></tr>
+      <tr><td>Anthropic via Azure AI Foundry</td><td><code>AzureAIChatCompletionClient</code></td><td>API key from Foundry Model Catalog deployment</td><td><code>autogen_ext.models.azure</code></td></tr>
+      <tr><td>Any OpenAI-compatible endpoint (Ollama, vLLM, Groq)</td><td><code>OpenAIChatCompletionClient</code> + custom <code>base_url</code></td><td>Bearer token or none</td><td><code>autogen_ext.models.openai</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · AzureAIChatCompletionClient</div>
+    Not to be confused with <code>AzureOpenAIChatCompletionClient</code>. This one calls the Azure AI Foundry "Models as a Service" endpoint — Foundry's serverless Model Catalog where you deploy Claude, Mistral, Llama, Cohere behind an Azure-managed endpoint.
+    <pre style="margin:0.5rem 0 0"><code>from autogen_ext.models.azure import AzureAIChatCompletionClient
+from azure.core.credentials import AzureKeyCredential
+
+client = AzureAIChatCompletionClient(
+    model="Claude-Sonnet-4",
+    endpoint="https://my-foundry-project.services.ai.azure.com/models",
+    credential=AzureKeyCredential("..."),
+    model_info={
+        "family": "unknown",
+        "function_calling": True,
+        "json_output": False,
+        "vision": True,
+    },
+)</code></pre>
+    Note <code>model_info</code>: for non-OpenAI models Foundry needs you to declare capabilities so AutoGen knows whether to attempt tool calls or JSON mode. If you forget it for a model AutoGen doesn't recognise, you'll get a KeyError on the first call.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · OpenAI-compatible base_url</div>
+    Ollama (local), vLLM (self-hosted), Groq, Together, DeepInfra, Fireworks all speak the OpenAI wire protocol. AutoGen supports them via <code>OpenAIChatCompletionClient</code> with a custom <code>base_url</code>:
+    <pre style="margin:0.5rem 0 0"><code>client = OpenAIChatCompletionClient(
+    model="llama3.2",
+    base_url="http://localhost:11434/v1",  # Ollama
+    api_key="ollama",                      # dummy
+    model_info={"family": "llama", "function_calling": True,
+                "json_output": False, "vision": False},
+)</code></pre>
+    This is the escape hatch for on-prem / sovereign / cost-sensitive customers. Same code as production — different <code>base_url</code>.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Prerequisites</h2>
+  <ol>
+    <li>L38 working — same virtualenv, same tools.</li>
+    <li>For OpenAI direct: an OpenAI API key.</li>
+    <li>For Anthropic-on-Foundry: an Azure AI Foundry project + Claude deployed from the Model Catalog. The endpoint URL ends in <code>/models</code>.</li>
+    <li>Install extras: <code>pip install autogen-ext[openai,azure,ollama]</code></li>
+    <li>(Optional) <code>ollama pull llama3.2</code> if you want to test the local path.</li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn</h2>
+  <p>Create <code>autogen_model_switch.py</code>. Refactor L38 so the model client comes from a factory — a single function you point at any of the four backends via an env var.</p>
+
+  <div class="todo">
+<span class="todo-label">SKELETON — fill in the 4 TODOs</span>
+
+<span class="cm"># autogen_model_switch.py — one agent, four backends</span>
+
+<span class="kw">import</span> asyncio
+<span class="kw">import</span> os
+<span class="kw">from</span> autogen_agentchat.agents <span class="kw">import</span> AssistantAgent
+<span class="kw">from</span> autogen_agentchat.messages <span class="kw">import</span> TextMessage
+<span class="kw">from</span> autogen_core <span class="kw">import</span> CancellationToken
+
+
+<span class="cm"># Reuse search_docs and get_anypoint_org_status from L38.</span>
+<span class="kw">from</span> autogen_hello <span class="kw">import</span> search_docs, get_anypoint_org_status, SYSTEM
+
+
+<span class="kw">def</span> <span class="fn">build_client</span>(backend: str):
+    <span class="str">"""Return a model client for the requested backend."""</span>
+    <span class="kw">if</span> backend <span class="op">==</span> <span class="str">"azure-openai"</span>:
+        <span class="kw">from</span> autogen_ext.models.openai <span class="kw">import</span> AzureOpenAIChatCompletionClient
+        <span class="cm"># TODO 1 — Return an AzureOpenAIChatCompletionClient using env vars</span>
+        <span class="cm">#          (see L38). This should already work.</span>
+        <span class="kw">pass</span>
+
+    <span class="kw">elif</span> backend <span class="op">==</span> <span class="str">"openai"</span>:
+        <span class="kw">from</span> autogen_ext.models.openai <span class="kw">import</span> OpenAIChatCompletionClient
+        <span class="cm"># TODO 2 — Direct OpenAI. Only needs api_key + model="gpt-4o-mini".</span>
+        <span class="kw">pass</span>
+
+    <span class="kw">elif</span> backend <span class="op">==</span> <span class="str">"foundry-claude"</span>:
+        <span class="kw">from</span> autogen_ext.models.azure <span class="kw">import</span> AzureAIChatCompletionClient
+        <span class="kw">from</span> azure.core.credentials <span class="kw">import</span> AzureKeyCredential
+        <span class="cm"># TODO 3 — Foundry Model Catalog. You MUST pass model_info because</span>
+        <span class="cm">#          Claude isn't in AutoGen's built-in registry.</span>
+        <span class="cm">#              return AzureAIChatCompletionClient(</span>
+        <span class="cm">#                  model="Claude-Sonnet-4",</span>
+        <span class="cm">#                  endpoint=os.environ["FOUNDRY_ENDPOINT"],</span>
+        <span class="cm">#                  credential=AzureKeyCredential(os.environ["FOUNDRY_KEY"]),</span>
+        <span class="cm">#                  model_info={"family": "unknown",</span>
+        <span class="cm">#                              "function_calling": True,</span>
+        <span class="cm">#                              "json_output": False,</span>
+        <span class="cm">#                              "vision": True},</span>
+        <span class="cm">#              )</span>
+        <span class="kw">pass</span>
+
+    <span class="kw">elif</span> backend <span class="op">==</span> <span class="str">"ollama"</span>:
+        <span class="kw">from</span> autogen_ext.models.openai <span class="kw">import</span> OpenAIChatCompletionClient
+        <span class="cm"># TODO 4 — Point OpenAI client at localhost:11434/v1 with a dummy</span>
+        <span class="cm">#          api_key. Pass model_info for llama3.2.</span>
+        <span class="kw">pass</span>
+
+    <span class="kw">raise</span> <span class="fn">ValueError</span>(f<span class="str">"unknown backend {backend}"</span>)
+
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    backend <span class="op">=</span> os.environ.get(<span class="str">"BACKEND"</span>, <span class="str">"azure-openai"</span>)
+    client <span class="op">=</span> build_client(backend)
+
+    agent <span class="op">=</span> AssistantAgent(
+        name<span class="op">=</span><span class="str">"mulesoft_helper"</span>,
+        model_client<span class="op">=</span>client,
+        tools<span class="op">=</span>[search_docs, get_anypoint_org_status],
+        system_message<span class="op">=</span>SYSTEM,
+    )
+
+    <span class="cm"># Same query as L38 so you can diff behaviour across providers.</span>
+    q <span class="op">=</span> <span class="str">"Give me both — status of org 12345 AND the runbook for degraded state."</span>
+    response <span class="op">=</span> <span class="kw">await</span> agent.on_messages(
+        [TextMessage(content<span class="op">=</span>q, source<span class="op">=</span><span class="str">"user"</span>)],
+        cancellation_token<span class="op">=</span>CancellationToken(),
+    )
+    <span class="fn">print</span>(f<span class="str">"[{backend}]"</span>, response.chat_message.content)
+
+
+<span class="kw">if</span> __name__ <span class="op">==</span> <span class="str">"__main__"</span>:
+    asyncio.run(main())
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Verification</h2>
+  <div class="callout callout-check">
+    <div class="callout-label">Four runs, one diff</div>
+    <ol style="margin:0.5rem 0">
+      <li><code>BACKEND=azure-openai python autogen_model_switch.py</code> → baseline.</li>
+      <li><code>BACKEND=openai python autogen_model_switch.py</code> → should match closely.</li>
+      <li><code>BACKEND=foundry-claude python autogen_model_switch.py</code> → different voice, same tool calls.</li>
+      <li><code>BACKEND=ollama python autogen_model_switch.py</code> → if the local model is smart enough, tool calls fire; if not, it may hallucinate the answer instead. That's not a bug — that's why model choice matters.</li>
+    </ol>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Common failure modes</div>
+    <ul style="margin:0.4rem 0">
+      <li><strong>KeyError on <code>model_info</code></strong> — Foundry client for non-OpenAI models. Add the dict.</li>
+      <li><strong>Tool calls silently ignored</strong> on Ollama — model too small. Try <code>llama3.1:70b</code> or a proper tool-tuned model.</li>
+      <li><strong>Higher latency on Foundry-Claude</strong> — first request warms the deployment. Second request is normal.</li>
+      <li><strong>Different tool-call formats</strong> per provider — AutoGen normalises, but if you inspect <code>inner_messages</code> you'll see the raw shape differs. Rely on the normalised view.</li>
+    </ul>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Compare to what you know</h2>
+  <table>
+    <thead>
+      <tr><th>Question</th><th>L33 Strands</th><th>L39 AutoGen</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Same-cloud SaaS provider</td><td>BedrockModel</td><td>AzureOpenAIChatCompletionClient</td></tr>
+      <tr><td>Direct API path</td><td>Anthropic() from anthropic-sdk</td><td>OpenAIChatCompletionClient</td></tr>
+      <tr><td>Third-party gateway</td><td>LiteLLM (unifies 100+ providers)</td><td>OpenAIChatCompletionClient + base_url</td></tr>
+      <tr><td>Cross-provider on the same platform</td><td>Bedrock (Anthropic, Meta, Mistral, Cohere)</td><td>Foundry Model Catalog (Anthropic, Mistral, Llama, Cohere)</td></tr>
+      <tr><td>What might break on switch</td><td>Tool-call format, streaming shape</td><td>Same — plus <code>model_info</code> declaration</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle</div>
+    Two customer conversations this unlocks: (1) The Azure customer worried about "OpenAI lock-in" — Foundry Model Catalog is Azure's answer, and AutoGen speaks it natively. (2) The regulated customer that needs sovereign inference — same code targets on-prem Ollama, vLLM behind a Flex Gateway, or a private Anthropic deployment. The model layer being swappable is not marketing — it's a real property of the framework, and customers should hear that.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where the abstraction leaks</h2>
+  <ul>
+    <li><strong>model_info is a manual declaration.</strong> AutoGen can't introspect an arbitrary Foundry endpoint. Get it wrong and either tool calls silently disable or JSON mode errors at runtime.</li>
+    <li><strong>Region coverage differs.</strong> gpt-4o may be available in East US 2 but not Southeast Asia. Claude on Foundry has its own region matrix. Verify before promising anything.</li>
+    <li><strong>Rate limits differ wildly.</strong> Azure OpenAI TPM quotas ≠ OpenAI direct usage tiers ≠ Foundry MaaS quotas. Load-testing on one provider does not qualify you on another.</li>
+    <li><strong>Streaming implementations differ.</strong> The token-boundary behaviour of Azure OpenAI vs OpenAI vs Claude-on-Foundry is not identical. If your UX depends on it, test each one.</li>
+    <li><strong>Auth stories diverge in production.</strong> Azure OpenAI can use Entra ID; OpenAI direct is API key only; Foundry MaaS is API key from the deployment; Ollama has no auth at all. Standardise via env vars, don't try to unify at the code layer.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> Your customer says "we want to run Claude but keep everything inside our Azure tenant." Best path in AutoGen?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Direct Anthropic API</li>
+        <li data-i="1">Azure AI Foundry Model Catalog + <code>AzureAIChatCompletionClient</code> — Claude is served from an Azure-managed serverless endpoint, billed through Azure, staying inside their tenant. No Anthropic API key needed.</li>
+        <li data-i="2">Impossible — Claude is OpenAI-only</li>
+        <li data-i="3">Bedrock</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> You add a new Foundry model and get <code>KeyError: 'function_calling'</code>. Why?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">The Foundry endpoint is misconfigured</li>
+        <li data-i="1">The model doesn't support tools</li>
+        <li data-i="2">You forgot the <code>model_info</code> dict. AutoGen keeps a registry of well-known OpenAI models with their capabilities, but for Foundry MaaS models you must declare capabilities yourself. Add <code>model_info={"family": ..., "function_calling": True, "json_output": ..., "vision": ...}</code>.</li>
+        <li data-i="3">Python version mismatch</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Same code works fine against Azure OpenAI. Against Ollama with <code>llama3.2:1b</code> the tool never fires. Why?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">AutoGen doesn't support Ollama</li>
+        <li data-i="1">Tool schema is wrong</li>
+        <li data-i="2">Ollama endpoint is down</li>
+        <li data-i="3">The model is too small to reliably emit tool-call syntax. Tool calling is an emergent behaviour of capable instruction-tuned models. Try a larger or explicitly tool-tuned model, or accept that some backends aren't fit for agentic workflows.</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> When would you pick OpenAI direct over Azure OpenAI?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">The customer isn't on Azure, doesn't need enterprise SLAs, wants the newest model on day-0, or is prototyping. Azure OpenAI has enterprise features but lags on new model availability by weeks-to-months. Pick per-workload, not once for all workloads.</li>
+        <li data-i="1">Always — it's cheaper</li>
+        <li data-i="2">Never — Azure OpenAI is a superset</li>
+        <li data-i="3">Only for images</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> Your code passes tests on OpenAI direct but fails intermittently on Azure OpenAI. Most likely single cause?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">AutoGen bug</li>
+        <li data-i="1">Different Python version</li>
+        <li data-i="2">TPM (tokens-per-minute) quota on the Azure deployment. Azure OpenAI quotas are per-deployment, and hitting them returns 429s that look intermittent under load. Check the deployment's quota and increase, or spread traffic across deployments/regions.</li>
+        <li data-i="3">Wrong region</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Common questions: how to use Entra ID auth instead of API key for Azure OpenAI (uses <code>azure_ad_token_provider</code>), how streaming differs across providers, which providers support structured outputs / JSON mode, how to fall back between providers on rate-limit. Ask.</p>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0038-autogen-basics.html">← L38 — AutoGen basics</a>
+      <a href="0033-strands-model-switch.html">L33 — Strands equivalent</a>
+      <a href="0005-sdk-vs-adk.html">L05 — SDK layers</a>
+    </div>
+    <p style="margin-top:1rem">Next (L40) — Azure AI Foundry Agents Service: the managed platform side. AutoGen the framework, Foundry the runtime.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

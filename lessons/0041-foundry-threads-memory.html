@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 41 — Foundry Threads & memory: state across turns</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 41 &nbsp;·&nbsp; AutoGen + Azure AI Foundry mini-series (4 of 6)</p>
+    <h1>Foundry Threads &amp; memory: state that survives the process</h1>
+    <p class="tagline">L28 was ADK Session.state. L35 was AgentCore Memory. This is the Azure story — Foundry Threads for per-conversation state, plus explicit "user memory" for cross-conversation preferences.</p>
+    <div class="progress">
+      <a href="0040-azure-ai-foundry-agents.html"><span class="pill pill-done">L40 ✓</span></a>
+      <span class="pill pill-now">L41 — Threads / memory</span>
+      <span class="pill pill-next">L42 — Multi-agent</span>
+      <span class="pill pill-next">L43 — Deploy capstone</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    In L40 you created a thread, sent one message, deleted the agent. The thread was disposable. Real agents need memory: "the same customer coming back tomorrow should not have to re-explain their org." L41 makes threads persistent, adds a second turn, and shows the split between <strong>short-term (thread history)</strong> and <strong>long-term (user preferences that outlive threads)</strong>.
+  </p>
+
+  <div class="callout callout-why">
+    <div class="callout-label">The two-level memory pattern (universal)</div>
+    Every managed agent platform ends up with the same split:
+    <ul style="margin:0.4rem 0 0">
+      <li><strong>Short-term / session:</strong> a thread's messages — what was said, what tools were called, in this conversation.</li>
+      <li><strong>Long-term / user:</strong> facts about the user or org that persist across threads (preferences, past decisions, extracted summaries).</li>
+    </ul>
+    L28 called them <code>Session.state</code> and (implicitly) whatever store you chose. L35 called them "events" and "strategies." Foundry calls them "threads" and "user-scoped context" — you'll typically wire your own persistence for the latter (e.g. Azure Cosmos DB), or use a Foundry-managed memory feature when available.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty</div>
+    Foundry's "managed memory" feature area is evolving. As of 2025, threads are the stable primitive for short-term state, and long-term memory is often implemented by the customer (Cosmos DB, Table Storage, or a vector index). Some Foundry SDK preview versions expose managed memory APIs — verify the current shape against Microsoft Learn before wiring anything permanent.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The two new syntax constructs</h2>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · reusing a thread</div>
+    A thread is a first-class Foundry resource with an ID. Save the ID, look it up next session:
+    <pre style="margin:0.5rem 0 0"><code># first time
+thread = project.agents.threads.create()
+save_to_db(user_id="alice", thread_id=thread.id)
+
+# next session
+thread_id = load_from_db(user_id="alice")
+project.agents.messages.create(thread_id=thread_id, role="user",
+                               content="What did we decide about org 12345 yesterday?")
+run = project.agents.runs.create_and_process(thread_id=thread_id, agent_id=agent.id)</code></pre>
+    Foundry replays the full thread transcript into the model's context on every run — <em>you don't have to</em>. Watch context-window cost: after 100 turns the thread doesn't shrink itself.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · user memory injected into instructions</div>
+    For cross-conversation facts, the practical pattern is: store user context in your own DB, then inject it into <code>instructions</code> or as the first user message at run creation:
+    <pre style="margin:0.5rem 0 0"><code>context = load_user_context("alice")  # your Cosmos/Table Storage lookup
+
+run = project.agents.runs.create(
+    thread_id=thread.id,
+    agent_id=agent.id,
+    additional_instructions=f"User context: {context}",  # per-run override
+)</code></pre>
+    <code>additional_instructions</code> stacks on top of the agent's base instructions <em>for this run only</em> — cleaner than editing the agent every time. This is the deliberate boundary between short-term (thread) and long-term (user profile) memory.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Prerequisites</h2>
+  <ol>
+    <li>L40 working end-to-end.</li>
+    <li>Somewhere to persist <code>{user_id → thread_id}</code>. For the exercise, a JSON file is fine.</li>
+    <li>Same env vars as L40.</li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn</h2>
+  <p>Create <code>foundry_memory.py</code>. Extend L40 with (a) reusable thread per user_id, (b) a fake user preference lookup, (c) a two-turn verification.</p>
+
+  <div class="todo">
+<span class="todo-label">SKELETON — fill in the 5 TODOs</span>
+
+<span class="cm"># foundry_memory.py — short-term (thread) + long-term (user profile) memory</span>
+
+<span class="kw">import</span> json
+<span class="kw">import</span> os
+<span class="kw">import</span> pathlib
+<span class="kw">import</span> time
+<span class="kw">from</span> azure.ai.projects <span class="kw">import</span> AIProjectClient
+<span class="kw">from</span> azure.identity <span class="kw">import</span> DefaultAzureCredential
+
+<span class="cm"># Reuse from L40 — build the agent once, save its ID.</span>
+<span class="kw">from</span> foundry_agent <span class="kw">import</span> get_anypoint_org_status
+
+
+STORE <span class="op">=</span> pathlib.Path(<span class="str">"thread_store.json"</span>)
+
+
+<span class="kw">def</span> <span class="fn">get_or_create_thread</span>(project, user_id: str) -> str:
+    <span class="cm"># TODO 1 — Load the JSON store. If user_id has a thread_id, return it.</span>
+    <span class="cm">#          Otherwise create a new thread, save it, return the new ID.</span>
+    <span class="cm">#     data = json.loads(STORE.read_text()) if STORE.exists() else {}</span>
+    <span class="cm">#     if user_id in data: return data[user_id]</span>
+    <span class="cm">#     thread = project.agents.threads.create()</span>
+    <span class="cm">#     data[user_id] = thread.id</span>
+    <span class="cm">#     STORE.write_text(json.dumps(data))</span>
+    <span class="cm">#     return thread.id</span>
+    <span class="kw">pass</span>
+
+
+<span class="kw">def</span> <span class="fn">load_user_context</span>(user_id: str) -> str:
+    <span class="cm"># TODO 2 — Fake it for now. Return a one-liner about the user.</span>
+    <span class="cm">#     return {"alice": "Alice manages org 12345, prefers concise answers.",</span>
+    <span class="cm">#             "bob":   "Bob is a solution architect, wants deep detail."}.get(user_id, "")</span>
+    <span class="kw">pass</span>
+
+
+<span class="kw">def</span> <span class="fn">ask</span>(project, agent_id: str, user_id: str, message: str) -> str:
+    <span class="cm"># TODO 3 — Build the interaction:</span>
+    <span class="cm">#          - fetch/create thread for user_id</span>
+    <span class="cm">#          - post message</span>
+    <span class="cm">#          - create run with additional_instructions=load_user_context(user_id)</span>
+    <span class="cm">#          - drive requires_action loop (same as L40)</span>
+    <span class="cm">#          - return the final assistant message</span>
+    <span class="kw">pass</span>
+
+
+<span class="kw">if</span> __name__ <span class="op">==</span> <span class="str">"__main__"</span>:
+    project <span class="op">=</span> AIProjectClient.from_connection_string(
+        conn_str<span class="op">=</span>os.environ[<span class="str">"AZURE_AI_PROJECT_CONN"</span>],
+        credential<span class="op">=</span>DefaultAzureCredential(),
+    )
+
+    <span class="cm"># TODO 4 — Load the agent ID from an env var (created once in L40).</span>
+    agent_id <span class="op">=</span> os.environ[<span class="str">"FOUNDRY_AGENT_ID"</span>]
+
+    <span class="cm"># TODO 5 — Two-turn verification for Alice, then a fresh turn for Bob.</span>
+    <span class="cm">#          Turn 1 (Alice): "Status of org 12345?"</span>
+    <span class="cm">#          Turn 2 (Alice, same thread): "What was that number again?"</span>
+    <span class="cm">#            → should recall org 12345 without you retyping it.</span>
+    <span class="cm">#          Turn 3 (Bob, different thread): "What was that number again?"</span>
+    <span class="cm">#            → should NOT know, because Bob has his own thread.</span>
+    <span class="fn">print</span>(ask(project, agent_id, <span class="str">"alice"</span>, <span class="str">"Status of org 12345?"</span>))
+    <span class="fn">print</span>(ask(project, agent_id, <span class="str">"alice"</span>, <span class="str">"What was that number again?"</span>))
+    <span class="fn">print</span>(ask(project, agent_id, <span class="str">"bob"</span>,   <span class="str">"What was that number again?"</span>))
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Verification</h2>
+  <div class="callout callout-check">
+    <div class="callout-label">Four checks</div>
+    <ol style="margin:0.5rem 0">
+      <li>Turn 1 for Alice returns the org status. Foundry portal shows one thread.</li>
+      <li>Turn 2 for Alice, same thread, answers "12345" without the number being resent. This proves short-term memory (thread history) works.</li>
+      <li>Turn 3 for Bob, different thread, does NOT know the number. Proves per-user thread isolation.</li>
+      <li>Kill the script, re-run it. Alice's thread ID is loaded from <code>thread_store.json</code> — the conversation still remembers. Proves persistence beyond the Python process.</li>
+    </ol>
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Watch the context bill</div>
+    Every run replays the full thread. After 200 turns that's expensive. Real production adds either (a) periodic summarisation into <code>additional_instructions</code> and thread reset, or (b) a moving window. Foundry doesn't do this for you.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Compare to what you know</h2>
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>L28 ADK Session</th><th>L35 AgentCore Memory</th><th>L41 Foundry</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Short-term store</td><td><code>Session.state</code> (dict)</td><td>Session events (log)</td><td>Thread (message list)</td></tr>
+      <tr><td>Long-term store</td><td>SessionService backend</td><td>Memory strategies (SEMANTIC / USER_PREFERENCE / SUMMARIZATION)</td><td>Your own store (Cosmos/Table) → additional_instructions</td></tr>
+      <tr><td>Server-managed?</td><td>Yes (once wired to Vertex)</td><td>Yes</td><td>Thread yes; long-term you-build (for now)</td></tr>
+      <tr><td>Isolation key</td><td>session_id</td><td>actor_id + session_id</td><td>thread_id per user</td></tr>
+      <tr><td>Replay strategy</td><td>Framework injects state</td><td>You retrieve relevant memories per turn</td><td>Foundry auto-replays full thread</td></tr>
+      <tr><td>Cost trap</td><td>State grows silently</td><td>Retrieval scoring matters</td><td>Thread history isn't compacted</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle</div>
+    Where does the <em>system of record</em> for user preferences live? In an enterprise, it's usually Salesforce, a CMDB, or a customer profile in a data mesh. That means <code>load_user_context</code> in real code is a MuleSoft System API call. Not a nice-to-have — the moment your Foundry agent has a memory feature, "where does that memory come from" is a MuleSoft conversation.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where the abstraction leaks</h2>
+  <ul>
+    <li><strong>Foundry doesn't summarise threads for you.</strong> Long threads become expensive. Instrument turn count and cost, plan a compaction policy.</li>
+    <li><strong>Threads persist until you delete.</strong> No TTL. Legal / GDPR right-to-delete lands on you, not on Foundry.</li>
+    <li><strong>Cross-user leakage is your job to prevent.</strong> If your <code>{user_id → thread_id}</code> map is wrong, one user gets another user's memory. Test the isolation.</li>
+    <li><strong>additional_instructions ≠ system prompt.</strong> It appends per-run; agents can still be steered by user messages against it. Treat it as guidance, not a security boundary.</li>
+    <li><strong>Long-term memory is usually your problem.</strong> Managed memory features in Foundry are still evolving — assume you'll wire persistence yourself in prod, and treat any managed feature as a bonus.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> Why can Turn 2 for Alice answer "12345" without you resending it?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Foundry has a shared cache</li>
+        <li data-i="1">The thread ID is the same for both turns. Foundry stores the message history on the thread and replays it into the model's context on every run — the model sees Turn 1's messages when responding to Turn 2. Thread ≈ conversation state.</li>
+        <li data-i="2">The model memorises it</li>
+        <li data-i="3">additional_instructions carries it</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Bob asks "what number again?" and gets confused. Why is that <em>correct</em>?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Bug in the model</li>
+        <li data-i="1">Foundry outage</li>
+        <li data-i="2">Bob has his own thread. Threads are the isolation boundary — Alice's history is not visible to Bob's runs. This is exactly the property you want; if Bob saw Alice's history you'd have a data-leak bug.</li>
+        <li data-i="3">Bob doesn't have permission</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> After 300 turns on Alice's thread, response latency and cost climb. Best fix?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Periodically summarise older turns into <code>additional_instructions</code> (or a stored user context) and reset the thread. Foundry doesn't auto-compact — replay of the full transcript is your bill.</li>
+        <li data-i="1">Delete the whole thread</li>
+        <li data-i="2">Switch models</li>
+        <li data-i="3">Use a larger context window</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> Where should long-term user preferences live in a MuleSoft-integrated Foundry deployment?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">In Foundry thread metadata</li>
+        <li data-i="1">In the model's context permanently</li>
+        <li data-i="2">In a per-agent global</li>
+        <li data-i="3">In the actual system of record (Salesforce / CMDB / customer profile), exposed via an Anypoint System API. <code>load_user_context</code> is a wrapper that calls that API. Keeps the source of truth in the right place and avoids syncing state into Foundry.</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> A user exercises GDPR right-to-delete. What must happen?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Nothing — Azure handles it</li>
+        <li data-i="1">Delete the model deployment</li>
+        <li data-i="2">Explicitly delete their thread(s), any long-term memory you stored elsewhere (Cosmos/Table), and any linked traces retained in Application Insights per your policy. Foundry doesn't auto-expire threads — deletion is your responsibility.</li>
+        <li data-i="3">Delete the whole Foundry project</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Common questions: how to page through very long thread history, how to detect thread-context growth before you get billed, whether to use Cosmos vs Table Storage for user context, and how to wire a MuleSoft System API into <code>load_user_context</code> without blocking the async event loop. Ask.</p>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0040-azure-ai-foundry-agents.html">← L40 — Foundry Agents</a>
+      <a href="0028-adk-state-memory-sessions.html">L28 — ADK Session</a>
+      <a href="0035-agentcore-memory.html">L35 — AgentCore Memory</a>
+    </div>
+    <p style="margin-top:1rem">Next (L42) — Multi-agent with AutoGen. RoundRobinGroupChat, Selector, Swarm — how three specialists coordinate.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 42 — AutoGen multi-agent: teams, selectors, swarms</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+    .pill-next { background: #e5e7eb; color: #6b7280; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 42 &nbsp;·&nbsp; AutoGen + Azure AI Foundry mini-series (5 of 6)</p>
+    <h1>AutoGen multi-agent: RoundRobin, Selector, Swarm</h1>
+    <p class="tagline">Three coordination patterns, one problem. Same shape as L25 (LangGraph), L29–30 (ADK), L36 (Strands). This is Azure's dialect of the multi-agent story.</p>
+    <div class="progress">
+      <a href="0041-foundry-threads-memory.html"><span class="pill pill-done">L41 ✓</span></a>
+      <span class="pill pill-now">L42 — Multi-agent</span>
+      <span class="pill pill-next">L43 — Deploy capstone</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    In L38–41 you had one agent doing everything. Real MuleSoft assistants split into <em>specialists</em>: a docs expert, a platform ops expert, a solution architect. Multi-agent is how you make those specialists collaborate on the same conversation without you writing router code.
+  </p>
+
+  <p>AutoGen v0.4's <code>autogen_agentchat.teams</code> module gives you three built-in team types. You pick the one that fits your coordination pattern.</p>
+
+  <table>
+    <thead><tr><th>Team</th><th>Coordination</th><th>When to use</th></tr></thead>
+    <tbody>
+      <tr><td><code>RoundRobinGroupChat</code></td><td>Fixed rotation among agents</td><td>Debate, review pipelines — everyone speaks in order</td></tr>
+      <tr><td><code>SelectorGroupChat</code></td><td>Model chooses next speaker</td><td>Supervisor / triage — dynamic, LLM-driven routing</td></tr>
+      <tr><td><code>Swarm</code></td><td>Explicit hand-off via <code>HandoffMessage</code></td><td>Deterministic transfer between specialists (agent A hands to B)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-why">
+    <div class="callout-label">Read L25, L29, L36 side-by-side</div>
+    Every framework has the same three patterns under different names: LangGraph supervisor / swarm / hierarchical; ADK SequentialAgent / ParallelAgent / sub_agents; Strands agent-as-tool / Swarm / GraphBuilder; AutoGen RoundRobin / Selector / Swarm. Learn once, translate.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three new syntax constructs</h2>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · RoundRobinGroupChat</div>
+    Simplest. Pass a list of agents and a termination condition. Agents speak in order until the condition fires.
+    <pre style="margin:0.5rem 0 0"><code>from autogen_agentchat.teams import RoundRobinGroupChat
+from autogen_agentchat.conditions import TextMentionTermination, MaxMessageTermination
+
+team = RoundRobinGroupChat(
+    participants=[docs_agent, ops_agent, architect_agent],
+    termination_condition=TextMentionTermination("APPROVED")
+                          | MaxMessageTermination(10),
+)
+result = await team.run(task="How do I rotate a Connected App secret?")</code></pre>
+    Termination conditions <em>compose with <code>|</code></em>. New syntax: <strong>bitwise-or overloaded on condition objects</strong> — same trick as SQLAlchemy filters. Also note <code>&amp;</code> for AND.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · SelectorGroupChat</div>
+    The supervisor pattern. An LLM inspects the conversation and picks the next agent to speak. Give it a <em>selector prompt</em> so it knows how to choose.
+    <pre style="margin:0.5rem 0 0"><code>from autogen_agentchat.teams import SelectorGroupChat
+
+team = SelectorGroupChat(
+    participants=[docs_agent, ops_agent, architect_agent],
+    model_client=client,   # the model that picks the speaker
+    selector_prompt="Read the conversation and pick the best agent for the "
+                    "next turn. docs_agent answers documentation questions. "
+                    "ops_agent handles live Anypoint status. architect_agent "
+                    "does solution design. Only respond with the agent name.",
+    termination_condition=MaxMessageTermination(6),
+)</code></pre>
+    The selector calls the model on every turn — count it in your cost model.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · Swarm with handoffs</div>
+    Explicit transfer. Each agent declares which agents it can hand to; the model can emit a <code>HandoffMessage</code> and the team routes it.
+    <pre style="margin:0.5rem 0 0"><code>from autogen_agentchat.teams import Swarm
+
+triage = AssistantAgent(
+    name="triage",
+    model_client=client,
+    handoffs=["docs_agent", "ops_agent"],   # who this agent can hand to
+    system_message="Classify the request. Hand off to docs_agent for "
+                   "documentation questions, or ops_agent for live status.",
+)
+
+team = Swarm(participants=[triage, docs_agent, ops_agent],
+             termination_condition=MaxMessageTermination(6))</code></pre>
+    The <code>handoffs=[...]</code> parameter converts each name into an auto-generated tool (<code>transfer_to_docs_agent</code>) that the agent can call. Same idea as ADK's <code>sub_agents</code> + <code>transfer_to_agent</code> and Strands' Swarm.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Prerequisites</h2>
+  <ol>
+    <li>L38 working. L39 recommended (you'll want the model client from there).</li>
+    <li>Install: <code>pip install autogen-agentchat autogen-ext[openai,azure]</code> (already done if you did L38).</li>
+    <li>Same env vars.</li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn</h2>
+  <p>Three separate small scripts so you can compare the shape. Each uses the same two agents (docs + ops) plus a coordinator where relevant. Reuse tools from L38.</p>
+
+  <h3>1. round_robin.py</h3>
+  <div class="todo">
+<span class="todo-label">SKELETON — round-robin team</span>
+
+<span class="kw">import</span> asyncio
+<span class="kw">from</span> autogen_agentchat.agents <span class="kw">import</span> AssistantAgent
+<span class="kw">from</span> autogen_agentchat.teams <span class="kw">import</span> RoundRobinGroupChat
+<span class="kw">from</span> autogen_agentchat.conditions <span class="kw">import</span> MaxMessageTermination
+<span class="kw">from</span> autogen_hello <span class="kw">import</span> search_docs, get_anypoint_org_status
+<span class="kw">from</span> autogen_model_switch <span class="kw">import</span> build_client
+
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    client <span class="op">=</span> build_client(<span class="str">"azure-openai"</span>)
+
+    <span class="cm"># TODO 1 — Build two specialist agents.</span>
+    <span class="cm">#     docs_agent = AssistantAgent(name="docs_agent", model_client=client,</span>
+    <span class="cm">#         tools=[search_docs],</span>
+    <span class="cm">#         system_message="You answer MuleSoft documentation questions.")</span>
+    <span class="cm">#     ops_agent  = AssistantAgent(name="ops_agent",  model_client=client,</span>
+    <span class="cm">#         tools=[get_anypoint_org_status],</span>
+    <span class="cm">#         system_message="You handle live Anypoint status questions.")</span>
+
+
+    <span class="cm"># TODO 2 — Compose into a RoundRobin team, cap at 4 messages.</span>
+    <span class="cm">#     team = RoundRobinGroupChat(</span>
+    <span class="cm">#         [docs_agent, ops_agent],</span>
+    <span class="cm">#         termination_condition=MaxMessageTermination(4),</span>
+    <span class="cm">#     )</span>
+
+
+    <span class="cm"># TODO 3 — Run and stream to console.</span>
+    <span class="cm">#     async for msg in team.run_stream(</span>
+    <span class="cm">#         task="Give me the runbook AND the live status of org 12345."):</span>
+    <span class="cm">#         print(msg)</span>
+
+
+asyncio.run(main())
+  </div>
+
+  <h3>2. selector.py</h3>
+  <div class="todo">
+<span class="todo-label">SKELETON — LLM picks the speaker</span>
+
+<span class="kw">import</span> asyncio
+<span class="kw">from</span> autogen_agentchat.agents <span class="kw">import</span> AssistantAgent
+<span class="kw">from</span> autogen_agentchat.teams <span class="kw">import</span> SelectorGroupChat
+<span class="kw">from</span> autogen_agentchat.conditions <span class="kw">import</span> MaxMessageTermination
+<span class="kw">from</span> autogen_hello <span class="kw">import</span> search_docs, get_anypoint_org_status
+<span class="kw">from</span> autogen_model_switch <span class="kw">import</span> build_client
+
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    client <span class="op">=</span> build_client(<span class="str">"azure-openai"</span>)
+
+    <span class="cm"># Reuse the two agents from round_robin.py.</span>
+
+    <span class="cm"># TODO 1 — Write a selector_prompt that describes each agent's job.</span>
+    selector_prompt <span class="op">=</span> <span class="str">"..."</span>
+
+
+    <span class="cm"># TODO 2 — Build the team.</span>
+    <span class="cm">#     team = SelectorGroupChat(</span>
+    <span class="cm">#         [docs_agent, ops_agent],</span>
+    <span class="cm">#         model_client=client,</span>
+    <span class="cm">#         selector_prompt=selector_prompt,</span>
+    <span class="cm">#         termination_condition=MaxMessageTermination(6),</span>
+    <span class="cm">#     )</span>
+
+
+    <span class="cm"># TODO 3 — Ask a docs-only question first. Verify docs_agent is picked</span>
+    <span class="cm">#          and ops_agent is NOT called.</span>
+    <span class="cm">#     async for m in team.run_stream(task="How do I rotate a Connected App secret?"):</span>
+    <span class="cm">#         print(m)</span>
+
+    <span class="cm"># TODO 4 — Then ask a mixed question. Verify BOTH agents are picked.</span>
+
+
+asyncio.run(main())
+  </div>
+
+  <h3>3. swarm.py</h3>
+  <div class="todo">
+<span class="todo-label">SKELETON — explicit hand-off</span>
+
+<span class="kw">import</span> asyncio
+<span class="kw">from</span> autogen_agentchat.agents <span class="kw">import</span> AssistantAgent
+<span class="kw">from</span> autogen_agentchat.teams <span class="kw">import</span> Swarm
+<span class="kw">from</span> autogen_agentchat.conditions <span class="kw">import</span> HandoffTermination, MaxMessageTermination
+<span class="kw">from</span> autogen_hello <span class="kw">import</span> search_docs, get_anypoint_org_status
+<span class="kw">from</span> autogen_model_switch <span class="kw">import</span> build_client
+
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    client <span class="op">=</span> build_client(<span class="str">"azure-openai"</span>)
+
+    <span class="cm"># TODO 1 — Triage agent that classifies and hands off.</span>
+    <span class="cm">#     triage = AssistantAgent(</span>
+    <span class="cm">#         name="triage", model_client=client,</span>
+    <span class="cm">#         handoffs=["docs_agent", "ops_agent", "user"],</span>
+    <span class="cm">#         system_message=("Classify the incoming request. "</span>
+    <span class="cm">#             "Hand off to docs_agent for documentation questions, "</span>
+    <span class="cm">#             "ops_agent for live status. Do not answer yourself."))</span>
+
+
+    <span class="cm"># TODO 2 — Two specialists that can hand back to the user directly.</span>
+    <span class="cm">#     docs_agent = AssistantAgent(name="docs_agent", ..., handoffs=["user"])</span>
+    <span class="cm">#     ops_agent  = AssistantAgent(name="ops_agent",  ..., handoffs=["user"])</span>
+
+
+    <span class="cm"># TODO 3 — Team; terminate on hand-off to "user" or after 6 msgs.</span>
+    <span class="cm">#     team = Swarm(</span>
+    <span class="cm">#         [triage, docs_agent, ops_agent],</span>
+    <span class="cm">#         termination_condition=HandoffTermination("user")</span>
+    <span class="cm">#                               | MaxMessageTermination(6),</span>
+    <span class="cm">#     )</span>
+
+
+    <span class="cm"># TODO 4 — Ask a docs question. Trace: user → triage → docs_agent → user.</span>
+
+
+asyncio.run(main())
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Verification</h2>
+  <div class="callout callout-check">
+    <div class="callout-label">The apples-to-apples test</div>
+    Run all three scripts with the same task: <em>"Give me the runbook AND the live status of org 12345."</em> — the composed question that requires both tools.
+    <ol style="margin:0.5rem 0">
+      <li><strong>RoundRobin</strong>: docs_agent speaks, then ops_agent speaks. Fixed order. Both fire regardless of relevance.</li>
+      <li><strong>Selector</strong>: LLM decides. Should pick both, in whichever order it deems best. If you ask a docs-only question, only docs_agent should be chosen.</li>
+      <li><strong>Swarm</strong>: triage speaks first, chooses a specialist via handoff tool call, that specialist answers and hands to user. Deterministic transfer, not fixed rotation.</li>
+    </ol>
+    Compare the message logs. Three different coordination shapes for the same task.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Compare to what you know</h2>
+  <table>
+    <thead>
+      <tr><th>Pattern</th><th>L25 LangGraph</th><th>L29–30 ADK</th><th>L36 Strands</th><th>L42 AutoGen</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Fixed rotation</td><td>Sequential nodes</td><td>SequentialAgent</td><td>GraphBuilder linear</td><td>RoundRobinGroupChat</td></tr>
+      <tr><td>LLM-driven routing</td><td>Supervisor pattern</td><td>sub_agents on LlmAgent</td><td>Agent-as-tool</td><td>SelectorGroupChat</td></tr>
+      <tr><td>Explicit hand-off</td><td>Swarm pattern</td><td>transfer_to_agent</td><td>Swarm(nodes=...)</td><td>Swarm + HandoffMessage</td></tr>
+      <tr><td>Termination</td><td>Custom state check</td><td>Framework default</td><td>N iterations</td><td>Composable conditions <code>|</code>/<code>&amp;</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle</div>
+    Docs / Ops / Architect isn't a whiteboard pattern — it maps directly to Experience API / Process API / System API. Each agent has its own responsibility and its own set of Anypoint tools. When customers ask "how do we scale one AI helper into a real assistant?", multi-agent + API-led connectivity is the same answer in two languages: <em>small components with clear responsibilities, coordinated at the top</em>.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where the abstraction leaks</h2>
+  <ul>
+    <li><strong>Selector cost stacks up.</strong> Every turn calls the model to pick the next speaker AND then calls the picked agent. If your selector prompt is verbose, that's twice the tokens per turn. Keep it tight.</li>
+    <li><strong>Swarm handoff needs discipline.</strong> If specialists don't hand back to <code>user</code>, they can hand to each other forever until termination fires. Design your handoff graph acyclic or bounded.</li>
+    <li><strong>RoundRobin isn't intelligent.</strong> It runs the loop regardless of relevance — every agent will produce an answer to every task. Wasteful unless every agent genuinely contributes.</li>
+    <li><strong>Termination conditions are AND/OR — not smart.</strong> There's no "terminate when a good answer exists." Add your own signal (e.g. an APPROVED string, or a HandoffTermination) explicitly.</li>
+    <li><strong>Debugging multi-agent is hard.</strong> Turn on message streaming (<code>run_stream</code>) so you see every message rather than just the final. If you skip this you'll never understand why the wrong agent won.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> User asks a docs-only question. RoundRobin runs docs_agent AND ops_agent. Why?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Bug</li>
+        <li data-i="1">RoundRobin has no smarts — it rotates through all participants until termination. Ops_agent runs even though its expertise isn't needed. Pick a different team type (Selector or Swarm) when relevance-aware routing matters.</li>
+        <li data-i="2">Wrong model</li>
+        <li data-i="3">The question is ambiguous</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Selector picks the wrong agent on 30% of queries. Best first fix?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Switch to a bigger model</li>
+        <li data-i="1">Add more agents</li>
+        <li data-i="2">Rewrite the selector prompt with sharper role descriptions and concrete examples. The selector <em>is</em> an LLM classifier — its accuracy depends almost entirely on how clearly you describe each agent's remit. Bigger models help; a clearer prompt helps more.</li>
+        <li data-i="3">Use RoundRobin</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Swarm never terminates — agents keep handing off to each other. Cause?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">Wrong model</li>
+        <li data-i="1">Bug in AutoGen</li>
+        <li data-i="2">Missing tools</li>
+        <li data-i="3">No agent hands to <code>"user"</code>, and MaxMessageTermination isn't set. Handoff cycles are the classic Swarm failure. Add <code>HandoffTermination("user")</code> and require specialists to hand back to user after answering.</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> Which pattern maps closest to LangGraph supervisor / ADK sub_agents / Strands agent-as-tool?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">RoundRobinGroupChat</li>
+        <li data-i="1">SelectorGroupChat — the LLM inspects the conversation and picks who speaks next. Supervisor pattern by another name.</li>
+        <li data-i="2">Swarm</li>
+        <li data-i="3">None</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> When would you actually pick RoundRobin in production?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Never</li>
+        <li data-i="1">Always — simplest wins</li>
+        <li data-i="2">Review / debate pipelines where every agent MUST contribute in order — e.g. "draft → critique → revise" or "SE proposes → architect reviews → security signs off." Fixed rotation is exactly what you want when the workflow is a checklist, not a routing decision.</li>
+        <li data-i="3">Only for demos</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Common questions: how to inspect the raw message log from a team, how to compose custom termination conditions, whether AutoGen teams can call Foundry Agents (yes, via an adapter agent), and how to include a human-in-the-loop step. Ask.</p>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0041-foundry-threads-memory.html">← L41 — Foundry threads</a>
+      <a href="0025-multi-agent-patterns.html">L25 — LangGraph multi-agent</a>
+      <a href="0029-adk-declarative-multi-agent.html">L29 — ADK declarative</a>
+      <a href="0036-strands-multi-agent.html">L36 — Strands equivalent</a>
+    </div>
+    <p style="margin-top:1rem">Next (L43, capstone) — Ship it. Multi-agent + memory + identity + observability + content safety on Foundry Agents Service. The Azure-native shippable.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

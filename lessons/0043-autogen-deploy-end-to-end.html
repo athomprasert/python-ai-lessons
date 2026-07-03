@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lesson 43 — Ship the Azure-native agent: capstone</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9f8f6;
+      color: #1a1a1a;
+      line-height: 1.7;
+      padding: 2rem 1rem 6rem;
+    }
+    .page { max-width: 860px; margin: 0 auto; }
+
+    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+
+    .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-now  { background: #1a1a1a; color: #fff; }
+
+    .capstone {
+      background: linear-gradient(135deg, #ffedd5, #fed7aa);
+      border: 2px solid #ea580c;
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1.6rem 0 2rem;
+    }
+    .capstone-label {
+      display: inline-block;
+      background: #ea580c;
+      color: #fff;
+      padding: 0.15rem 0.7rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+    .capstone p { margin: 0; font-size: 0.95rem; color: #7c2d12; }
+
+    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: #2563eb; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    p code, li code, td code, th code {
+      background: #eee;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.85em;
+      color: #c7254e;
+    }
+
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .attr { color: #f38ba8; }
+
+    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
+    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
+    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f9f8f6; }
+
+    .todo {
+      background: #1e1e2e;
+      border: 2px dashed #f59e0b;
+      color: #cdd6f4;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+    .todo-label {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a1a;
+      padding: 0.1rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+
+    .stack {
+      background: #fff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.85rem;
+      line-height: 1.55;
+      margin: 1rem 0 1.5rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz h3 { margin-top: 0; font-size: 1rem; }
+    .quiz-question { margin-bottom: 1.4rem; }
+    .quiz-question:last-child { margin-bottom: 0; }
+    .options { list-style: none; padding: 0; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
+    .options li:hover { background: #f3f4f6; }
+    .options li.correct { background: #d1fae5; border-color: #22c55e; }
+    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
+    .feedback.ok  { color: #15803d; }
+    .feedback.err { color: #b91c1c; }
+
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Python for AI/ML &nbsp;·&nbsp; Lesson 43 &nbsp;·&nbsp; AutoGen + Azure AI Foundry mini-series (6 of 6) · CAPSTONE</p>
+    <h1>Ship the Azure-native agent</h1>
+    <p class="tagline">Everything from L38–L42 stacked into one shippable app: multi-agent, memory, Entra ID identity, content safety, and observability — all on Azure AI Foundry.</p>
+    <div class="progress">
+      <a href="0038-autogen-basics.html"><span class="pill pill-done">L38 ✓</span></a>
+      <a href="0039-autogen-model-switch.html"><span class="pill pill-done">L39 ✓</span></a>
+      <a href="0040-azure-ai-foundry-agents.html"><span class="pill pill-done">L40 ✓</span></a>
+      <a href="0041-foundry-threads-memory.html"><span class="pill pill-done">L41 ✓</span></a>
+      <a href="0042-autogen-multi-agent.html"><span class="pill pill-done">L42 ✓</span></a>
+      <span class="pill pill-now">L43 — Capstone</span>
+    </div>
+  </header>
+
+  <div class="capstone">
+    <span class="capstone-label">CAPSTONE</span>
+    <p><strong>Goal:</strong> stand up a MuleSoft assistant an Azure-committed customer would actually put in front of users. Not a toy. Not a demo. A thing you could hand to a customer's platform team and they'd know how to operate it.</p>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mission moment</h2>
+  <p>
+    In L37 you shipped the AWS-native version of this. This is the Azure-native twin. Same MuleSoft helper you've built five times, now with the five things every enterprise agent needs on day one:
+  </p>
+  <ul>
+    <li><strong>Identity</strong> — verified caller, not a hardcoded API key</li>
+    <li><strong>Multi-agent</strong> — specialists, not one omni-agent</li>
+    <li><strong>Memory</strong> — the same user, tomorrow, without starting over</li>
+    <li><strong>Observability</strong> — traces you can grep in an incident</li>
+    <li><strong>Content safety</strong> — the "prompt injection said something bad" story</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <h2>The full stack</h2>
+
+<div class="stack">┌──────────────────────────────────────────────────────────────────┐
+│ Client (mobile app / web / MuleSoft flow / another agent)        │
+└─────────────┬────────────────────────────────────────────────────┘
+              │ HTTPS + Entra ID bearer token
+              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ Azure API Management  OR  App Service front door                 │
+│   • JWT validation (Entra ID)                                    │
+│   • Rate limiting, quotas                                        │
+└─────────────┬────────────────────────────────────────────────────┘
+              │
+              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ Your FastAPI service (Container Apps / Functions / AKS)          │
+│   • verify claim → user_id                                       │
+│   • load user context (from MuleSoft System API → SFDC/CMDB)     │
+│   • drive Foundry run with additional_instructions               │
+└─────────────┬────────────────────────────────────────────────────┘
+              │
+              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ Azure AI Foundry Project                                         │
+│   • Agents Service (multi-agent team)                            │
+│   • Threads (per-user, persistent)                               │
+│   • Content Safety filters                                       │
+│   • Model deployments (Azure OpenAI + Model Catalog)             │
+│   • Traces → Application Insights                                │
+└─────────────┬────────────────────────────────────────────────────┘
+              │ tool callbacks
+              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ Anypoint Platform (MuleSoft)                                     │
+│   • Experience / Process / System APIs                           │
+│   • DataWeave, connectors, governance                            │
+└──────────────────────────────────────────────────────────────────┘</div>
+
+  <p>Each row is optional. What isn't optional is <em>knowing what each row exists for</em>. This is the diagram to whiteboard in front of a customer.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three new syntax constructs</h2>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · Entra ID auth via DefaultAzureCredential + FastAPI JWT dependency</div>
+    Two layers. Foundry SDK uses <code>DefaultAzureCredential</code> (which prefers the App Service managed identity in prod). Your FastAPI service validates the caller's Entra ID JWT before letting them touch Foundry.
+    <pre style="margin:0.5rem 0 0"><code>from fastapi import FastAPI, Depends, HTTPException, Header
+import jwt   # PyJWT
+from jwt import PyJWKClient
+
+_jwks = PyJWKClient(f"https://login.microsoftonline.com/{TENANT}/discovery/v2.0/keys")
+
+def verified_user(authorization: str = Header(...)) -> dict:
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(401, "missing bearer")
+    token = authorization.split()[1]
+    signing_key = _jwks.get_signing_key_from_jwt(token).key
+    return jwt.decode(token, signing_key, algorithms=["RS256"],
+                      audience=APP_CLIENT_ID, issuer=ISSUER)</code></pre>
+    Only <code>verified_user(...)</code>'s <code>sub</code> (or <code>oid</code>) claim becomes the user ID for thread routing. Never trust a header the client controls.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · Content safety on the Foundry side</div>
+    Foundry has managed content-safety filters. You enable them in the portal or via the SDK on the agent or the run. Blocked inputs return a specific error you can catch.
+    <pre style="margin:0.5rem 0 0"><code># In your project, enable "Prompt Shields" and "Groundedness detection"
+# under Content Safety.
+try:
+    run = project.agents.runs.create_and_process(
+        thread_id=thread.id, agent_id=agent.id
+    )
+except HttpResponseError as e:
+    if getattr(e, "error", None) and e.error.code == "content_filter":
+        return {"error": "Message blocked by content safety policy."}
+    raise</code></pre>
+    Content safety is not a substitute for authz — it's the "did the LLM see something dangerous or say something unsafe?" layer.
+  </div>
+
+  <div class="callout callout-syntax">
+    <div class="callout-label">New syntax · Application Insights via connection string</div>
+    Foundry writes traces to your project's linked Application Insights automatically. To trace your <em>own</em> code (FastAPI, MuleSoft calls) alongside, add:
+    <pre style="margin:0.5rem 0 0"><code>from azure.monitor.opentelemetry import configure_azure_monitor
+configure_azure_monitor(connection_string=os.environ["APPINSIGHTS_CONN"])</code></pre>
+    One line. Your logs, spans, and Foundry's server-side traces land in the same Application Insights workspace, correlatable by trace ID.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Prerequisites</h2>
+  <ol>
+    <li>L38–L42 done.</li>
+    <li>Entra ID: an App Registration for your service, with an <em>Application ID URI</em> and at least one exposed scope. Note the tenant ID and the App Registration's client ID.</li>
+    <li>Foundry project connected to an Application Insights resource. Content Safety filters enabled.</li>
+    <li>Local Python: <code>pip install fastapi uvicorn PyJWT[crypto] azure-monitor-opentelemetry azure-ai-projects azure-ai-agents azure-identity</code></li>
+    <li>For the identity test, install <code>az</code> CLI and run <code>az login</code>.</li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>Your turn</h2>
+  <p>Build <code>shippable.py</code> — one file, one API endpoint, all five properties above. This is the file you'd hand to a real customer as the starting point.</p>
+
+  <div class="todo">
+<span class="todo-label">SKELETON — fill in the 6 TODOs</span>
+
+<span class="cm"># shippable.py — Azure-native MuleSoft assistant, all boxes ticked</span>
+
+<span class="kw">import</span> json
+<span class="kw">import</span> os
+<span class="kw">import</span> time
+<span class="kw">import</span> jwt
+<span class="kw">from</span> jwt <span class="kw">import</span> PyJWKClient
+<span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI, Depends, HTTPException, Header
+<span class="kw">from</span> azure.ai.projects <span class="kw">import</span> AIProjectClient
+<span class="kw">from</span> azure.identity <span class="kw">import</span> DefaultAzureCredential
+<span class="kw">from</span> azure.core.exceptions <span class="kw">import</span> HttpResponseError
+<span class="kw">from</span> azure.monitor.opentelemetry <span class="kw">import</span> configure_azure_monitor
+
+<span class="kw">from</span> foundry_agent <span class="kw">import</span> get_anypoint_org_status
+<span class="kw">from</span> foundry_memory <span class="kw">import</span> get_or_create_thread, load_user_context
+
+
+<span class="cm"># TODO 1 — Wire Application Insights so your own spans join Foundry traces.</span>
+<span class="cm">#     configure_azure_monitor(connection_string=os.environ["APPINSIGHTS_CONN"])</span>
+
+
+app <span class="op">=</span> FastAPI()
+
+TENANT <span class="op">=</span> os.environ[<span class="str">"AZURE_TENANT_ID"</span>]
+CLIENT_ID <span class="op">=</span> os.environ[<span class="str">"AZURE_APP_CLIENT_ID"</span>]
+ISSUER <span class="op">=</span> f<span class="str">"https://login.microsoftonline.com/{TENANT}/v2.0"</span>
+_jwks <span class="op">=</span> PyJWKClient(f<span class="str">"https://login.microsoftonline.com/{TENANT}/discovery/v2.0/keys"</span>)
+
+
+<span class="kw">def</span> <span class="fn">verified_user</span>(authorization: str <span class="op">=</span> Header(...)) -> dict:
+    <span class="cm"># TODO 2 — Validate the incoming JWT. Return the decoded claims.</span>
+    <span class="cm">#          Raise 401 on any failure. Do NOT trust any user-controlled header.</span>
+    <span class="kw">pass</span>
+
+
+project <span class="op">=</span> AIProjectClient.from_connection_string(
+    conn_str<span class="op">=</span>os.environ[<span class="str">"AZURE_AI_PROJECT_CONN"</span>],
+    credential<span class="op">=</span>DefaultAzureCredential(),
+)
+AGENT_ID <span class="op">=</span> os.environ[<span class="str">"FOUNDRY_AGENT_ID"</span>]
+
+
+<span class="attr">@app.post(</span><span class="str">"/ask"</span><span class="attr">)</span>
+<span class="kw">def</span> <span class="fn">ask</span>(body: dict, claims: dict <span class="op">=</span> Depends(verified_user)):
+    user_id <span class="op">=</span> claims[<span class="str">"sub"</span>]      <span class="cm"># stable per user + tenant</span>
+    message <span class="op">=</span> body[<span class="str">"message"</span>]
+
+    <span class="cm"># TODO 3 — Per-user thread (memory across sessions, isolated per user).</span>
+    thread_id <span class="op">=</span> get_or_create_thread(project, user_id)
+
+    <span class="cm"># TODO 4 — Load long-term user context from MuleSoft System API.</span>
+    <span class="cm">#          For now, keep load_user_context stub from L41; note in a</span>
+    <span class="cm">#          comment where the Anypoint call would go.</span>
+    ctx <span class="op">=</span> load_user_context(user_id)
+
+    project.agents.messages.create(thread_id<span class="op">=</span>thread_id, role<span class="op">=</span><span class="str">"user"</span>, content<span class="op">=</span>message)
+    <span class="kw">try</span>:
+        <span class="cm"># TODO 5 — Drive the run with additional_instructions=ctx. Wrap in</span>
+        <span class="cm">#          try/except HttpResponseError; return a clean JSON error</span>
+        <span class="cm">#          when e.error.code == "content_filter".</span>
+        run <span class="op">=</span> project.agents.runs.create(
+            thread_id<span class="op">=</span>thread_id, agent_id<span class="op">=</span>AGENT_ID,
+            additional_instructions<span class="op">=</span>f<span class="str">"User context: {ctx}"</span>,
+        )
+        <span class="kw">while</span> run.status <span class="kw">in</span> (<span class="str">"queued"</span>, <span class="str">"in_progress"</span>, <span class="str">"requires_action"</span>):
+            <span class="kw">if</span> run.status <span class="op">==</span> <span class="str">"requires_action"</span>:
+                outputs <span class="op">=</span> []
+                <span class="kw">for</span> call <span class="kw">in</span> run.required_action.submit_tool_outputs.tool_calls:
+                    args <span class="op">=</span> json.loads(call.function.arguments)
+                    <span class="kw">if</span> call.function.name <span class="op">==</span> <span class="str">"get_anypoint_org_status"</span>:
+                        result <span class="op">=</span> get_anypoint_org_status(<span class="op">**</span>args)
+                        outputs.append({<span class="str">"tool_call_id"</span>: call.id,
+                                        <span class="str">"output"</span>: json.dumps(result)})
+                run <span class="op">=</span> project.agents.runs.submit_tool_outputs(
+                    thread_id<span class="op">=</span>thread_id, run_id<span class="op">=</span>run.id, tool_outputs<span class="op">=</span>outputs)
+            <span class="kw">else</span>:
+                time.sleep(<span class="num">0.5</span>)
+                run <span class="op">=</span> project.agents.runs.get(thread_id<span class="op">=</span>thread_id, run_id<span class="op">=</span>run.id)
+    <span class="kw">except</span> HttpResponseError <span class="kw">as</span> e:
+        <span class="kw">if</span> <span class="fn">getattr</span>(e, <span class="str">"error"</span>, <span class="kw">None</span>) <span class="kw">and</span> e.error.code <span class="op">==</span> <span class="str">"content_filter"</span>:
+            <span class="kw">raise</span> HTTPException(<span class="num">400</span>, <span class="str">"Blocked by content-safety policy."</span>)
+        <span class="kw">raise</span>
+
+    <span class="cm"># TODO 6 — Return the latest assistant message + run.id for auditability.</span>
+    msgs <span class="op">=</span> project.agents.messages.list(thread_id<span class="op">=</span>thread_id)
+    <span class="kw">for</span> m <span class="kw">in</span> msgs:
+        <span class="kw">if</span> m.role <span class="op">==</span> <span class="str">"assistant"</span>:
+            <span class="kw">return</span> {<span class="str">"answer"</span>: m.content[<span class="num">0</span>].text.value, <span class="str">"run_id"</span>: run.id}
+    <span class="kw">return</span> {<span class="str">"answer"</span>: <span class="str">""</span>, <span class="str">"run_id"</span>: run.id}
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-label">Run it</div>
+    <pre style="margin:0.4rem 0 0"><code>uvicorn shippable:app --reload
+
+# in another shell — grab a token for a user, then call
+TOKEN=$(az account get-access-token --resource api://$AZURE_APP_CLIENT_ID --query accessToken -o tsv)
+curl -X POST http://localhost:8000/ask \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"message":"What is the status of org 12345?"}'</code></pre>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The shipping check</h2>
+  <div class="callout callout-check">
+    <div class="callout-label">Five things to prove before you call it done</div>
+    <ol style="margin:0.5rem 0">
+      <li><strong>Unauthenticated call is rejected.</strong> Same curl without <code>Authorization</code> → 401. If not, your JWT dependency is not wired.</li>
+      <li><strong>Two users get isolated threads.</strong> Alice's token gets Alice's history; Bob's token gets Bob's. Check in Foundry portal's Threads view.</li>
+      <li><strong>Content-safety block returns a clean 400.</strong> Send a message that trips the filter (Foundry's Prompt Shields have example prompts). You should see your JSON error, not a stack trace.</li>
+      <li><strong>Trace correlation works.</strong> One request in Application Insights, expanded → shows your FastAPI span, the Foundry run span, tool-call span, model call. If it doesn't, the connection string didn't take.</li>
+      <li><strong>Restart survives.</strong> Kill the process, restart. Alice's next message still lands in her existing thread. Not a soft-restart — a real process crash test.</li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Capability accumulation</h2>
+  <table>
+    <thead>
+      <tr><th>Lesson</th><th>Adds</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>L38</td><td>Async AutoGen agent on Azure OpenAI, plain-function tools</td></tr>
+      <tr><td>L39</td><td>Model client abstraction — swap providers without rewrites</td></tr>
+      <tr><td>L40</td><td>Managed runtime (Foundry Agents Service) — server-side loop, portal, quotas</td></tr>
+      <tr><td>L41</td><td>Persistent memory — thread reuse per user + user context</td></tr>
+      <tr><td>L42</td><td>Multi-agent teams — RoundRobin / Selector / Swarm</td></tr>
+      <tr><td>L43</td><td>Identity + Content Safety + Observability in one shippable API</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The full MuleSoft-on-Azure pitch</div>
+    You can now walk into an Azure-committed customer conversation and describe the eight-piece stack cleanly:
+    <ol style="margin:0.4rem 0">
+      <li><strong>App Registration</strong> (Entra ID) — who's calling</li>
+      <li><strong>API Management</strong> — rate limit, transform, audit</li>
+      <li><strong>Container Apps / Functions</strong> — your service</li>
+      <li><strong>Foundry Agents Service</strong> — managed agent runtime</li>
+      <li><strong>Foundry Model Catalog</strong> — GPT-4o, Claude, Llama in Azure</li>
+      <li><strong>Foundry Content Safety</strong> — the "unsafe input/output" guardrail</li>
+      <li><strong>Application Insights</strong> — one trace timeline</li>
+      <li><strong>Anypoint Platform</strong> — where the tools actually live</li>
+    </ol>
+    Symmetric with the Google (L31) and AWS (L37) pitches. Three clouds, one architecture, one MuleSoft.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where to go from here</h2>
+  <ul>
+    <li><strong>Evaluations &amp; guardrails</strong> — Foundry has an Evaluations feature; wire a golden dataset and run it on every deploy. This is L44+ material.</li>
+    <li><strong>Foundry-hosted MCP tools</strong> — plug MuleSoft MCP endpoints directly into an agent (no requires_action loop needed).</li>
+    <li><strong>File Search / Bing grounding</strong> — Foundry's built-in RAG and web-search tools. When to pick these vs your own RAG (L09–L16).</li>
+    <li><strong>Streaming responses</strong> — <code>project.agents.runs.stream</code> for chat UIs.</li>
+    <li><strong>Load-testing and quotas</strong> — the operational side of running agents in prod.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <div class="quiz">
+    <h3>Quick check</h3>
+
+    <div class="quiz-question" id="q0">
+      <p><strong>Q1.</strong> A colleague suggests reading the user_id from a header your app trusts. Why is that wrong?</p>
+      <ul class="options" data-answer="1">
+        <li data-i="0">Headers aren't reliable</li>
+        <li data-i="1">The client controls headers. Any attacker who reaches your endpoint can spoof another user's ID and read their thread history. The user identity must come from a cryptographically verified token — <code>sub</code>/<code>oid</code> claim in the Entra ID JWT, not a header the client sets.</li>
+        <li data-i="2">Azure blocks custom headers</li>
+        <li data-i="3">It's fine</li>
+      </ul>
+      <p class="feedback" id="fb0"></p>
+    </div>
+
+    <div class="quiz-question" id="q1">
+      <p><strong>Q2.</strong> Content-safety filter blocks a message. What should <em>you</em> do in code?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">Retry</li>
+        <li data-i="1">Ignore the error</li>
+        <li data-i="2">Catch the specific error code (<code>content_filter</code>), return a clean 400 to the caller, and log the incident with the run/request ID so someone can review. Don't retry — retrying doesn't change the filter's decision, and repeated hits may raise your abuse profile.</li>
+        <li data-i="3">Escalate to Foundry support</li>
+      </ul>
+      <p class="feedback" id="fb1"></p>
+    </div>
+
+    <div class="quiz-question" id="q2">
+      <p><strong>Q3.</strong> Application Insights shows a Foundry run span but nothing from your FastAPI code. Why?</p>
+      <ul class="options" data-answer="3">
+        <li data-i="0">You need a different plan</li>
+        <li data-i="1">Foundry doesn't expose traces</li>
+        <li data-i="2">Wrong region</li>
+        <li data-i="3">You forgot <code>configure_azure_monitor(connection_string=...)</code>, or the connection string points at a different resource than the Foundry project. Foundry auto-instruments itself; your app has to opt in explicitly.</li>
+      </ul>
+      <p class="feedback" id="fb2"></p>
+    </div>
+
+    <div class="quiz-question" id="q3">
+      <p><strong>Q4.</strong> Which single piece of this stack is <em>not</em> Foundry's job?</p>
+      <ul class="options" data-answer="0">
+        <li data-i="0">Long-term user profile from your systems of record. Foundry manages threads (conversation memory) but knowing "Alice manages org 12345" comes from Salesforce / CMDB / your data — reached via MuleSoft in most enterprises. Foundry never sees that unless you inject it into <code>additional_instructions</code>.</li>
+        <li data-i="1">Thread persistence</li>
+        <li data-i="2">Content safety</li>
+        <li data-i="3">Model inference</li>
+      </ul>
+      <p class="feedback" id="fb3"></p>
+    </div>
+
+    <div class="quiz-question" id="q4">
+      <p><strong>Q5.</strong> Foundry Agent Service vs AutoGen local — for this shippable, which did we pick and why?</p>
+      <ul class="options" data-answer="2">
+        <li data-i="0">AutoGen local — cheaper</li>
+        <li data-i="1">Foundry — because it's Microsoft</li>
+        <li data-i="2">Foundry — because managed identity, content safety, threads, and tracing are wired in without extra code. The tradeoff is Azure-only. If portability across clouds mattered more than these managed properties, keep AutoGen local and add each piece yourself.</li>
+        <li data-i="3">Doesn't matter</li>
+      </ul>
+      <p class="feedback" id="fb4"></p>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Ask follow-ups</h2>
+  <p>Common questions: how to add a MuleSoft System API to <code>load_user_context</code> without blocking, how to move from managed identity to a service principal for local dev, how to blue/green a new Foundry agent version behind the same endpoint, whether the whole thing runs in Sovereign Cloud regions. Ask.</p>
+
+  <div class="footer">
+    <div class="nav-links">
+      <a href="0042-autogen-multi-agent.html">← L42 — Multi-agent</a>
+      <a href="0031-adk-deploy-agent-engine.html">L31 — Vertex capstone</a>
+      <a href="0037-strands-deploy-end-to-end.html">L37 — AgentCore capstone</a>
+      <a href="../reference/mcp-integration-positioning.html">REF — MCP positioning</a>
+    </div>
+    <p style="margin-top:1rem">You've completed the Azure mini-series. Three clouds down. Next up: cross-cutting concerns — evals, guardrails, and the production discipline that separates a demo from a customer deployment.</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.quiz-question').forEach((q) => {
+    const correct = q.querySelector('.options').dataset.answer;
+    q.querySelectorAll('.options li').forEach(li => {
+      li.addEventListener('click', () => {
+        const fb = q.querySelector('.feedback');
+        q.querySelectorAll('.options li').forEach(x => x.classList.remove('correct', 'wrong'));
+        if (li.dataset.i === correct) {
+          li.classList.add('correct');
+          fb.textContent = 'Correct.';
+          fb.className = 'feedback ok';
+        } else {
+          li.classList.add('wrong');
+          q.querySelector(`.options li[data-i="${correct}"]`).classList.add('correct');
+          fb.textContent = 'Not quite — the highlighted answer is right.';
+          fb.className = 'feedback err';
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
