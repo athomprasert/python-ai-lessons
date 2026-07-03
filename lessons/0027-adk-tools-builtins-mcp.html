@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L27 — ADK Tools: function tools, built-ins, MCP</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .series-banner {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      color: #92400e;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .series-banner strong { color: #78350f; }
+
+    .lesson-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .lesson-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.3rem; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0.9rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .ty  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.6rem 0 1.1rem; font-size: 0.88rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.65rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+      border-left: 4px solid;
+      font-size: 0.9rem;
+    }
+    .callout strong { font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .callout-tip      { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn     { background: #fffbeb; border-color: #f59e0b; }
+    .callout-syntax   { background: #fdf4ff; border-color: #a855f7; }
+    .callout-pedagogy { background: #f1f5ff; border-color: #6366f1; }
+    .callout-compare  { background: #f0f9ff; border-color: #0ea5e9; }
+
+    .exercise-box {
+      border: 2px solid #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+      background: #fefefe;
+    }
+    .exercise-box h3 { margin-top: 0; }
+    .exercise-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    details {
+      margin: 0.5rem 0;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+    }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    details[open] summary { margin-bottom: 0.4rem; }
+
+    .quiz { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.7rem 0; }
+    .quiz-q { font-weight: 600; margin-bottom: 0.4rem; }
+
+    .ascii-diagram {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 6px;
+      margin: 0.7rem 0;
+    }
+
+    .footer-links { margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid #ddd; font-size: 0.82rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="series-banner">
+    <strong>Google ADK mini-series · part 2 of 6</strong> · Tools deep dive: bare functions, built-in Google Search, MCP toolsets. This is the lesson that makes the "MuleSoft-as-MCP-server" story real.
+    &nbsp;<a href="0026-adk-basics-agent-tools-runner.html">← L26: ADK Basics</a>
+  </div>
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Lesson 27 · Python for AI/ML</p>
+    <h1>ADK Tools: function tools, built-ins, MCP</h1>
+    <p class="tagline">Three ways to give an agent capabilities — plain Python functions, Google's built-in tools, and any MCP server. Same agent, three toolboxes, wildly different implications for what you can ship.</p>
+  </header>
+
+  <div class="callout callout-pedagogy">
+    <strong>Pedagogy reminder.</strong> Skeleton → TODO → run → paste back. If you don't run it, you didn't finish the lesson.
+  </div>
+
+  <h2>The three tool types</h2>
+
+  <table>
+    <thead><tr><th>Type</th><th>What it is</th><th>When to reach for it</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Function tool</strong></td>
+        <td>Plain Python function you pass to <code>tools=[...]</code></td>
+        <td>Your own logic — DB queries, API calls, calculations. The default.</td>
+      </tr>
+      <tr>
+        <td><strong>Built-in tool</strong></td>
+        <td>Ships with ADK — <code>google_search</code>, code execution, Vertex AI Search</td>
+        <td>Common capabilities Google implemented for you. Zero code.</td>
+      </tr>
+      <tr>
+        <td><strong>MCP toolset</strong></td>
+        <td>A whole set of tools imported from an MCP server</td>
+        <td>Reusing tools built for the wider MCP ecosystem — no glue code.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>You can mix function tools freely. But <strong>built-in tools have restrictions</strong> (see the warning below). MCP toolsets are the interesting one for your MuleSoft story.</p>
+
+  <h2>Function tools — auto-wrap vs explicit wrap</h2>
+
+  <p>In L26, you passed a plain function to <code>tools=[lookup_anypoint_status]</code>. ADK auto-wraps that in a <code>FunctionTool</code> for you. What if you want to wrap it yourself?</p>
+
+<pre><code><span class="cm"># Auto-wrap (what L26 did — the default)</span>
+<span class="kw">def</span> <span class="fn">lookup_anypoint_status</span>(org_id: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="str">"""..."""</span>
+    <span class="kw">return</span> {...}
+
+root_agent <span class="op">=</span> <span class="fn">Agent</span>(
+    ...,
+    tools<span class="op">=</span>[lookup_anypoint_status],   <span class="cm"># bare function — ADK wraps it</span>
+)
+
+<span class="cm"># Explicit wrap (same outcome, more control)</span>
+<span class="kw">from</span> google.adk.tools <span class="kw">import</span> FunctionTool
+
+status_tool <span class="op">=</span> <span class="fn">FunctionTool</span>(func<span class="op">=</span>lookup_anypoint_status)
+
+root_agent <span class="op">=</span> <span class="fn">Agent</span>(
+    ...,
+    tools<span class="op">=</span>[status_tool],
+)</code></pre>
+
+  <p><strong>When to use explicit <code>FunctionTool</code>:</strong> when you need to override the auto-generated schema, mark a tool as long-running, or customise how it appears to the LLM. For 90% of cases, auto-wrap is fine.</p>
+
+  <div class="callout callout-syntax">
+    <strong>New syntax — the schema comes from your function signature and docstring.</strong><br>
+    ADK inspects the function's parameter names, type hints, and the docstring to build the JSON schema the LLM sees. That's why L26 was strict about writing a proper docstring. No decorator, no manual schema — the Python signature IS the schema.
+  </div>
+
+  <h2>Built-in tools — one line, huge capability</h2>
+
+  <p>ADK ships tools you'd otherwise have to build yourself. The one you'll use most:</p>
+
+<pre><code><span class="kw">from</span> google.adk.tools <span class="kw">import</span> google_search
+<span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
+
+root_agent <span class="op">=</span> <span class="fn">Agent</span>(
+    name<span class="op">=</span><span class="str">"search_agent"</span>,
+    model<span class="op">=</span><span class="str">"gemini-flash-latest"</span>,
+    instruction<span class="op">=</span><span class="str">"Answer questions using Google Search. Always cite sources."</span>,
+    tools<span class="op">=</span>[google_search],
+)</code></pre>
+
+  <p>That's it. Ask the agent <em>"what's the current price of Gold?"</em> and it'll grounds its answer in Google search results — with citations.</p>
+
+  <div class="callout callout-warn">
+    <strong>Gotcha — built-in "grounding" tools may not mix with function tools.</strong><br>
+    Historically, Gemini has enforced a rule where a "grounding tool" (like <code>google_search</code>) can't share an agent with regular function tools — the API returns an error if you try. ADK docs don't explicitly warn about this, but if you get an error like <em>"Tool config incompatible"</em> when combining <code>google_search</code> with your <code>lookup_anypoint_status</code> function, that's why.<br><br>
+    <strong>The workaround</strong>: use two sub-agents. A <code>search_specialist</code> agent with just <code>google_search</code>, and a <code>mulesoft_specialist</code> agent with your function tools. A root agent routes between them. You'll build this pattern properly in L31 (multi-agent).
+  </div>
+
+  <h3>Other built-ins worth knowing</h3>
+  <ul>
+    <li><code>built_in_code_execution</code> — LLM writes Python and runs it in a sandbox to compute answers. Great for math/data questions.</li>
+    <li><code>vertex_ai_search</code> — searches your Vertex AI Search index (enterprise doc-search). Requires Vertex setup, not AI Studio.</li>
+    <li><code>load_memory</code> — reads from ADK's long-term memory service. Covered in L28.</li>
+  </ul>
+
+  <h2>MCP toolsets — the killer feature for MuleSoft</h2>
+
+  <p>MCP (Model Context Protocol) is Anthropic's open standard for exposing tools to LLMs. Any MCP server exposes a list of tools; ADK can consume that list and hand the tools to your agent — <strong>you write zero glue code</strong>.</p>
+
+  <div class="ascii-diagram">                    ┌──────────────────────┐
+   ADK Agent ─────►│ MCPToolset (config)  │──stdio/HTTP──► MCP server
+                    │                      │                 │
+                    │  discovers tools     │◄────tools list──┤
+                    │  makes them          │                 │
+                    │  available to agent  │                 └── implements
+                    └──────────────────────┘                     the actual work</div>
+
+  <p>Why this matters for you:</p>
+  <ul>
+    <li><strong>Reusability</strong> — build a tool once as an MCP server; use it from ADK, Claude Code, Cursor, any MCP-aware client</li>
+    <li><strong>Language independence</strong> — MCP server can be in TypeScript, Python, Go — ADK doesn't care</li>
+    <li><strong>MuleSoft strategy</strong> — Salesforce is investing in <a href="https://www.salesforce.com/news/press-releases/2025/09/09/mulesoft-model-context-protocol-mcp/">exposing Anypoint APIs as MCP servers</a>. When that ships, an ADK agent (or any MCP client) gets Anypoint capabilities for free</li>
+  </ul>
+
+  <p>Verified imports and shape from current ADK docs:</p>
+
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> LlmAgent
+<span class="kw">from</span> google.adk.tools.mcp_tool <span class="kw">import</span> McpToolset
+<span class="kw">from</span> google.adk.tools.mcp_tool.mcp_session_manager <span class="kw">import</span> StdioConnectionParams
+<span class="kw">from</span> mcp <span class="kw">import</span> StdioServerParameters
+
+root_agent <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    name<span class="op">=</span><span class="str">'fetch_agent'</span>,
+    instruction<span class="op">=</span><span class="str">'Fetch web pages and summarise them.'</span>,
+    tools<span class="op">=</span>[
+        <span class="fn">McpToolset</span>(
+            connection_params<span class="op">=</span><span class="fn">StdioConnectionParams</span>(
+                server_params<span class="op">=</span><span class="fn">StdioServerParameters</span>(
+                    command<span class="op">=</span><span class="str">'uvx'</span>,
+                    args<span class="op">=</span>[<span class="str">'mcp-server-fetch'</span>],
+                ),
+            ),
+        )
+    ],
+)</code></pre>
+
+  <div class="callout callout-syntax">
+    <strong>New syntax — the three-layer MCP config.</strong><br>
+    <code>McpToolset</code> holds the connection. <code>StdioConnectionParams</code> says "talk to it via stdin/stdout". <code>StdioServerParameters</code> says "here's the command to spawn". The nesting looks over-engineered, but it lets ADK swap in HTTP/SSE transports later with the same outer <code>McpToolset</code>.
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>Rule — the MCP toolset must be defined synchronously in <code>agent.py</code>.</strong><br>
+    ADK docs are explicit: <em>"When deploying agents with MCP tools, the agent and its McpToolset must be defined synchronously in your <code>agent.py</code> file."</em> You can't <code>await</code> or <code>async def</code> the setup at module scope. The example above is the pattern to copy.
+  </div>
+
+  <h2 id="step-0">Step 0 — install prerequisites</h2>
+<pre><code><span class="cm"># You should already have the L26 venv active</span>
+cd ~/ai/claude/projects/python/exercises/adk
+source .venv/bin/activate
+
+<span class="cm"># For Exercise 3 (MCP), install uv — the fast Python package runner</span>
+brew install uv     <span class="cm"># if you don't already have it</span>
+
+<span class="cm"># Verify — mcp-server-fetch is fetchable via uvx (uv's one-shot runner)</span>
+uvx mcp-server-fetch --help
+<span class="cm"># Should print usage. First run downloads the package (~15s).</span></code></pre>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 1 · guided · built-in google_search</span>
+    <h3>Add Google Search to a NEW agent</h3>
+
+    <p><strong>Important:</strong> because of the built-in-mixing gotcha above, don't add <code>google_search</code> to your L26 <code>mulesoft_helper</code>. Make a new agent folder.</p>
+
+    <p>Structure:</p>
+<pre><code>adk/
+├── mulesoft_helper/     <span class="cm"># from L26 — leave alone</span>
+└── news_agent/          <span class="cm"># new, this exercise</span>
+    ├── agent.py
+    ├── __init__.py
+    └── .env             <span class="cm"># same key as mulesoft_helper</span></code></pre>
+
+    <h4>Skeleton — fill in the TODOs in <code>news_agent/agent.py</code></h4>
+<pre><code><span class="cm"># TODO 1: import Agent and the google_search built-in tool.</span>
+<span class="kw">from</span> google.adk.agents <span class="kw">import</span> ...
+<span class="kw">from</span> google.adk.tools <span class="kw">import</span> ...
+
+<span class="cm"># TODO 2: define root_agent.</span>
+<span class="cm">#  - name: 'news_agent'</span>
+<span class="cm">#  - model: 'gemini-flash-latest'</span>
+<span class="cm">#  - description: one-liner about what it does</span>
+<span class="cm">#  - instruction: tell it to use Google Search and cite sources</span>
+<span class="cm">#  - tools: [google_search]   <-- built-in tool, no function needed</span>
+root_agent <span class="op">=</span> ...</code></pre>
+
+    <p>Copy your <code>__init__.py</code> and <code>.env</code> from <code>mulesoft_helper/</code> — same content.</p>
+
+    <h4>Run</h4>
+<pre><code>adk run news_agent
+
+<span class="cm"># Try:</span>
+<span class="cm">#   "What's MuleSoft's latest release announcement?"</span>
+<span class="cm">#   "Latest news about Google ADK?"</span>
+<span class="cm">#   "Who won the 2026 Australian Open?"</span></code></pre>
+
+    <details>
+      <summary>Hint 1 — imports</summary>
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
+<span class="kw">from</span> google.adk.tools <span class="kw">import</span> google_search</code></pre>
+    </details>
+
+    <details>
+      <summary>Hint 2 — Agent definition</summary>
+<pre><code>root_agent <span class="op">=</span> <span class="fn">Agent</span>(
+    name<span class="op">=</span><span class="str">'news_agent'</span>,
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    description<span class="op">=</span><span class="str">"Answers current-events questions using Google Search."</span>,
+    instruction<span class="op">=</span>(
+        <span class="str">"You are a research assistant. When asked about current events "</span>
+        <span class="str">"or anything time-sensitive, use google_search to find the answer. "</span>
+        <span class="str">"Always cite your sources with URLs."</span>
+    ),
+    tools<span class="op">=</span>[google_search],
+)</code></pre>
+    </details>
+
+    <h4>What to notice in <code>adk web</code></h4>
+    <ol>
+      <li>Run <code>adk web --port 8000</code> — you'll see <em>two</em> agents now, <code>mulesoft_helper</code> and <code>news_agent</code>. Auto-discovered.</li>
+      <li>Open <code>news_agent</code>, ask a question. The trace view will show a <code>google_search</code> tool call — but the payload looks different from your <code>lookup_anypoint_status</code> call. Look at how the results are structured.</li>
+    </ol>
+
+    <div class="callout callout-tip" style="margin-top:0.5rem">
+      <strong>Checkpoint.</strong> Paste <code>agent.py</code> + terminal transcript of one query + one observation about how the trace differs from a function-tool call.
+    </div>
+  </div>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 2 · guided · explicit FunctionTool wrapping</span>
+    <h3>Wrap two tools explicitly and add a second function</h3>
+
+    <p>Goal: see the explicit <code>FunctionTool</code> API. Same outcome as auto-wrap, but with the option to override things later.</p>
+
+    <p>Edit your L26 <code>mulesoft_helper/agent.py</code>. Add a second function <code>get_env_recommendation(org_type: str) -> dict</code>, and wrap both tools explicitly with <code>FunctionTool</code>.</p>
+
+    <h4>Skeleton additions</h4>
+<pre><code><span class="kw">from</span> google.adk.tools <span class="kw">import</span> FunctionTool  <span class="cm"># new import</span>
+
+<span class="cm"># TODO 1: keep your existing lookup_anypoint_status function.</span>
+
+<span class="cm"># TODO 2: write a new tool `get_env_recommendation(org_type: str) -> dict`.</span>
+<span class="cm">#  - org_type is one of "startup" / "enterprise" / "regulated".</span>
+<span class="cm">#  - Return {"status": "success", "org_type": org_type, "recommendation": "..."}.</span>
+<span class="cm">#  - Include a proper docstring.</span>
+<span class="kw">def</span> <span class="fn">get_env_recommendation</span>(org_type: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">dict</span>:
+    ...
+
+<span class="cm"># TODO 3: build TWO FunctionTool instances and pass BOTH to tools=[...].</span>
+status_tool <span class="op">=</span> <span class="fn">FunctionTool</span>(func<span class="op">=</span>...)
+recommendation_tool <span class="op">=</span> <span class="fn">FunctionTool</span>(func<span class="op">=</span>...)
+
+root_agent <span class="op">=</span> <span class="fn">Agent</span>(
+    ...,
+    tools<span class="op">=</span>[status_tool, recommendation_tool],
+)</code></pre>
+
+    <details>
+      <summary>Hint — the recommendation tool</summary>
+<pre><code><span class="kw">def</span> <span class="fn">get_env_recommendation</span>(org_type: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="str">"""Recommend an Anypoint environment topology for a given org type.
+
+    Args:
+        org_type: one of "startup", "enterprise", or "regulated".
+    """</span>
+    recs <span class="op">=</span> {
+        <span class="str">"startup"</span>:    <span class="str">"CloudHub 2.0 shared workers, single sandbox + prod."</span>,
+        <span class="str">"enterprise"</span>: <span class="str">"CloudHub 2.0 private space, sandbox/staging/prod."</span>,
+        <span class="str">"regulated"</span>:  <span class="str">"Runtime Fabric on-prem, air-gapped, HITL deploys."</span>,
+    }
+    <span class="kw">if</span> org_type <span class="kw">not in</span> recs:
+        <span class="kw">return</span> {<span class="str">"status"</span>: <span class="str">"error"</span>, <span class="str">"message"</span>: <span class="str">f"Unknown org_type: {org_type}"</span>}
+    <span class="kw">return</span> {<span class="str">"status"</span>: <span class="str">"success"</span>, <span class="str">"org_type"</span>: org_type, <span class="str">"recommendation"</span>: recs[org_type]}</code></pre>
+    </details>
+
+    <h4>Test</h4>
+<pre><code>adk run mulesoft_helper
+
+<span class="cm"># Try a prompt that should trigger BOTH tools:</span>
+<span class="cm">#   "Is acme-prod healthy, and what environment topology would you recommend for an enterprise?"</span></code></pre>
+
+    <h4>Reflection questions</h4>
+    <ol>
+      <li>Did the LLM call both tools in the same turn, or one after the other? Look at the trace.</li>
+      <li>What's the actual behaviour difference between passing <code>[status_tool, recommendation_tool]</code> vs <code>[lookup_anypoint_status, get_env_recommendation]</code>? (There isn't one for this exercise — but is that always true?)</li>
+    </ol>
+  </div>
+
+  <div class="exercise-box">
+    <span class="exercise-tag">Exercise 3 · stretch · MCP toolset</span>
+    <h3>Give your agent an MCP-provided tool with zero glue code</h3>
+
+    <p>Goal: point ADK at the reference <code>mcp-server-fetch</code> MCP server and see its tools appear in your agent automatically. This is the pattern MuleSoft-as-MCP-server will follow.</p>
+
+    <p>Create a new agent:</p>
+<pre><code>adk/
+├── mulesoft_helper/
+├── news_agent/
+└── fetch_agent/          <span class="cm"># new</span>
+    ├── agent.py
+    ├── __init__.py
+    └── .env</code></pre>
+
+    <h4>Skeleton — <code>fetch_agent/agent.py</code></h4>
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> LlmAgent
+<span class="kw">from</span> google.adk.tools.mcp_tool <span class="kw">import</span> McpToolset
+<span class="kw">from</span> google.adk.tools.mcp_tool.mcp_session_manager <span class="kw">import</span> StdioConnectionParams
+<span class="kw">from</span> mcp <span class="kw">import</span> StdioServerParameters
+
+<span class="cm"># TODO 1: build an McpToolset that spawns `uvx mcp-server-fetch` via stdio.</span>
+<span class="cm">#  - Use StdioConnectionParams wrapping StdioServerParameters.</span>
+<span class="cm">#  - command='uvx', args=['mcp-server-fetch']</span>
+fetch_toolset <span class="op">=</span> ...
+
+<span class="cm"># TODO 2: define root_agent as an LlmAgent (note: LlmAgent, not Agent — the</span>
+<span class="cm">#         MCP docs use LlmAgent explicitly).</span>
+<span class="cm">#  - name: 'fetch_agent'</span>
+<span class="cm">#  - model: 'gemini-flash-latest'</span>
+<span class="cm">#  - instruction: tell it it can fetch web pages using the MCP fetch tool,</span>
+<span class="cm">#    and summarise them.</span>
+<span class="cm">#  - tools: [fetch_toolset]</span>
+root_agent <span class="op">=</span> ...</code></pre>
+
+    <details>
+      <summary>Hint 1 — the toolset construction</summary>
+<pre><code>fetch_toolset <span class="op">=</span> <span class="fn">McpToolset</span>(
+    connection_params<span class="op">=</span><span class="fn">StdioConnectionParams</span>(
+        server_params<span class="op">=</span><span class="fn">StdioServerParameters</span>(
+            command<span class="op">=</span><span class="str">'uvx'</span>,
+            args<span class="op">=</span>[<span class="str">'mcp-server-fetch'</span>],
+        ),
+    ),
+)</code></pre>
+    </details>
+
+    <details>
+      <summary>Hint 2 — the agent</summary>
+<pre><code>root_agent <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'fetch_agent'</span>,
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    instruction<span class="op">=</span>(
+        <span class="str">"You are a web-fetching assistant. When the user gives you a URL, "</span>
+        <span class="str">"use the fetch tool to retrieve its content, then summarise it in "</span>
+        <span class="str">"three sentences."</span>
+    ),
+    tools<span class="op">=</span>[fetch_toolset],
+)</code></pre>
+    </details>
+
+    <h4>Run</h4>
+<pre><code>adk run fetch_agent
+
+<span class="cm"># Try:</span>
+<span class="cm">#   "Summarise https://en.wikipedia.org/wiki/MuleSoft"</span>
+<span class="cm">#   "Fetch https://news.ycombinator.com and tell me the top story"</span>
+
+<span class="cm"># The FIRST time you run this, uv will download mcp-server-fetch (~10-20s).</span>
+<span class="cm"># Subsequent runs are instant — it's cached.</span></code></pre>
+
+    <h4>What to notice</h4>
+    <ol>
+      <li><strong>You wrote no tool functions.</strong> The <code>fetch</code> tool appeared in your agent because the MCP server exposed it. Look at <code>adk web</code>'s tool list for <code>fetch_agent</code> — you'll see a tool you didn't define.</li>
+      <li>The MCP server is a separate process. ADK spawns it, talks to it over stdin/stdout, and shuts it down when the agent exits. You never manage the process directly.</li>
+      <li>If <code>mcp-server-fetch</code> gets updated, you get the new version by re-running <code>uvx</code>. No agent code changes.</li>
+    </ol>
+
+    <h4>Reflection questions</h4>
+    <ol>
+      <li>Imagine MuleSoft ships <code>mcp-server-anypoint</code>. What would this agent's config look like? What would change vs the fetch example?</li>
+      <li>Why is "MCP server exposing 20 tools" better than "20 Python functions in my agent.py" for a large integration platform like MuleSoft?</li>
+      <li>What's the security trade-off? MCP servers can do anything the server has permission to do. How would you audit them?</li>
+    </ol>
+  </div>
+
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <p class="quiz-q">1. Your agent has both a bare function <code>get_stock_price</code> and an explicit <code>FunctionTool(func=get_stock_price)</code>. What's the behavioural difference?</p>
+    <details><summary>Answer</summary>
+      <p>None for standard use — auto-wrap and explicit wrap produce equivalent tools. The explicit wrapper only matters when you need to override the auto-generated schema (custom parameter names, custom description), mark the tool as long-running, or configure other tool-level options that aren't exposed to bare functions.</p>
+      <p>Rule of thumb: <strong>start with auto-wrap. Reach for <code>FunctionTool</code> only when you have a specific option to set.</strong></p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">2. You try adding <code>google_search</code> to your existing <code>mulesoft_helper</code> agent alongside <code>lookup_anypoint_status</code>. It errors out. Why?</p>
+    <details><summary>Answer</summary>
+      <p>Built-in "grounding" tools like <code>google_search</code> historically can't share an agent with custom function tools — the underlying Gemini API rejects the combination. The docs are quiet on this, but you'll hit it in practice.</p>
+      <p>The fix is a two-agent pattern: one agent has <code>google_search</code>, another has your function tools, and a root agent delegates. Full pattern in L31 (multi-agent).</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">3. Why is "MCP toolset" a fundamentally different proposition from "function tool", even though they both end up as tools in <code>tools=[...]</code>?</p>
+    <details><summary>Answer</summary>
+      <p>Function tools couple the tool implementation to your agent code — the Python function lives inside <code>agent.py</code>. Change the tool, redeploy the agent.</p>
+      <p>MCP tools decouple: the tool lives in a separate process (possibly maintained by a different team, in a different language). Your agent just points at it. This is the enterprise integration pattern — one team ships the MCP server for their domain (e.g. MuleSoft ships <code>mcp-server-anypoint</code>), many agents consume it, no glue code.</p>
+      <p>For a MuleSoft sales engineer, this is the story: <em>"our platform exposes hundreds of integration capabilities. Once we ship them as an MCP server, any AI agent — ADK, Claude Code, Cursor — can use them without custom code."</em></p>
+    </details>
+  </div>
+
+  <h2>What you now know</h2>
+  <ul>
+    <li><strong>Function tools:</strong> bare function auto-wrapped, or <code>FunctionTool(func=...)</code> for explicit control</li>
+    <li><strong>Built-in tools:</strong> <code>google_search</code>, code execution, Vertex AI Search — one-line adds, but grounding tools don't mix with custom tools</li>
+    <li><strong>MCP toolsets:</strong> <code>McpToolset</code> + <code>StdioConnectionParams</code> + <code>StdioServerParameters</code>; one line adds an entire external tool set with zero glue code</li>
+    <li><strong>The MCP pattern</strong> is the strategic bet for enterprise integration platforms — MuleSoft included</li>
+  </ul>
+
+  <h2>The MuleSoft angle</h2>
+  <p>The three-tool taxonomy maps to three tiers of MuleSoft go-to-market conversations:</p>
+  <ul>
+    <li><strong>Function tools</strong> — "Here's a custom agent for your CRM sync. Six functions, six use cases." Bespoke work; sold as a project.</li>
+    <li><strong>Built-in tools</strong> — "Google's already solved search grounding for you. You don't need to build it." Anchors credibility for GCP-first customers.</li>
+    <li><strong>MCP toolsets</strong> — "MuleSoft is exposing all of Anypoint as an MCP server. Point your ADK/Claude/Cursor agent at it, and you get every Anypoint capability out of the box." Sold as a platform.</li>
+  </ul>
+  <p>The last one is your differentiator. Every customer builds function tools. Only customers on MuleSoft get the platform-scale MCP story.</p>
+
+  <h2>What's next</h2>
+  <p><strong>L28 — State &amp; memory: <code>Session.state</code>, <code>SessionService</code>.</strong> How agents remember things across turns (short-term) and across conversations (long-term). Direct analogue to L22's LangGraph checkpointer.</p>
+
+  <div class="footer-links">
+    ADK series:
+    <a href="0026-adk-basics-agent-tools-runner.html">L26</a>
+    &nbsp;·&nbsp;
+    LangGraph series:
+    <a href="0020-langgraph-state-nodes-edges.html">L20</a>
+    · <a href="0021-llm-node-tools-graph.html">L21</a>
+    · <a href="0022-checkpointing-time-travel.html">L22</a>
+    · <a href="0023-streaming-observability.html">L23</a>
+    · <a href="0024-human-in-the-loop-interrupt.html">L24</a>
+    · <a href="0025-multi-agent-patterns.html">L25</a>
+    &nbsp;·&nbsp;
+    <a href="../MISSION.md">Mission</a>
+  </div>
+
+</div>
+</body>
+</html>

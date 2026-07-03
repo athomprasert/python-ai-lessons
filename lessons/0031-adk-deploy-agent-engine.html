@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L31 — Deploying ADK agents to Vertex Agent Engine</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .series-banner {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      color: #92400e;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .series-banner strong { color: #78350f; }
+
+    .lesson-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .lesson-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.3rem; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0.9rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .ty  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.6rem 0 1.1rem; font-size: 0.88rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.65rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+      border-left: 4px solid;
+      font-size: 0.9rem;
+    }
+    .callout strong { font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .callout-tip      { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn     { background: #fffbeb; border-color: #f59e0b; }
+    .callout-syntax   { background: #fdf4ff; border-color: #a855f7; }
+    .callout-pedagogy { background: #f1f5ff; border-color: #6366f1; }
+    .callout-compare  { background: #f0f9ff; border-color: #0ea5e9; }
+
+    .exercise-box {
+      border: 2px solid #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+      background: #fefefe;
+    }
+    .exercise-box h3 { margin-top: 0; }
+    .exercise-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    details {
+      margin: 0.5rem 0;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+    }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    details[open] summary { margin-bottom: 0.4rem; }
+
+    .quiz { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.7rem 0; }
+    .quiz-q { font-weight: 600; margin-bottom: 0.4rem; }
+
+    .ascii-diagram {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 6px;
+      margin: 0.7rem 0;
+    }
+
+    .footer-links { margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid #ddd; font-size: 0.82rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="series-banner">
+    <strong>Google ADK mini-series · part 6 of 6 (finale)</strong> · Everything so far ran on your laptop. This lesson takes an agent to production on GCP — the concrete ADK win to lead demos with.
+    &nbsp;<a href="0030-adk-agent-transfer-routing.html">← L30</a>
+  </div>
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Lesson 31 · Python for AI/ML</p>
+    <h1>Deploying ADK agents to Vertex Agent Engine</h1>
+    <p class="tagline">One CLI command turns your <code>my_agent/</code> folder into a managed, auto-scaling, GCP-native service with built-in tracing, IAM, and session persistence. This is the pitch that closes the deal.</p>
+  </header>
+
+  <div class="callout callout-pedagogy">
+    <strong>Pedagogy note — different from prior lessons.</strong> Exercises 1 and 2 need a real GCP project with billing enabled. If you don't have one right now, read them as walkthroughs — the concepts still land. Exercise 3 (cost + trace analysis) needs Exercise 1 to be actually deployed.
+  </div>
+
+  <h2>The three ADK deployment options</h2>
+
+  <table>
+    <thead><tr><th>Target</th><th>Best for</th><th>Ops overhead</th><th>Managed session storage?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Vertex Agent Engine</strong></td>
+        <td>Production ADK agents on GCP. The Google-recommended path.</td>
+        <td>None. Fully managed.</td>
+        <td>Yes — <code>VertexAiSessionService</code> auto-wired.</td>
+      </tr>
+      <tr>
+        <td><strong>Cloud Run</strong></td>
+        <td>You already run everything else on Cloud Run and want the agent alongside it.</td>
+        <td>Low. You get a container URL; you bring session storage.</td>
+        <td>No — bring your own (e.g. <code>DatabaseSessionService</code> against Cloud SQL).</td>
+      </tr>
+      <tr>
+        <td><strong>GKE</strong></td>
+        <td>Enterprise SRE teams that want full container-orchestration control.</td>
+        <td>High. Cluster ops, autoscaling policies, networking.</td>
+        <td>No — bring your own.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>This lesson covers <strong>Agent Engine</strong> — the ADK-native option. It's the story that makes ADK compelling vs LangGraph: LangGraph gives you no equivalent one-command deploy, so <em>you</em> would have to build the Cloud Run wrapper, wire the session store, and expose the endpoint yourself.</p>
+
+  <div class="callout callout-compare">
+    <strong>What "Agent Engine" (formerly "Reasoning Engine") gives you for free.</strong>
+    <ul style="margin-top:0.4rem;">
+      <li>A stable resource name: <code>projects/{project}/locations/{region}/reasoningEngines/{id}</code></li>
+      <li>Managed autoscaling (0 → N instances)</li>
+      <li>Cloud Trace + Cloud Logging out of the box</li>
+      <li>IAM (only callers you authorise can query the agent)</li>
+      <li><code>VertexAiSessionService</code> automatically wired — no extra DB to provision</li>
+    </ul>
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>What about on-premise? (The question every MuleSoft customer asks.)</strong>
+    <p style="margin-top:0.4rem;">Agent Engine is GCP-only — no on-prem install. But ADK <em>itself</em> is just a Python library, so you have three fallback paths for regulated customers who can't put agents in a public cloud:</p>
+
+    <table style="margin-top:0.6rem;">
+      <thead><tr><th>Path</th><th>How</th><th>What you lose</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Container on your infra</strong></td>
+          <td>Wrap the agent in Docker (using <code>adk api_server</code> or a FastAPI shell) and run on your K8s / OpenShift / VMs.</td>
+          <td>You now own scaling, session storage, and observability. Everything Agent Engine did for free.</td>
+        </tr>
+        <tr>
+          <td><strong>GKE on-prem / Anthos</strong></td>
+          <td>Same container, Google's on-prem Kubernetes distribution.</td>
+          <td>Not pure on-prem — still a GCP subscription, hybrid model.</td>
+        </tr>
+        <tr>
+          <td><strong>Air-gapped (no internet)</strong></td>
+          <td>Same container <em>plus</em> swap the LLM. Gemini needs egress to AI Studio or Vertex — neither works air-gapped. Use a self-hosted model (Llama, Mistral, Gemma) via Ollama or vLLM, plugged in through the <code>LiteLlm</code> adapter (<code>from google.adk.models.lite_llm import LiteLlm</code>).</td>
+          <td>Gemini quality. Plus you now run a GPU cluster.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:0.6rem;"><strong>What doesn't come along for the ride:</strong></p>
+    <ul>
+      <li><code>VertexAiSessionService</code> → replace with <code>DatabaseSessionService</code> against on-prem Postgres (see L28 Exercise 3).</li>
+      <li>Cloud Trace + Cloud Logging → replace with OpenTelemetry → your existing stack (Datadog, Splunk, Grafana).</li>
+    </ul>
+
+    <p style="margin-top:0.6rem;"><strong>The middle-ground question you'll get:</strong> <em>"Can we run the agent in our VPC but still use Gemini?"</em> Yes — via <strong>Vertex AI Private Service Connect</strong>. The LLM call goes over a private GCP link instead of the public internet, but the model still runs in Google's data centres. Standard compromise for banks and healthcare.</p>
+  </div>
+
+  <h2>The dev → prod switch</h2>
+
+  <p>Every ADK agent you've built in L26–L30 used one of two auth modes. Which one you're on determines which env vars matter:</p>
+
+  <table>
+    <thead><tr><th></th><th>Dev — AI Studio</th><th>Prod — Vertex</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Signal env var</strong></td>
+        <td><code>GOOGLE_API_KEY=...</code></td>
+        <td><code>GOOGLE_GENAI_USE_VERTEXAI=TRUE</code></td>
+      </tr>
+      <tr>
+        <td><strong>Required extras</strong></td>
+        <td>None</td>
+        <td><code>GOOGLE_CLOUD_PROJECT</code>, <code>GOOGLE_CLOUD_LOCATION</code></td>
+      </tr>
+      <tr>
+        <td><strong>Auth</strong></td>
+        <td>API key</td>
+        <td>gcloud application-default credentials</td>
+      </tr>
+      <tr>
+        <td><strong>Billing</strong></td>
+        <td>Free tier + pay-as-you-go per request</td>
+        <td>Vertex AI billing tied to your GCP project</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-syntax">
+    <strong>Zero code changes.</strong> The same <code>agent.py</code> from L26 runs in both modes. ADK reads the env vars at startup and picks the right backend. This is the "same agent, dev-to-prod without rewrites" promise.
+  </div>
+
+  <h2>The deploy command — <code>adk deploy agent_engine</code></h2>
+
+  <p>This is the single command that turns a folder into a running service:</p>
+
+<pre><code><span class="cm"># From the directory containing my_agent/</span>
+adk deploy agent_engine <span class="op">\</span>
+    <span class="op">--</span>project<span class="op">=</span>my-gcp-project <span class="op">\</span>
+    <span class="op">--</span>region<span class="op">=</span>us-central1 <span class="op">\</span>
+    <span class="op">--</span>display_name<span class="op">=</span><span class="str">"MuleSoft Helper"</span> <span class="op">\</span>
+    <span class="op">--</span>description<span class="op">=</span><span class="str">"MuleSoft Anypoint copilot"</span> <span class="op">\</span>
+    my_agent</code></pre>
+
+  <p>What the CLI does under the hood:</p>
+  <ol>
+    <li>Reads <code>my_agent/</code> — your agent folder from L26.</li>
+    <li>Auto-generates a <code>requirements.txt</code> (or extends yours) with the correct <code>google-cloud-aiplatform[adk,agent_engines]</code> dependency.</li>
+    <li>Packages the folder, uploads it to a Google-managed staging area.</li>
+    <li>Provisions a Reasoning Engine resource in Vertex.</li>
+    <li>Returns the resource name — copy this, you'll need it.</li>
+  </ol>
+
+  <p>Typical output ends with something like:</p>
+<pre><code>Successfully created Agent Engine.
+Resource name: projects<span class="op">/</span>123456<span class="op">/</span>locations<span class="op">/</span>us<span class="op">-</span>central1<span class="op">/</span>reasoningEngines<span class="op">/</span>7516195516779</code></pre>
+
+  <div class="callout callout-warn">
+    <strong>The <code>--staging_bucket</code> flag is deprecated.</strong> Older tutorials mention it — you don't need it anymore. ADK manages staging automatically.
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>To update an existing agent, pass <code>--agent_engine_id</code>.</strong> Without it, every deploy creates a <em>new</em> Reasoning Engine resource and you'll end up with 20 unused agents in your project. Copy the ID from the first deploy's output and pass it back on subsequent deploys.
+  </div>
+
+  <h2>Calling a deployed agent from Python</h2>
+
+  <p>Once deployed, the agent is a Vertex resource you can query from any Python client — a notebook, a Cloud Function, a MuleSoft flow calling out via HTTP.</p>
+
+<pre><code><span class="kw">import</span> vertexai
+<span class="kw">from</span> vertexai <span class="kw">import</span> agent_engines
+
+vertexai.<span class="fn">init</span>(project<span class="op">=</span><span class="str">"my-gcp-project"</span>, location<span class="op">=</span><span class="str">"us-central1"</span>)
+
+<span class="cm"># Get a handle to the deployed agent by resource name</span>
+remote_agent <span class="op">=</span> agent_engines.<span class="fn">get</span>(
+    <span class="str">"projects/123456/locations/us-central1/reasoningEngines/7516195516779"</span>
+)
+
+<span class="cm"># Create a session (this is where VertexAiSessionService comes in — it's</span>
+<span class="cm"># the backing service for these calls, but you don't instantiate it directly)</span>
+session <span class="op">=</span> remote_agent.<span class="fn">create_session</span>(user_id<span class="op">=</span><span class="str">"attapol"</span>)
+
+<span class="cm"># Send a query — streams events back</span>
+<span class="kw">for</span> event <span class="kw">in</span> remote_agent.<span class="fn">stream_query</span>(
+    user_id<span class="op">=</span><span class="str">"attapol"</span>,
+    session_id<span class="op">=</span>session[<span class="str">"id"</span>],
+    message<span class="op">=</span><span class="str">"What's the status of org acme-prod?"</span>,
+):
+    <span class="fn">print</span>(event)</code></pre>
+
+  <p>Same conversational primitives you had on your laptop (<code>user_id</code>, <code>session_id</code>, <code>message</code>) — now hitting a managed GCP service.</p>
+
+  <div class="callout callout-tip">
+    <strong>REST is also available.</strong> If you want to call from something non-Python (e.g., a MuleSoft flow), the resource exposes a REST endpoint at <code>https://{region}-aiplatform.googleapis.com/v1/{resource_name}:streamQuery</code>. Auth is via a Google Cloud IAM identity token. This is <em>the</em> integration point for putting an ADK agent inside a MuleSoft flow — you're calling one Google API from another.
+  </div>
+
+  <h2>Session persistence in production</h2>
+
+  <p>You saw <code>VertexAiSessionService</code> in L28's session-service table but never used it. In production on Agent Engine, it's <em>already wired</em> — every <code>create_session</code> call goes through it. No code change needed. Your L26/L28 agent, deployed via <code>adk deploy agent_engine</code>, automatically gets:</p>
+
+  <ul>
+    <li>Sessions that survive process restarts</li>
+    <li>Sessions that survive autoscaling (any instance can pick up any session)</li>
+    <li>Per-user session isolation</li>
+    <li>Session lifecycle management via the SDK (<code>list_sessions</code>, <code>delete_session</code>)</li>
+  </ul>
+
+  <p>This is the killer feature. In LangGraph you'd wire a Redis/Postgres checkpointer, provision the DB, handle failover, manage connection pools. Here — <em>nothing to do</em>.</p>
+
+  <h2>Observability — Cloud Trace &amp; Cloud Logging</h2>
+
+  <p>Every deployed agent emits structured traces to Cloud Trace and structured logs to Cloud Logging automatically. Open the GCP console and you'll see:</p>
+
+  <ul>
+    <li><strong>Cloud Trace:</strong> a span tree per invocation showing every LLM call, tool call, sub-agent transfer with latency and token counts. This is your L27+L30 trace panel, but for the deployed instance.</li>
+    <li><strong>Cloud Logging:</strong> raw request/response logs, with the query, session ID, and any exceptions from tool execution.</li>
+    <li><strong>Cloud Monitoring:</strong> latency percentiles (p50, p95, p99), request rate, error rate — the SRE dashboard, free.</li>
+  </ul>
+
+  <p>Your MuleSoft customers already have Cloud Trace enabled for their existing GCP workloads. The agent slots straight into their existing observability without any new dashboards to introduce.</p>
+
+  <h2>Cost model — the back-of-envelope</h2>
+
+  <p>Two things you pay for:</p>
+
+  <ol>
+    <li><strong>LLM tokens.</strong> Gemini prices per input + output token, no different from calling the Gemini API directly. This dominates cost.</li>
+    <li><strong>Agent Engine runtime.</strong> Priced per vCPU-hour + GB-memory-hour of the underlying reasoning engine. Autoscales to zero when idle — so for a demo used sporadically, this is close to nothing.</li>
+  </ol>
+
+  <p>Rough example — 10,000 requests/day, average 2 LLM calls per request, ~1 KB prompt + ~500 B response:</p>
+
+  <table>
+    <thead><tr><th>Component</th><th>Rough monthly cost (USD)</th></tr></thead>
+    <tbody>
+      <tr><td>Gemini Flash tokens (60M input, 15M output)</td><td>~$10</td></tr>
+      <tr><td>Agent Engine runtime</td><td>~$30–80 depending on scaling</td></tr>
+      <tr><td>Cloud Trace + Logging</td><td>~$5</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>~$45–100/mo</strong></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warn">
+    <strong>These numbers are illustrative.</strong> Check the current Gemini pricing at <a href="https://ai.google.dev/pricing">ai.google.dev/pricing</a> and Vertex AI Reasoning Engine pricing at <a href="https://cloud.google.com/vertex-ai/pricing">cloud.google.com/vertex-ai/pricing</a> before quoting a customer.
+  </div>
+
+  <h2>What ADK gives you that LangGraph doesn't</h2>
+
+  <p>This is the whole ADK thesis in one table:</p>
+
+  <table>
+    <thead><tr><th>Concern</th><th>LangGraph on GCP</th><th>ADK on Agent Engine</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Deployment</td>
+        <td>Build a Cloud Run container, write a FastAPI wrapper, configure routes</td>
+        <td><code>adk deploy agent_engine</code></td>
+      </tr>
+      <tr>
+        <td>Session storage</td>
+        <td>Provision Cloud SQL, wire <code>PostgresSaver</code>, manage connection pool</td>
+        <td>Zero setup — <code>VertexAiSessionService</code> is automatic</td>
+      </tr>
+      <tr>
+        <td>Autoscaling</td>
+        <td>Configure Cloud Run min/max instances, cold-start tuning</td>
+        <td>Free — Agent Engine scales to zero</td>
+      </tr>
+      <tr>
+        <td>Auth</td>
+        <td>Design your own — API keys, JWT, or IAP</td>
+        <td>Native GCP IAM on the resource</td>
+      </tr>
+      <tr>
+        <td>Observability</td>
+        <td>Bring your own — Phoenix, LangSmith, OpenTelemetry</td>
+        <td>Cloud Trace + Cloud Logging out of the box</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>For a MuleSoft customer already on GCP, ADK on Agent Engine is <em>obviously</em> the right choice for a support agent. This is the story you should be able to tell without slides.</p>
+
+  <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+  <h2>Exercise 1 — <span class="exercise-tag">Guided</span></h2>
+
+  <div class="exercise-box">
+    <h3>Deploy <code>mulesoft_helper</code> to Agent Engine</h3>
+
+    <p><strong>Goal.</strong> Take the L26 <code>mulesoft_helper</code> agent, switch it from AI Studio auth to Vertex auth, and deploy it to Vertex Agent Engine.</p>
+
+    <p><strong>Prerequisite:</strong> A GCP project with billing enabled, and <code>gcloud</code> CLI installed and authenticated.</p>
+
+    <p><strong>Steps</strong> (fill in the TODOs):</p>
+
+    <ol>
+      <li>
+        <p><strong>TODO 1</strong> — Enable the required APIs on your project:</p>
+<pre><code>gcloud services enable aiplatform.googleapis.com<span class="op">,</span>storage.googleapis.com <span class="op">\</span>
+  <span class="op">--</span>project<span class="op">=</span><span class="cm"># your project id</span></code></pre>
+      </li>
+
+      <li>
+        <p><strong>TODO 2</strong> — Authenticate for application-default credentials (this is what ADK uses locally to talk to Vertex):</p>
+<pre><code>gcloud auth application<span class="op">-</span>default login</code></pre>
+      </li>
+
+      <li>
+        <p><strong>TODO 3</strong> — Edit <code>mulesoft_helper/.env</code>. Comment out <code>GOOGLE_API_KEY</code>, add:</p>
+<pre><code>GOOGLE_GENAI_USE_VERTEXAI<span class="op">=</span>TRUE
+GOOGLE_CLOUD_PROJECT<span class="op">=</span><span class="cm"># your project id</span>
+GOOGLE_CLOUD_LOCATION<span class="op">=</span>us-central1</code></pre>
+      </li>
+
+      <li>
+        <p><strong>TODO 4</strong> — Verify the agent still works <em>locally</em> against Vertex first:</p>
+<pre><code>adk web</code></pre>
+        <p>Same UI as before, but LLM calls now hit Vertex, not AI Studio. If this fails, don't proceed — deployment won't fix an auth issue.</p>
+      </li>
+
+      <li>
+        <p><strong>TODO 5</strong> — Deploy:</p>
+<pre><code>adk deploy agent_engine <span class="op">\</span>
+    <span class="op">--</span>project<span class="op">=</span><span class="cm"># your project</span> <span class="op">\</span>
+    <span class="op">--</span>region<span class="op">=</span>us-central1 <span class="op">\</span>
+    <span class="op">--</span>display_name<span class="op">=</span><span class="str">"MuleSoft Helper"</span> <span class="op">\</span>
+    mulesoft_helper</code></pre>
+        <p><strong>Copy the resource name</strong> from the output — you'll need it in TODO 6.</p>
+      </li>
+
+      <li>
+        <p><strong>TODO 6</strong> — Create a small Python file (<code>call_remote.py</code>) that queries the deployed agent. Fill in your project + resource name:</p>
+<pre><code><span class="kw">import</span> vertexai
+<span class="kw">from</span> vertexai <span class="kw">import</span> agent_engines
+
+vertexai.<span class="fn">init</span>(project<span class="op">=</span><span class="str">"..."</span>, location<span class="op">=</span><span class="str">"us-central1"</span>)
+
+remote <span class="op">=</span> agent_engines.<span class="fn">get</span>(<span class="str">"projects/.../reasoningEngines/..."</span>)
+session <span class="op">=</span> remote.<span class="fn">create_session</span>(user_id<span class="op">=</span><span class="str">"attapol"</span>)
+
+<span class="kw">for</span> event <span class="kw">in</span> remote.<span class="fn">stream_query</span>(
+    user_id<span class="op">=</span><span class="str">"attapol"</span>,
+    session_id<span class="op">=</span>session[<span class="str">"id"</span>],
+    message<span class="op">=</span><span class="str">"What's the status of org acme-prod?"</span>,
+):
+    <span class="fn">print</span>(event)</code></pre>
+        <p>Run <code>python call_remote.py</code>. You should see events streaming back — an LLM turn, a <code>lookup_anypoint_status</code> tool call, and the final answer.</p>
+      </li>
+    </ol>
+
+    <details>
+      <summary>Hint — First deploy takes 3–5 minutes. Don't Ctrl-C.</summary>
+      <p>Agent Engine has to package your code, build a container, provision the runtime, and warm the first instance. Subsequent deploys of the <em>same</em> agent (with <code>--agent_engine_id</code>) are faster (~1–2 min).</p>
+    </details>
+
+    <details>
+      <summary>Hint — If the deploy fails with a permission error</summary>
+      <p>Your GCP user needs the roles: <code>roles/aiplatform.user</code>, <code>roles/storage.admin</code>, and <code>roles/serviceusage.serviceUsageAdmin</code>. Ask your GCP admin if you don't have them.</p>
+    </details>
+
+    <p><strong>Paste back:</strong> The deploy command's final output (with the resource name) and the first event streamed from <code>call_remote.py</code>.</p>
+  </div>
+
+  <h2>Exercise 2 — <span class="exercise-tag">Guided</span></h2>
+
+  <div class="exercise-box">
+    <h3>Persistent sessions — verify state survives across queries</h3>
+
+    <p><strong>Goal.</strong> Use the deployed agent from Exercise 1 to send two queries in <em>the same session</em>, and confirm the state persists between them — this proves <code>VertexAiSessionService</code> is doing its job.</p>
+
+    <p><strong>Setup:</strong> This exercise builds on Exercise 1's deployed agent. First, add the L28 <code>remember_org</code> and <code>recall_org</code> tools to <code>mulesoft_helper</code> (if you haven't already), and redeploy — this time passing <code>--agent_engine_id</code> to update the existing engine instead of creating a new one.</p>
+
+<pre><code>adk deploy agent_engine <span class="op">\</span>
+    <span class="op">--</span>project<span class="op">=</span><span class="cm"># your project</span> <span class="op">\</span>
+    <span class="op">--</span>region<span class="op">=</span>us-central1 <span class="op">\</span>
+    <span class="op">--</span>agent_engine_id<span class="op">=</span><span class="cm"># the ID from Exercise 1</span> <span class="op">\</span>
+    mulesoft_helper</code></pre>
+
+    <p><strong>Then run this script</strong> (<code>call_stateful.py</code>) with your resource name filled in:</p>
+
+<pre><code><span class="kw">import</span> vertexai
+<span class="kw">from</span> vertexai <span class="kw">import</span> agent_engines
+
+vertexai.<span class="fn">init</span>(project<span class="op">=</span><span class="str">"..."</span>, location<span class="op">=</span><span class="str">"us-central1"</span>)
+remote <span class="op">=</span> agent_engines.<span class="fn">get</span>(<span class="str">"projects/.../reasoningEngines/..."</span>)
+session <span class="op">=</span> remote.<span class="fn">create_session</span>(user_id<span class="op">=</span><span class="str">"attapol"</span>)
+
+<span class="kw">def</span> <span class="fn">ask</span>(msg: <span class="ty">str</span>):
+    <span class="fn">print</span>(<span class="fn">f</span><span class="str">"</span><span class="op">\n</span><span class="str">→ </span>{msg}<span class="str">"</span>)
+    <span class="kw">for</span> event <span class="kw">in</span> remote.<span class="fn">stream_query</span>(
+        user_id<span class="op">=</span><span class="str">"attapol"</span>,
+        session_id<span class="op">=</span>session[<span class="str">"id"</span>],
+        message<span class="op">=</span>msg,
+    ):
+        <span class="fn">print</span>(event)
+
+<span class="cm"># TODO — send TWO messages in the same session.</span>
+<span class="cm"># Turn 1: "I'm working on org acme-prod. Please remember that."</span>
+<span class="cm"># Turn 2: "Which org am I on?"</span>
+<span class="cm"># The second turn's answer should mention acme-prod — proving state persisted.</span>
+<span class="fn">ask</span>(...)   <span class="cm"># TODO turn 1</span>
+<span class="fn">ask</span>(...)   <span class="cm"># TODO turn 2</span></code></pre>
+
+    <p><strong>Verify:</strong> Turn 2's response must contain <code>acme-prod</code>. If the agent forgets, it means either (a) you're using two different session IDs by accident, or (b) the <code>remember_org</code> tool didn't fire. Check the events on turn 1 for a <code>remember_org</code> tool call.</p>
+
+    <p><strong>Reflection:</strong> If you now kill and restart <code>call_stateful.py</code>, then re-open the same session via <code>agent_engines.get</code> + <code>agent_engine.get_session(session_id)</code>, does the state still work? Try it. Compare to L28's <code>InMemorySessionService</code>.</p>
+  </div>
+
+  <h2>Exercise 3 — <span class="exercise-tag">Stretch</span></h2>
+
+  <div class="exercise-box">
+    <h3>Trace &amp; cost walkthrough</h3>
+
+    <p><strong>Goal.</strong> Send 20 queries to your deployed agent, then use Cloud Trace and Cloud Billing to answer real production questions.</p>
+
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Modify <code>call_remote.py</code> to loop 20 times with a variety of realistic MuleSoft questions.</li>
+      <li>Wait 5 minutes for traces + billing to land.</li>
+      <li>Open <a href="https://console.cloud.google.com/traces">Cloud Trace Explorer</a>. Filter by your agent's resource. Look at the span tree of one invocation.</li>
+      <li>Open Cloud Logging. Search for your agent's requests.</li>
+      <li>Open Cloud Billing → your project → recent charges filtered to "Vertex AI".</li>
+    </ol>
+
+    <p><strong>Answer these questions</strong> (write them up as a comment in your script):</p>
+    <ol>
+      <li>What's the p50 and p95 latency of a single invocation?</li>
+      <li>What percentage of total latency is spent in LLM calls vs tool execution?</li>
+      <li>Extrapolate: if a MuleSoft customer sends 10,000 queries/day, what's the estimated monthly Vertex AI cost? Show your math.</li>
+      <li>Which of the observability signals here is the one you'd demo to a customer's SRE team first? Why?</li>
+    </ol>
+  </div>
+
+  <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+  <h2>Quick quiz</h2>
+
+  <div class="quiz">
+    <p class="quiz-q">1. What's the single command that deploys an ADK agent folder to Vertex Agent Engine?</p>
+    <details><summary>Show answer</summary>
+      <p><code>adk deploy agent_engine --project=... --region=... my_agent_folder</code>. Optional flags: <code>--display_name</code>, <code>--description</code>, and <code>--agent_engine_id</code> for updates. <code>--staging_bucket</code> exists but is deprecated — don't include it.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">2. Your agent works locally with <code>GOOGLE_API_KEY</code> but fails on Agent Engine. What env vars does Vertex mode need instead?</p>
+    <details><summary>Show answer</summary>
+      <p><code>GOOGLE_GENAI_USE_VERTEXAI=TRUE</code>, <code>GOOGLE_CLOUD_PROJECT=your-project</code>, <code>GOOGLE_CLOUD_LOCATION=us-central1</code>. Agent Engine mode uses application-default credentials from <code>gcloud auth application-default login</code>, not an API key.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">3. Your first deploy created a resource. You want to push a code change. What flag prevents ADK from creating a second resource?</p>
+    <details><summary>Show answer</summary>
+      <p><code>--agent_engine_id=&lt;the ID from the first deploy&gt;</code>. Without it, every <code>adk deploy</code> creates a fresh Reasoning Engine, which is expensive-to-orphan and cluttering your project.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">4. Compared to running LangGraph on Cloud Run yourself, what are the three biggest things Agent Engine handles for you?</p>
+    <details><summary>Show answer</summary>
+      <p>(1) Session persistence — <code>VertexAiSessionService</code> is auto-wired, no DB to provision. (2) Autoscaling to zero — no infrastructure tuning. (3) Observability — Cloud Trace + Logging out of the box, no OpenTelemetry setup. Bonus fourth: native GCP IAM on the resource, so you don't build your own auth.</p>
+    </details>
+  </div>
+
+  <h2>End of the ADK mini-series</h2>
+  <p>You've now covered:</p>
+  <ul>
+    <li><a href="0026-adk-basics-agent-tools-runner.html">L26</a> — Agent, tools, Runner (30-line hello world)</li>
+    <li><a href="0027-adk-tools-builtins-mcp.html">L27</a> — Tools deep dive (function, built-in, MCP)</li>
+    <li><a href="0028-adk-state-memory-sessions.html">L28</a> — State &amp; memory (<code>Session.state</code>, <code>SessionService</code>)</li>
+    <li><a href="0029-adk-declarative-multi-agent.html">L29</a> — Declarative multi-agent (Sequential, Parallel, Loop)</li>
+    <li><a href="0030-adk-agent-transfer-routing.html">L30</a> — Agent transfer &amp; dynamic routing</li>
+    <li>L31 — Deployment on Vertex Agent Engine (this lesson)</li>
+  </ul>
+
+  <p>Combined with the LangGraph series (<a href="0020-langgraph-state-nodes-edges.html">L20</a>–<a href="0025-multi-agent-patterns.html">L25</a>), you now have two full framework vocabularies. In a customer conversation, you can pick either — or argue the trade-offs between them — without googling.</p>
+
+  <h2>Where to go from here</h2>
+  <p>Some directions your MISSION.md may want to lead you next:</p>
+  <ul>
+    <li><strong>Evaluation frameworks</strong> — how to measure whether an agent is <em>good</em>, not just runnable (RAGAS, custom eval harnesses, LLM-as-judge)</li>
+    <li><strong>Advanced MCP</strong> — building your own MCP server (not just consuming one) so MuleSoft flows become tools for any MCP-compatible agent</li>
+    <li><strong>Agent security</strong> — prompt injection defence, tool sandboxing, egress control</li>
+    <li><strong>Cost engineering</strong> — reducing LLM spend via caching, prompt compression, model routing (Flash for easy, Pro for hard)</li>
+  </ul>
+
+  <p>Any of those sound compelling? Ping me for the next mini-series.</p>
+
+  <div class="footer-links">
+    <p>Previous: <a href="0030-adk-agent-transfer-routing.html">L30 — Agent transfer</a> &nbsp;·&nbsp;
+       ADK mini-series complete: <a href="0026-adk-basics-agent-tools-runner.html">L26</a> ·
+       <a href="0027-adk-tools-builtins-mcp.html">L27</a> ·
+       <a href="0028-adk-state-memory-sessions.html">L28</a> ·
+       <a href="0029-adk-declarative-multi-agent.html">L29</a> ·
+       <a href="0030-adk-agent-transfer-routing.html">L30</a> · L31</p>
+    <p style="margin-top:0.4rem">Also see: <a href="0022-checkpointing-time-travel.html">L22 — LangGraph checkpointing (the equivalent in a different framework)</a></p>
+  </div>
+
+</div>
+</body>
+</html>

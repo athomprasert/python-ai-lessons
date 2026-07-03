@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L30 — ADK agent transfer &amp; dynamic routing</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .series-banner {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      color: #92400e;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .series-banner strong { color: #78350f; }
+
+    .lesson-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .lesson-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.3rem; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0.9rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .ty  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.6rem 0 1.1rem; font-size: 0.88rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.65rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+      border-left: 4px solid;
+      font-size: 0.9rem;
+    }
+    .callout strong { font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .callout-tip      { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn     { background: #fffbeb; border-color: #f59e0b; }
+    .callout-syntax   { background: #fdf4ff; border-color: #a855f7; }
+    .callout-pedagogy { background: #f1f5ff; border-color: #6366f1; }
+    .callout-compare  { background: #f0f9ff; border-color: #0ea5e9; }
+
+    .exercise-box {
+      border: 2px solid #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+      background: #fefefe;
+    }
+    .exercise-box h3 { margin-top: 0; }
+    .exercise-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    details {
+      margin: 0.5rem 0;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+    }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    details[open] summary { margin-bottom: 0.4rem; }
+
+    .quiz { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.7rem 0; }
+    .quiz-q { font-weight: 600; margin-bottom: 0.4rem; }
+
+    .ascii-diagram {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 6px;
+      margin: 0.7rem 0;
+    }
+
+    .footer-links { margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid #ddd; font-size: 0.82rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="series-banner">
+    <strong>Google ADK mini-series · part 5 of 6</strong> · The counterweight to L29. When the workflow shape depends on what the user asks, you need dynamic routing — ADK's <code>sub_agents</code> + <code>transfer_to_agent</code> pattern.
+    &nbsp;<a href="0029-adk-declarative-multi-agent.html">← L29</a>
+  </div>
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Lesson 30 · Python for AI/ML</p>
+    <h1>ADK agent transfer &amp; dynamic routing — supervisor and swarm patterns</h1>
+    <p class="tagline">Workflow agents are static. Real customer conversations aren't. This is how ADK does what LangGraph L25 called "supervisor" and "swarm" — with one parameter and one auto-injected tool.</p>
+  </header>
+
+  <div class="callout callout-pedagogy">
+    <strong>Pedagogy reminder.</strong> Skeleton + TODOs + paste-back review. The magic in this lesson is <em>invisible</em> — ADK auto-injects a tool the LLM decides to call. That means when it doesn't work, you have to reason about why the LLM didn't pick it. Description-writing is the skill.
+  </div>
+
+  <h2>Why L29 isn't enough</h2>
+
+  <p>L29's <code>SequentialAgent</code>, <code>ParallelAgent</code>, and <code>LoopAgent</code> all bake the flow into the code. You decide at author time: "run A, then B, then C." Great for pipelines.</p>
+
+  <p>Now consider this MuleSoft support scenario:</p>
+
+  <ul>
+    <li>User: "Why is my invoice wrong?" → route to <code>billing_agent</code></li>
+    <li>User: "My Anypoint deployment is failing" → route to <code>technical_agent</code></li>
+    <li>User: "How do I cancel my subscription?" → route to <code>billing_agent</code></li>
+  </ul>
+
+  <p>You can't hard-code this in a <code>SequentialAgent</code>. You need the <em>LLM</em> to read the question and pick the right specialist. That's <strong>dynamic routing</strong>.</p>
+
+  <h2>The mechanism — <code>sub_agents</code> on <code>LlmAgent</code></h2>
+
+  <p>When you set <code>sub_agents=[...]</code> on a regular <code>LlmAgent</code> (not a workflow agent), ADK does three things automatically:</p>
+
+  <ol>
+    <li>Auto-injects a <code>transfer_to_agent(agent_name: str)</code> tool into the parent agent's tool list.</li>
+    <li>Constrains <code>agent_name</code> to a JSON-schema <code>enum</code> of the sub-agents' names — so the LLM can't hallucinate a non-existent target.</li>
+    <li>When the LLM calls <code>transfer_to_agent(agent_name="billing_agent")</code>, ADK sets <code>tool_context.actions.transfer_to_agent = "billing_agent"</code>, and the framework re-runs the loop with that agent as the new active agent.</li>
+  </ol>
+
+  <div class="callout callout-syntax">
+    <strong>New syntax — <code>sub_agents=[...]</code> on <code>LlmAgent</code>.</strong><br>
+    You've seen <code>sub_agents</code> before on <code>SequentialAgent</code> and <code>ParallelAgent</code>. The <em>same parameter name</em> on <code>LlmAgent</code> means something totally different: not "run them in a fixed order" but "let me choose to hand off to one of them at any time". Same list, different semantics — read the class name to know which behaviour applies.
+  </div>
+
+  <h2>Minimal hello-world — a triage agent with two specialists</h2>
+
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> LlmAgent
+
+<span class="cm"># The parent agent doesn't do the answering — it does the routing.</span>
+<span class="cm"># Its instruction is short: figure out which specialist should handle this.</span>
+billing_agent <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'billing_agent'</span>,
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    description<span class="op">=</span><span class="str">"Handles all questions about invoices, subscriptions, payment methods, and refunds."</span>,
+    instruction<span class="op">=</span><span class="str">"You are a billing specialist. Answer only billing questions."</span>,
+)
+
+technical_agent <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'technical_agent'</span>,
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    description<span class="op">=</span><span class="str">"Handles all technical questions about MuleSoft Anypoint deployments, APIs, and errors."</span>,
+    instruction<span class="op">=</span><span class="str">"You are a MuleSoft technical support engineer."</span>,
+)
+
+root_agent <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'triage_agent'</span>,
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    instruction<span class="op">=</span><span class="str">"""You are a customer-support triage agent.</span>
+<span class="str">Look at the user's question and transfer to the correct specialist.</span>
+<span class="str">Do NOT try to answer the question yourself."""</span>,
+    sub_agents<span class="op">=</span>[billing_agent, technical_agent],
+)</code></pre>
+
+  <p>That's it. No <code>transfer_to_agent</code> in the tools list — it's auto-injected. No routing logic in code — the LLM reads each sub-agent's <code>description</code> and picks.</p>
+
+  <div class="callout callout-warn">
+    <strong>The <code>description</code> field is now load-bearing.</strong><br>
+    In L26 you could put anything in <code>description</code> and the agent still worked. Not here. The parent LLM's <em>only</em> signal for "which specialist should I pick" is the child's <code>description</code>. Write it like you're writing router documentation: what the specialist covers, in one crisp sentence.
+  </div>
+
+  <h2>Peer transfer — the swarm pattern</h2>
+
+  <p>By default, when two agents are peers (siblings under the same parent), <em>either can transfer to the other</em>. This is what L25 called the "swarm" pattern.</p>
+
+<pre><code><span class="cm"># billing_agent can transfer to technical_agent mid-conversation, and vice versa.</span>
+<span class="cm"># You don't need to configure anything for this — it's the default.</span></code></pre>
+
+  <p>You can turn it off per-agent:</p>
+
+<pre><code>billing_agent <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'billing_agent'</span>,
+    <span class="cm"># ...</span>
+    disallow_transfer_to_peers<span class="op">=</span><span class="kw">True</span>,     <span class="cm"># can't hand off sideways</span>
+    disallow_transfer_to_parent<span class="op">=</span><span class="kw">False</span>,   <span class="cm"># can still bubble up (default)</span>
+)</code></pre>
+
+  <div class="callout callout-tip">
+    <strong>When to disallow peer transfer.</strong> When you want a strict supervisor pattern where all routing goes through the parent. This makes the routing behaviour <em>much</em> easier to reason about — you have one router and N leaves, instead of N routers.
+  </div>
+
+  <h2>What "supervisor" and "swarm" mean in ADK vs LangGraph</h2>
+
+  <table>
+    <thead><tr><th></th><th>LangGraph L25</th><th>ADK L30</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Supervisor</strong></td>
+        <td>You write a node that returns <code>Command(goto="billing")</code></td>
+        <td>Parent <code>LlmAgent</code> with <code>sub_agents=[...]</code> and <code>disallow_transfer_to_peers=True</code> on each child</td>
+      </tr>
+      <tr>
+        <td><strong>Swarm</strong></td>
+        <td>Every specialist calls <code>Command(goto="other_agent")</code> when it wants to hand off</td>
+        <td>Peers under a common parent with default <code>disallow_transfer_to_peers=False</code></td>
+      </tr>
+      <tr>
+        <td><strong>Who writes the routing prompt</strong></td>
+        <td>You write it — the LLM calls a function you define</td>
+        <td>ADK writes it — you shape it via <code>description</code> fields</td>
+      </tr>
+      <tr>
+        <td><strong>Explicit tool call visible in trace</strong></td>
+        <td><code>Command(goto=...)</code> in state</td>
+        <td><code>transfer_to_agent(agent_name=...)</code> tool call event</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Composition — putting L29 and L30 together</h2>
+
+  <p>Nothing stops you from making a sub-agent a workflow agent. This is the full ADK vocabulary:</p>
+
+<pre><code>research_pipeline <span class="op">=</span> <span class="fn">SequentialAgent</span>(sub_agents<span class="op">=</span>[researcher, writer])
+
+billing_agent <span class="op">=</span> <span class="fn">LlmAgent</span>(name<span class="op">=</span><span class="str">'billing_agent'</span>, description<span class="op">=</span><span class="str">"..."</span>)
+
+root_agent <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'triage'</span>,
+    instruction<span class="op">=</span><span class="str">"Route the user to the right specialist."</span>,
+    sub_agents<span class="op">=</span>[billing_agent, research_pipeline],   <span class="cm"># mix leaf agent + workflow</span>
+)</code></pre>
+
+  <p>Now the LLM can transfer control to either a simple leaf agent (billing) or a whole two-stage pipeline (research). The parent doesn't care what its children look like internally.</p>
+
+  <h2>Two gotchas that will bite you in demos</h2>
+
+  <div class="callout callout-warn">
+    <strong>Gotcha 1 — the parent tries to answer instead of transferring.</strong> If your parent's instruction says "you are a helpful assistant", the LLM will happily answer everything itself. You have to be explicit: <em>"Do NOT try to answer. Always call transfer_to_agent."</em> Otherwise the router becomes another responder.
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>Gotcha 2 — control doesn't automatically return to the parent.</strong> Once <code>billing_agent</code> takes over, the user's next message goes to <code>billing_agent</code>, not back to <code>triage</code>. To go back, the specialist has to call <code>transfer_to_agent(agent_name="triage")</code>. For most demos this is fine — the specialist handles the whole thread — but for multi-topic conversations, plan the return trip.
+  </div>
+
+  <h2>The MuleSoft angle</h2>
+
+  <p>Enterprise customer-support agents almost always need this pattern. A single "MuleSoft copilot" is really 4–6 specialists behind a router:</p>
+
+  <ul>
+    <li><strong>Design specialist</strong> — API design, RAML/OAS, Anypoint Design Center</li>
+    <li><strong>Runtime specialist</strong> — deployments, CloudHub, Runtime Fabric</li>
+    <li><strong>Security specialist</strong> — policies, OAuth, JWT, mTLS</li>
+    <li><strong>Data specialist</strong> — DataWeave transformations</li>
+    <li><strong>Billing specialist</strong> — subscription, usage, invoices</li>
+  </ul>
+
+  <p>Trying to shove all this into one system prompt makes the LLM mediocre at everything. Splitting into specialists with a router gets you focused, high-quality answers per topic. That's the story customers want to hear.</p>
+
+  <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+  <h2>Exercise 1 — <span class="exercise-tag">Guided</span></h2>
+
+  <div class="exercise-box">
+    <h3>Build a triage agent with two specialists (strict supervisor)</h3>
+
+    <p><strong>Goal.</strong> A <code>triage_agent</code> that routes questions to either <code>billing_agent</code> or <code>technical_agent</code>. Specialists cannot transfer to each other — pure supervisor pattern.</p>
+
+    <p><strong>Folder structure:</strong></p>
+<pre><code>triage_supervisor/
+├── agent.py
+├── __init__.py
+└── .env</code></pre>
+
+    <p><strong>Skeleton</strong> (fill in the TODOs):</p>
+
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> LlmAgent
+
+<span class="cm"># TODO 1: build billing_agent.</span>
+<span class="cm">#   - name: 'billing_agent'</span>
+<span class="cm">#   - model: 'gemini-flash-latest'</span>
+<span class="cm">#   - description: ONE crisp sentence about billing topics.</span>
+<span class="cm">#     This is the router's ONLY signal for when to pick this agent.</span>
+<span class="cm">#   - instruction: "You are a billing specialist for MuleSoft..."</span>
+<span class="cm">#   - disallow_transfer_to_peers: True  (strict supervisor pattern)</span>
+billing_agent <span class="op">=</span> ...
+
+<span class="cm"># TODO 2: build technical_agent — same shape as billing_agent.</span>
+<span class="cm">#   - Its description should be crystal clear about MuleSoft Anypoint</span>
+<span class="cm">#     deployments, APIs, and error debugging.</span>
+technical_agent <span class="op">=</span> ...
+
+<span class="cm"># TODO 3: build root_agent as the triage LlmAgent.</span>
+<span class="cm">#   - name: 'triage_agent'</span>
+<span class="cm">#   - instruction: MUST tell the LLM to NOT answer itself, only transfer.</span>
+<span class="cm">#   - sub_agents: [billing_agent, technical_agent]</span>
+root_agent <span class="op">=</span> ...</code></pre>
+
+    <details>
+      <summary>Hint 1 — Writing a description the LLM can route on</summary>
+      <p>Bad: <code>"handles billing questions"</code> — too vague. Good: <code>"Handles invoices, subscription changes, payment methods, refunds, and pricing questions."</code> — the LLM can match specific keywords in the user's message against this. The description is essentially the "when to call me" prompt for the router.</p>
+    </details>
+
+    <details>
+      <summary>Hint 2 — Why the parent has NO tools of its own</summary>
+      <p>The parent's <em>only</em> job is routing. Give it any real tool and the LLM will try to answer itself. Keep <code>tools=[]</code> (or omit the parameter) and let the auto-injected <code>transfer_to_agent</code> be the only thing it can do.</p>
+    </details>
+
+    <p><strong>Verify:</strong></p>
+    <ol>
+      <li>Run <code>adk web</code>, pick <code>triage_agent</code>.</li>
+      <li>Ask: "How do I update my payment method?"</li>
+      <li>In the trace panel, confirm you see a <code>transfer_to_agent(agent_name="billing_agent")</code> tool call, then the billing agent's response.</li>
+      <li>Ask: "My CloudHub deployment is failing with a memory error." — should route to <code>technical_agent</code>.</li>
+      <li>Ask: "How's the weather?" — the router should pick one of them (probably technical) or the specialist should decline politely. Note what happens.</li>
+    </ol>
+
+    <p>Paste back <code>agent.py</code> plus the trace showing the two correct routing decisions.</p>
+  </div>
+
+  <h2>Exercise 2 — <span class="exercise-tag">Guided</span></h2>
+
+  <div class="exercise-box">
+    <h3>Swarm — enable peer transfer between two specialists</h3>
+
+    <p><strong>Goal.</strong> Modify Exercise 1's agents so <code>technical_agent</code> can transfer to <code>billing_agent</code> mid-conversation when the user's issue turns out to be billing-related, and vice versa.</p>
+
+    <p><strong>Test scenario.</strong> A user tells <code>technical_agent</code> about a deployment failure. During the diagnosis, it turns out the deployment failed because the customer's subscription lapsed. The technical agent should hand off to billing.</p>
+
+    <p><strong>Changes to make:</strong></p>
+    <ol>
+      <li>Set <code>disallow_transfer_to_peers=False</code> on both specialists (or just remove the flag — <code>False</code> is the default).</li>
+      <li>Update each specialist's <em>instruction</em> to explicitly mention "if the question is really about X, transfer to Y". You have to prompt the specialist to consider transferring — the auto-injected tool is available but the LLM won't use it without a reason.</li>
+    </ol>
+
+    <details>
+      <summary>Hint — What the technical specialist's instruction should include</summary>
+      <p>Something like: <em>"You are a MuleSoft technical support engineer. Diagnose the user's issue step by step. If during your diagnosis you realise the root cause is actually a billing issue (expired subscription, unpaid invoice, subscription tier limits), transfer to billing_agent to complete the resolution."</em> The last sentence is what makes the LLM consider peer transfer.</p>
+    </details>
+
+    <p><strong>Verify:</strong></p>
+    <ol>
+      <li>Start a fresh session on <code>triage_agent</code>.</li>
+      <li>Give it a technical-sounding prompt with a billing twist: <em>"My CloudHub deployment fails with a 402 error every time I try to scale up."</em> (A 402 is HTTP "Payment Required" — a hint that this is really billing.)</li>
+      <li>The trace should show: <code>transfer_to_agent → technical_agent</code>, then <code>transfer_to_agent → billing_agent</code>.</li>
+    </ol>
+
+    <p><strong>Reflection questions:</strong></p>
+    <ol>
+      <li>How is this different from just having the router agent make both decisions at once?</li>
+      <li>What's the downside of swarm-style peer transfer for observability and debugging?</li>
+      <li>When would you use strict supervisor (Exercise 1) versus swarm (Exercise 2) in a real customer deployment?</li>
+    </ol>
+  </div>
+
+  <h2>Exercise 3 — <span class="exercise-tag">Stretch</span></h2>
+
+  <div class="exercise-box">
+    <h3>Hybrid — router with a workflow-agent sub-agent</h3>
+
+    <p><strong>Goal.</strong> A router that transfers between a simple leaf <code>billing_agent</code> and a two-stage <code>research_writer</code> pipeline from L29 Exercise 1. Shows the full ADK composition vocabulary.</p>
+
+    <p><strong>The shape:</strong></p>
+<pre><code>triage_agent  (LlmAgent, router)
+├── billing_agent  (LlmAgent, leaf)
+└── research_writer  (SequentialAgent)
+    ├── researcher   (LlmAgent)
+    └── writer       (LlmAgent)</code></pre>
+
+    <p><strong>You get minimal scaffolding.</strong> Reuse L29 Exercise 1's <code>research_writer</code> code, add a <code>billing_agent</code>, and wire both under a new triage router.</p>
+
+    <p><strong>Requirements:</strong></p>
+    <ul>
+      <li>The <code>research_writer</code>'s <code>description</code> must clearly say what it's for: "Researches a topic thoroughly and writes a polished multi-sentence answer. Use this for questions that require web research or detailed explanations."</li>
+      <li>The <code>billing_agent</code>'s <code>description</code> stays as-is from Exercise 1.</li>
+      <li>Test with: <em>"How do I cancel my subscription?"</em> (→ billing) and <em>"Explain how MuleSoft's flow architecture works."</em> (→ research_writer).</li>
+    </ul>
+
+    <div class="callout callout-tip">
+      <strong>Note — workflow agents as sub_agents.</strong> When the router transfers to <code>research_writer</code>, it starts the whole two-stage sequence. The parent doesn't see the intermediate <code>research_notes</code> — only the final <code>writer</code> output flows back through the conversation. Perfect encapsulation.
+    </div>
+
+    <p><strong>Reflection questions:</strong></p>
+    <ol>
+      <li>Look at the trace. How many LLM calls happen for the research route vs the billing route? What's the cost implication?</li>
+      <li>When designing a real MuleSoft customer-support agent with 5+ specialists, would you use one router or nested routers (router → sub-router → specialists)? Why?</li>
+      <li>What's the ADK equivalent of the "hierarchical" pattern from LangGraph L25? Show it in one sentence.</li>
+    </ol>
+  </div>
+
+  <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+  <h2>Quick quiz</h2>
+
+  <div class="quiz">
+    <p class="quiz-q">1. You set <code>sub_agents=[a, b]</code> on an <code>LlmAgent</code> called <code>parent</code>. What tool does ADK auto-inject into <code>parent</code>?</p>
+    <details><summary>Show answer</summary>
+      <p><code>transfer_to_agent(agent_name: str)</code>. It's constrained by a JSON-schema enum to only allow <code>"a"</code> or <code>"b"</code> as valid values, so the LLM can't hallucinate a non-existent target. When the LLM calls it, ADK sets <code>tool_context.actions.transfer_to_agent</code> and re-runs the loop with the new active agent.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">2. Your router keeps trying to answer questions itself instead of transferring. What's the fix?</p>
+    <details><summary>Show answer</summary>
+      <p>Rewrite the parent's instruction to explicitly say "Do NOT answer questions yourself. Always transfer to the correct specialist." Also make sure the parent has <code>tools=[]</code> (or the parameter omitted) — if it has any real tool of its own, it'll be tempted to use it.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">3. What's the difference between "supervisor" and "swarm" in ADK terms?</p>
+    <details><summary>Show answer</summary>
+      <p>Supervisor = <code>disallow_transfer_to_peers=True</code> on all specialists. Every routing decision goes through the parent, giving you one point of control and one clear trace. Swarm = the default (<code>False</code>) — peers can hand off to each other directly, which is more flexible but harder to debug because routing decisions are distributed.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">4. The parent LLM has three specialists to choose from. What is its <em>only</em> signal for which one to pick?</p>
+    <details><summary>Show answer</summary>
+      <p>The <code>description</code> field on each sub-agent. The parent LLM reads the descriptions (surfaced through the auto-injected <code>transfer_to_agent</code> tool's schema) and picks the best match against the user's question. Vague descriptions = bad routing. This is why <code>description</code> is load-bearing in this pattern but decorative in L26.</p>
+    </details>
+  </div>
+
+  <h2>What's next</h2>
+  <p>L31 — <strong>Deployment on Vertex Agent Engine</strong>. All the concepts you've learned in L26–L30 live in your laptop right now. This last lesson takes your agent to production: <code>agent-engine deploy</code>, custom URLs, IAM, cost model. The final piece of the "why ADK" story for MuleSoft customers on GCP.</p>
+
+  <div class="footer-links">
+    <p>Previous: <a href="0029-adk-declarative-multi-agent.html">L29 — Declarative multi-agent</a> &nbsp;·&nbsp;
+       Series so far: <a href="0026-adk-basics-agent-tools-runner.html">L26</a> ·
+       <a href="0027-adk-tools-builtins-mcp.html">L27</a> ·
+       <a href="0028-adk-state-memory-sessions.html">L28</a> ·
+       <a href="0029-adk-declarative-multi-agent.html">L29</a> · L30 ·
+       L31 (upcoming)</p>
+    <p style="margin-top:0.4rem">LangGraph parallels: <a href="0025-multi-agent-patterns.html">L25 — Multi-agent: supervisor, swarm, hierarchical</a></p>
+  </div>
+
+</div>
+</body>
+</html>

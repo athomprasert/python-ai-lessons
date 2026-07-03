@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L28 — ADK state &amp; memory: Session.state and SessionService</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .series-banner {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      color: #92400e;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .series-banner strong { color: #78350f; }
+
+    .lesson-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .lesson-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.3rem; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0.9rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .ty  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.6rem 0 1.1rem; font-size: 0.88rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.65rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+      border-left: 4px solid;
+      font-size: 0.9rem;
+    }
+    .callout strong { font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .callout-tip      { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn     { background: #fffbeb; border-color: #f59e0b; }
+    .callout-syntax   { background: #fdf4ff; border-color: #a855f7; }
+    .callout-pedagogy { background: #f1f5ff; border-color: #6366f1; }
+    .callout-compare  { background: #f0f9ff; border-color: #0ea5e9; }
+
+    .exercise-box {
+      border: 2px solid #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+      background: #fefefe;
+    }
+    .exercise-box h3 { margin-top: 0; }
+    .exercise-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    details {
+      margin: 0.5rem 0;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+    }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    details[open] summary { margin-bottom: 0.4rem; }
+
+    .quiz { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.7rem 0; }
+    .quiz-q { font-weight: 600; margin-bottom: 0.4rem; }
+
+    .ascii-diagram {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 6px;
+      margin: 0.7rem 0;
+    }
+
+    .footer-links { margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid #ddd; font-size: 0.82rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="series-banner">
+    <strong>Google ADK mini-series · part 3 of 6</strong> · An agent with no memory is a chatbot. This lesson teaches the ADK primitives that turn conversations into stateful workflows.
+    &nbsp;<a href="0027-adk-tools-builtins-mcp.html">← L27</a>
+  </div>
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Lesson 28 · Python for AI/ML</p>
+    <h1>ADK state &amp; memory: <code>Session.state</code>, <code>output_key</code>, <code>SessionService</code></h1>
+    <p class="tagline">By default, every ADK agent forgets everything the second the response ends. Session state is how you fix that — and it's ADK's answer to LangGraph's checkpointer.</p>
+  </header>
+
+  <div class="callout callout-pedagogy">
+    <strong>Pedagogy reminder.</strong> Skeleton + TODOs + paste-back review. Don't peek at the canonical until you've tried the code yourself and hit at least one error.
+  </div>
+
+  <h2>Why this lesson exists</h2>
+  <p>Your L26/L27 agent works — you send a message, it uses tools, it answers. But watch what happens on turn 2:</p>
+
+<pre><code><span class="cm"># Turn 1</span>
+user: I am working on the acme-prod org.
+assistant: Got it, acme-prod noted.
+
+<span class="cm"># Turn 2</span>
+user: What is the status of the org I mentioned?
+assistant: I don't have any context about which org you are referring to.</code></pre>
+
+  <p>The agent has <em>no idea</em>. Every turn is a fresh brain. To be useful in the real world — remembering the customer's org ID, tracking which ticket you're mid-way through, resuming a half-finished deployment — you need <strong>state that survives across turns</strong>.</p>
+
+  <p>That's what <code>Session.state</code> is for.</p>
+
+  <h2>The three memory primitives in ADK</h2>
+
+  <table>
+    <thead><tr><th>Primitive</th><th>Scope</th><th>Persists?</th><th>Analogy</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>Session.state</code></td>
+        <td>One conversation (a "session")</td>
+        <td>As long as the session lives — determined by <code>SessionService</code></td>
+        <td>LangGraph <code>State</code> dict</td>
+      </tr>
+      <tr>
+        <td><code>SessionService</code></td>
+        <td>Storage backend for many sessions</td>
+        <td>Depends on implementation (in-memory / DB / Vertex)</td>
+        <td>LangGraph checkpointer</td>
+      </tr>
+      <tr>
+        <td><code>MemoryService</code></td>
+        <td>Across sessions, cross-user long-term recall</td>
+        <td>Yes — like a vector store of past conversations</td>
+        <td>RAG over conversation history</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>This lesson covers the first two. <code>MemoryService</code> is a later topic — you can go far with just <code>Session.state</code>.</p>
+
+  <div class="callout callout-compare">
+    <strong>LangGraph vs ADK mental map.</strong> In LangGraph, <em>you</em> design the state <code>TypedDict</code> and pass it explicitly. In ADK, state is a plain dict that lives on the <code>Session</code> object — you just read and write keys. Less type safety, more flexibility.
+  </div>
+
+  <h2>The three ways to touch state</h2>
+
+  <h3>Way 1 — Read/write from inside a tool</h3>
+
+  <p>Add a <code>tool_context: ToolContext</code> parameter to your tool function. ADK sees this and injects the context automatically. You then read and write <code>tool_context.state</code> like any dict.</p>
+
+<pre><code><span class="kw">from</span> google.adk.tools <span class="kw">import</span> ToolContext
+
+<span class="kw">def</span> <span class="fn">remember_org</span>(org_id: <span class="ty">str</span>, tool_context: ToolContext) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="str">"""Remember which Anypoint org the user is working on."""</span>
+    tool_context.state[<span class="str">"current_org"</span>] <span class="op">=</span> org_id
+    <span class="kw">return</span> {<span class="str">"status"</span>: <span class="str">"success"</span>, <span class="str">"org_id"</span>: org_id}
+
+<span class="kw">def</span> <span class="fn">recall_org</span>(tool_context: ToolContext) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="str">"""Return the org the user is currently working on."""</span>
+    org <span class="op">=</span> tool_context.state.<span class="fn">get</span>(<span class="str">"current_org"</span>)
+    <span class="kw">if</span> org <span class="kw">is</span> <span class="kw">None</span>:
+        <span class="kw">return</span> {<span class="str">"status"</span>: <span class="str">"empty"</span>, <span class="str">"message"</span>: <span class="str">"No org remembered yet."</span>}
+    <span class="kw">return</span> {<span class="str">"status"</span>: <span class="str">"success"</span>, <span class="str">"org_id"</span>: org}</code></pre>
+
+  <div class="callout callout-syntax">
+    <strong>New syntax — <code>ToolContext</code> injection.</strong><br>
+    The parameter name matters. ADK inspects your function signature: if it sees a parameter typed as <code>ToolContext</code>, ADK provides it at call time — the LLM never sees it in the schema. Everything else in the signature <em>is</em> exposed to the LLM. This is why you can freely add <code>tool_context: ToolContext</code> without breaking your tool's shape.
+  </div>
+
+  <div class="callout callout-tip">
+    <strong>Prefer <code>.get()</code> over <code>[key]</code></strong> when reading state — the key may not exist yet on turn 1. <code>state.get("current_org")</code> returns <code>None</code> safely; <code>state["current_org"]</code> would raise <code>KeyError</code> and blow up your tool.
+  </div>
+
+  <h3>Way 2 — Auto-save the reply with <code>output_key</code></h3>
+
+  <p>Set <code>output_key="foo"</code> on an <code>Agent</code>, and after each turn ADK writes the agent's final text response into <code>Session.state["foo"]</code> automatically. No code needed.</p>
+
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> LlmAgent
+
+root_agent <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'greeter'</span>,
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    instruction<span class="op">=</span><span class="str">"Generate a warm greeting."</span>,
+    output_key<span class="op">=</span><span class="str">"last_greeting"</span>,   <span class="cm"># ← auto-saves to state["last_greeting"]</span>
+)</code></pre>
+
+  <p>Useful for chaining agents (agent A's answer becomes agent B's input) or for the next pattern:</p>
+
+  <h3>Way 3 — Interpolate state <em>into</em> the instruction</h3>
+
+  <p>ADK's instruction strings support <code>{key}</code> placeholders. On each turn, ADK replaces them with the current value from <code>Session.state</code>.</p>
+
+<pre><code>root_agent <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'mulesoft_helper'</span>,
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    instruction<span class="op">=</span><span class="str">"""You are a MuleSoft assistant.</span>
+<span class="str">The user is currently working on org: {current_org}.</span>
+<span class="str">Answer questions in the context of that org."""</span>,
+    tools<span class="op">=</span>[remember_org, recall_org],
+)</code></pre>
+
+  <p>When the user has already run <code>remember_org("acme-prod")</code>, <code>{current_org}</code> gets substituted with <code>"acme-prod"</code> at every turn — the LLM never has to call <code>recall_org</code>. Instruction interpolation is the <em>cheapest</em> way to give the LLM stateful context because it costs zero extra tool calls.</p>
+
+  <div class="callout callout-syntax">
+    <strong>New syntax — <code>{key}</code> in <code>instruction</code>.</strong><br>
+    Standard Python f-string-<em>looking</em> syntax, but it's not an f-string — the string is a plain <code>str</code>, and ADK does the substitution at runtime using the live <code>Session.state</code>. If <code>{current_org}</code> is not in state yet, you'll get a literal <code>{current_org}</code> in the prompt (annoying but not a crash). If you need literal curly braces (e.g., for JSON in the prompt), use an <code>InstructionProvider</code> function instead of a string.
+  </div>
+
+  <div class="callout callout-warn">
+    <strong>Gotcha — instruction interpolation happens once per turn</strong>, at the top of the loop. If a tool inside the same turn writes to state, the change is visible on the <em>next</em> turn, not the current one. Chain via <code>output_key</code> if you need mid-conversation propagation.
+  </div>
+
+  <h2>Where sessions live — <code>SessionService</code></h2>
+
+  <p>Every <code>adk web</code> and <code>adk run</code> command uses a <em>session service</em> — the storage backend that decides whether your state survives a restart.</p>
+
+  <table>
+    <thead><tr><th>Backend</th><th>When to use</th><th>Persists across restart?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>InMemorySessionService</code></td>
+        <td>Local dev, unit tests, quick demos</td>
+        <td>❌ No — dict in RAM</td>
+      </tr>
+      <tr>
+        <td><code>DatabaseSessionService</code></td>
+        <td>Anything real. SQLite for solo dev; Postgres/MySQL for prod</td>
+        <td>✅ Yes</td>
+      </tr>
+      <tr>
+        <td><code>VertexAiSessionService</code></td>
+        <td>Deployed on Vertex Agent Engine (managed by Google)</td>
+        <td>✅ Yes — GCP-managed</td>
+      </tr>
+    </tbody>
+  </table>
+
+<pre><code><span class="kw">from</span> google.adk.sessions <span class="kw">import</span> InMemorySessionService, DatabaseSessionService
+
+<span class="cm"># dev</span>
+session_service <span class="op">=</span> <span class="fn">InMemorySessionService</span>()
+
+<span class="cm"># solo dev with persistence — sessions.db is a plain SQLite file on disk</span>
+session_service <span class="op">=</span> <span class="fn">DatabaseSessionService</span>(db_url<span class="op">=</span><span class="str">"sqlite:///./sessions.db"</span>)</code></pre>
+
+  <div class="callout callout-tip">
+    <strong>How <code>adk web</code> uses this.</strong> By default, <code>adk web</code> uses <code>InMemorySessionService</code>. To make sessions survive a server restart, launch it with <code>adk web --session-service-uri="sqlite:///./sessions.db"</code>. Kill the server, restart, and your previous conversation is still there.
+  </div>
+
+  <h2>The MuleSoft angle</h2>
+
+  <p>Every enterprise agent you'll design for MuleSoft customers has to answer questions like:</p>
+  <ul>
+    <li>Which environment is the user currently deploying to? (<code>state["current_env"]</code>)</li>
+    <li>What ticket ID are we mid-way through resolving? (<code>state["active_ticket"]</code>)</li>
+    <li>Which API did the last error come from? (<code>state["last_failed_api"]</code>)</li>
+    <li>Has this user approved the destructive action yet? (<code>state["deploy_approved_at"]</code>)</li>
+  </ul>
+
+  <p>These are all natural fits for <code>Session.state</code>. Once you understand this pattern, you can walk into any enterprise agent design and answer the "how do you handle context" question fluently.</p>
+
+  <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+  <h2>Exercise 1 — <span class="exercise-tag">Guided</span></h2>
+
+  <div class="exercise-box">
+    <h3>Add memory to <code>mulesoft_helper</code></h3>
+
+    <p><strong>Goal.</strong> Extend the L26 <code>mulesoft_helper</code> agent so it can remember and recall the "current org" across turns using <code>tool_context.state</code>.</p>
+
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Open <code>mulesoft_helper/agent.py</code> from L26.</li>
+      <li>Add two new tool functions: <code>remember_org(org_id: str, tool_context: ToolContext) -> dict</code> and <code>recall_org(tool_context: ToolContext) -> dict</code>.</li>
+      <li>Register both tools with the <code>Agent</code>.</li>
+      <li>Update the instruction to tell the LLM it can remember and recall which org the user is working on.</li>
+      <li>Run <code>adk web</code>, and in a fresh session try this two-turn conversation:
+        <br><em>Turn 1:</em> "I'm working on org acme-prod. Please remember that."
+        <br><em>Turn 2:</em> "Which org am I on?"
+      </li>
+      <li>The agent should call <code>recall_org</code> on turn 2 and answer correctly.</li>
+    </ol>
+
+    <p><strong>Skeleton</strong> (fill in the TODOs — don't rewrite from scratch):</p>
+
+<pre><code><span class="kw">from</span> google.adk.agents.llm_agent <span class="kw">import</span> Agent
+<span class="kw">from</span> google.adk.tools <span class="kw">import</span> ToolContext
+
+<span class="cm"># --- existing L26 tools kept as-is ---</span>
+<span class="kw">def</span> <span class="fn">lookup_anypoint_status</span>(org_id: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="cm"># ... your L26 implementation ...</span>
+    <span class="kw">pass</span>
+
+<span class="cm"># --- new: state-aware tools ---</span>
+<span class="kw">def</span> <span class="fn">remember_org</span>(org_id: <span class="ty">str</span>, tool_context: ToolContext) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="str">"""Remember which Anypoint org the user is working on for this session."""</span>
+    <span class="cm"># TODO 1: write org_id to tool_context.state under the key "current_org"</span>
+    <span class="cm"># TODO 2: return a dict {"status": "success", "org_id": org_id}</span>
+
+<span class="kw">def</span> <span class="fn">recall_org</span>(tool_context: ToolContext) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="str">"""Return the Anypoint org the user is currently working on."""</span>
+    <span class="cm"># TODO 3: read "current_org" from tool_context.state using .get()</span>
+    <span class="cm"># TODO 4: if None, return {"status": "empty", "message": "..."}</span>
+    <span class="cm"># TODO 5: otherwise return {"status": "success", "org_id": org}</span>
+
+root_agent <span class="op">=</span> <span class="fn">Agent</span>(
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    name<span class="op">=</span><span class="str">'mulesoft_helper'</span>,
+    description<span class="op">=</span><span class="str">"MuleSoft assistant with per-session memory."</span>,
+    <span class="cm"># TODO 6: rewrite the instruction so the LLM knows it can call</span>
+    <span class="cm"># remember_org and recall_org — otherwise it won't use them.</span>
+    instruction<span class="op">=</span><span class="str">"..."</span>,
+    tools<span class="op">=</span>[lookup_anypoint_status, remember_org, recall_org],
+)</code></pre>
+
+    <details>
+      <summary>Hint 1 — What "the LLM won't use tools" means</summary>
+      <p>LLMs decide which tool to call based on the tool's name, docstring, and the agent's instruction. If your instruction just says "you are a helpful assistant", the model has no reason to prefer <code>remember_org</code> over just… acknowledging the user in text. You need to say something like <em>"When the user mentions an org they're working on, always call remember_org. When they ask about the org they mentioned, always call recall_org first."</em></p>
+    </details>
+
+    <details>
+      <summary>Hint 2 — Why <code>.get()</code> matters here</summary>
+      <p>On turn 2 in a fresh session, if the user asks "which org am I on?" without a prior <code>remember_org</code> call, <code>state["current_org"]</code> would raise <code>KeyError</code>. Using <code>state.get("current_org")</code> returns <code>None</code>, which lets you return a friendly "empty" response instead of crashing.</p>
+    </details>
+
+    <p><strong>Verify:</strong></p>
+    <ol>
+      <li>In the ADK Web trace panel, confirm turn 1 shows a <code>remember_org</code> call with <code>org_id="acme-prod"</code>.</li>
+      <li>Confirm turn 2 shows a <code>recall_org</code> call, then the LLM answers with the org name.</li>
+      <li>Click on the "State" tab in the session inspector — you should see <code>{"current_org": "acme-prod"}</code>.</li>
+    </ol>
+
+    <p>Paste back your <code>agent.py</code> plus the trace panel screenshot or event log for review.</p>
+  </div>
+
+  <h2>Exercise 2 — <span class="exercise-tag">Guided</span></h2>
+
+  <div class="exercise-box">
+    <h3><code>output_key</code> + instruction interpolation</h3>
+
+    <p><strong>Goal.</strong> Skip the <code>recall_org</code> tool entirely by interpolating state directly into the instruction — this is faster and cheaper (one fewer LLM call per turn).</p>
+
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Keep <code>remember_org</code> from Exercise 1. <em>Delete</em> <code>recall_org</code> — you won't need it.</li>
+      <li>Rewrite the instruction to include the placeholder <code>{current_org}</code>:
+<pre><code>instruction<span class="op">=</span><span class="str">"""You are a MuleSoft assistant.</span>
+<span class="str">Current org context: {current_org}</span>
+<span class="str">When the user mentions a new org, call remember_org.</span>
+<span class="str">Answer all other questions in the context of the current org."""</span></code></pre>
+      </li>
+      <li>Also add <code>output_key="last_answer"</code> to the <code>Agent</code>.</li>
+      <li>Run the same two-turn conversation as Exercise 1.</li>
+      <li>Open the session inspector and confirm state now contains <em>two</em> keys: <code>current_org</code> and <code>last_answer</code>.</li>
+    </ol>
+
+    <details>
+      <summary>Hint — what happens on the first turn?</summary>
+      <p>On turn 1, <code>Session.state</code> is empty, so <code>{current_org}</code> won't have a value to interpolate. ADK will substitute an empty/placeholder — the LLM might see something like "Current org context: " with no value. That's fine. The user's turn-1 message says "I'm working on org acme-prod", and the LLM can still call <code>remember_org</code>. From turn 2 onwards, the interpolation kicks in properly.</p>
+    </details>
+
+    <p><strong>Reflection questions</strong> (answer in a comment inside <code>agent.py</code>):</p>
+    <ol>
+      <li>What's the trade-off between Exercise 1 (tool-based recall) and Exercise 2 (interpolation)?</li>
+      <li>When would you keep <code>recall_org</code> even though interpolation works?</li>
+      <li>What does <code>output_key</code> save that <em>isn't</em> already visible in the message history?</li>
+    </ol>
+  </div>
+
+  <h2>Exercise 3 — <span class="exercise-tag">Stretch</span></h2>
+
+  <div class="exercise-box">
+    <h3>Persistent sessions with <code>DatabaseSessionService</code></h3>
+
+    <p><strong>Goal.</strong> Make your <code>mulesoft_helper</code> agent's state survive an <code>adk web</code> restart, using SQLite as the backing store.</p>
+
+    <p><strong>Steps:</strong></p>
+    <ol>
+      <li>Launch <code>adk web</code> with the SQLite session service:
+<pre><code>adk web --session-service-uri=<span class="str">"sqlite:///./sessions.db"</span></code></pre>
+      </li>
+      <li>Have the two-turn conversation from Exercise 1 or 2. Confirm the state is saved.</li>
+      <li>Stop the server (Ctrl-C).</li>
+      <li>Look in the directory: you should see a file called <code>sessions.db</code>. That's your SQLite database.</li>
+      <li>Restart <code>adk web</code> with the same flag. <em>Load your previous session</em> from the sidebar (don't start a new one).</li>
+      <li>Ask "Which org am I on?" — the agent should still remember.</li>
+    </ol>
+
+    <div class="callout callout-tip">
+      <strong>Bonus — poke around the database.</strong> If you have the SQLite CLI installed (<code>brew install sqlite</code>), run <code>sqlite3 sessions.db ".tables"</code> to see the schema ADK creates. It's a shockingly small number of tables — mostly a <code>sessions</code> table and an <code>events</code> table.
+    </div>
+
+    <p><strong>Reflection questions:</strong></p>
+    <ol>
+      <li>What would you change to move from SQLite to Postgres for a production deployment?</li>
+      <li>Why is this pattern important for enterprise MuleSoft use cases? (Hint: think about a long-running deployment approval workflow.)</li>
+      <li>What state <em>should not</em> be persisted this way (i.e., what's the security implication)?</li>
+    </ol>
+  </div>
+
+  <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+  <h2>Quick quiz</h2>
+
+  <div class="quiz">
+    <p class="quiz-q">1. You add <code>tool_context: ToolContext</code> to a tool function. Does the LLM see this parameter in the tool's JSON schema?</p>
+    <details><summary>Show answer</summary>
+      <p>No. ADK inspects the signature, identifies <code>ToolContext</code> as a special dependency-injected parameter, and strips it from the schema exposed to the LLM. Only the "real" business parameters (like <code>org_id: str</code>) show up in the schema.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">2. Your instruction is <code>"Working on: {current_org}"</code>. On turn 1, state is empty. What does the LLM see?</p>
+    <details><summary>Show answer</summary>
+      <p>Roughly <code>"Working on: "</code> with the placeholder unresolved or blank. It's not a crash — but the LLM sees no useful context, so on the first turn you should still expect it to call <code>remember_org</code> based on what the user said. From turn 2 onwards, once state is populated, the interpolation is meaningful.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">3. You want your agent's sessions to survive an <code>adk web</code> restart. Which SessionService do you use, and how do you configure <code>adk web</code>?</p>
+    <details><summary>Show answer</summary>
+      <p><code>DatabaseSessionService</code>, configured via the CLI flag <code>adk web --session-service-uri="sqlite:///./sessions.db"</code> for solo dev, or a Postgres/MySQL URL for production. <code>InMemorySessionService</code> (the default) loses everything on restart.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">4. What's the difference between saving state via <code>output_key</code> versus writing it in a tool function?</p>
+    <details><summary>Show answer</summary>
+      <p><code>output_key</code> saves the agent's <em>final text response</em> — the message going back to the user. Tool state writes save whatever <em>you</em> put there (structured data like an org ID, a ticket number, a boolean flag). Use <code>output_key</code> when you want to chain outputs across agents; use tool state for structured facts the LLM has extracted.</p>
+    </details>
+  </div>
+
+  <h2>What's next</h2>
+  <p>L29 — <strong>Declarative multi-agent</strong>: ADK's <code>SequentialAgent</code>, <code>ParallelAgent</code>, and <code>LoopAgent</code>. In LangGraph you wire these yourself (L25); ADK ships them as first-class primitives. This is where the "opinionated" thesis pays off — you'll see three-agent pipelines in five lines of code.</p>
+
+  <div class="footer-links">
+    <p>Previous: <a href="0027-adk-tools-builtins-mcp.html">L27 — ADK Tools</a> &nbsp;·&nbsp;
+       Series so far: <a href="0026-adk-basics-agent-tools-runner.html">L26</a> ·
+       <a href="0027-adk-tools-builtins-mcp.html">L27</a> · L28 ·
+       L29 (upcoming) · L30 (upcoming) · L31 (upcoming)</p>
+    <p style="margin-top:0.4rem">LangGraph parallels: <a href="0022-checkpointing-time-travel.html">L22 — Checkpointing (the LangGraph equivalent of SessionService)</a></p>
+  </div>
+
+</div>
+</body>
+</html>

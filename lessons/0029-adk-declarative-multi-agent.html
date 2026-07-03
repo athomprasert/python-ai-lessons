@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L29 — ADK declarative multi-agent: Sequential, Parallel, Loop</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 820px; margin: 0 auto; }
+
+    .series-banner {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      color: #92400e;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+    .series-banner strong { color: #78350f; }
+
+    .lesson-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .lesson-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.3rem; font-size: 0.95rem; }
+
+    h2 {
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0.9rem;
+    }
+    code { font-family: "JetBrains Mono", "Fira Code", monospace; }
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+    }
+    .kw  { color: #cba6f7; }
+    .fn  { color: #89dceb; }
+    .str { color: #a6e3a1; }
+    .num { color: #fab387; }
+    .cm  { color: #6c7086; font-style: italic; }
+    .op  { color: #89b4fa; }
+    .ty  { color: #f9e2af; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.6rem 0 1.1rem; font-size: 0.88rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.65rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+      border-left: 4px solid;
+      font-size: 0.9rem;
+    }
+    .callout strong { font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .callout-tip      { background: #f0fdf4; border-color: #22c55e; }
+    .callout-warn     { background: #fffbeb; border-color: #f59e0b; }
+    .callout-syntax   { background: #fdf4ff; border-color: #a855f7; }
+    .callout-pedagogy { background: #f1f5ff; border-color: #6366f1; }
+    .callout-compare  { background: #f0f9ff; border-color: #0ea5e9; }
+
+    .exercise-box {
+      border: 2px solid #1a1a1a;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin: 1rem 0;
+      background: #fefefe;
+    }
+    .exercise-box h3 { margin-top: 0; }
+    .exercise-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    details {
+      margin: 0.5rem 0;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+    }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.88rem; }
+    details[open] summary { margin-bottom: 0.4rem; }
+
+    .quiz { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.7rem 0; }
+    .quiz-q { font-weight: 600; margin-bottom: 0.4rem; }
+
+    .ascii-diagram {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 6px;
+      margin: 0.7rem 0;
+    }
+
+    .footer-links { margin-top: 1.6rem; padding-top: 0.9rem; border-top: 1px solid #ddd; font-size: 0.82rem; color: #6b7280; }
+    .footer-links a { color: #2563eb; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="series-banner">
+    <strong>Google ADK mini-series · part 4 of 6</strong> · The "opinionated ADK" thesis pays off here. What took a page of LangGraph in L25 becomes five lines of ADK.
+    &nbsp;<a href="0028-adk-state-memory-sessions.html">← L28</a>
+  </div>
+
+  <header class="lesson-header">
+    <p class="lesson-meta">Lesson 29 · Python for AI/ML</p>
+    <h1>ADK declarative multi-agent: <code>SequentialAgent</code>, <code>ParallelAgent</code>, <code>LoopAgent</code></h1>
+    <p class="tagline">Three first-class classes for the three most common multi-agent patterns. No graph wiring, no <code>Command(goto=...)</code>, no supervisor nodes to author. Trade flexibility for authoring speed.</p>
+  </header>
+
+  <div class="callout callout-pedagogy">
+    <strong>Pedagogy reminder.</strong> Skeleton + TODOs + paste-back review. Multi-agent orchestration <em>looks</em> simple in ADK because most of the wiring is hidden — that's exactly why writing it yourself matters.
+  </div>
+
+  <h2>Why declarative multi-agent</h2>
+
+  <p>In L25 (LangGraph) you built three multi-agent patterns — supervisor, swarm, hierarchical — by <em>wiring nodes and edges</em>. Every routing decision was a <code>Command(goto=...)</code> or a conditional edge you designed.</p>
+
+  <p>ADK takes the opposite bet: <em>most multi-agent workflows fit one of three shapes</em>. Ship those shapes as classes. Let the developer say "run these three in sequence" or "run these three in parallel" and be done.</p>
+
+  <div class="callout callout-compare">
+    <strong>The trade.</strong> LangGraph = infinite flexibility, more code. ADK workflow agents = less flexibility, dramatically less code. For 80% of enterprise agents (research pipelines, refinement loops, fan-out/fan-in aggregation) the ADK shapes are enough. For the other 20% (dynamic routing, cyclic supervisor patterns, HITL branch selection) you'll still reach for LangGraph or write a <code>CustomAgent</code> in ADK.
+  </div>
+
+  <h2>The three shapes</h2>
+
+  <table>
+    <thead><tr><th>Class</th><th>Shape</th><th>Use for</th><th>LangGraph equivalent</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>SequentialAgent</code></td>
+        <td>A → B → C</td>
+        <td>Multi-stage pipelines: research → draft → review</td>
+        <td>A linear chain of nodes with fixed edges</td>
+      </tr>
+      <tr>
+        <td><code>ParallelAgent</code></td>
+        <td>A + B + C simultaneously</td>
+        <td>Independent research/enrichment: fetch API health + deploy history + alerts in parallel</td>
+        <td>Fan-out via multiple edges to the same next node</td>
+      </tr>
+      <tr>
+        <td><code>LoopAgent</code></td>
+        <td>A → B → A → B ... until "done"</td>
+        <td>Refinement / critic loops: draft → critique → refine until acceptable</td>
+        <td>A cycle in the graph with a conditional break</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>The one mechanism that ties them together</h2>
+
+  <p>All three shapes use the <strong>same</strong> state-passing mechanism, and you've already seen it in L28:</p>
+
+  <ol>
+    <li>Each sub-agent has an <code>output_key</code> — its final text response is written to <code>Session.state[output_key]</code>.</li>
+    <li>Downstream sub-agents interpolate that value into their instruction with <code>{key}</code>.</li>
+  </ol>
+
+  <p>That's it. No message passing, no queues, no explicit hand-offs. The workflow agent is just a small piece of orchestration on top of shared session state.</p>
+
+  <div class="callout callout-syntax">
+    <strong>Mental model — think of workflow agents as loops around L28.</strong> <code>SequentialAgent</code> is a for-loop that runs each sub-agent once. <code>ParallelAgent</code> is an <code>asyncio.gather</code>. <code>LoopAgent</code> is a while-loop. All three just call sub-agents that read and write <code>Session.state</code>.
+  </div>
+
+  <h2>Shape 1 — <code>SequentialAgent</code></h2>
+
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> LlmAgent
+<span class="kw">from</span> google.adk.agents.sequential_agent <span class="kw">import</span> SequentialAgent
+
+researcher <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'researcher'</span>,
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    instruction<span class="op">=</span><span class="str">"Research the user's question. Output bullet-point notes."</span>,
+    output_key<span class="op">=</span><span class="str">"research_notes"</span>,   <span class="cm"># ← writes final text to state["research_notes"]</span>
+)
+
+writer <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'writer'</span>,
+    model<span class="op">=</span><span class="str">'gemini-flash-latest'</span>,
+    instruction<span class="op">=</span><span class="str">"""Given these research notes, write a polished 3-sentence answer.</span>
+<span class="str">Notes: {research_notes}"""</span>,     <span class="cm"># ← reads from state via interpolation</span>
+    output_key<span class="op">=</span><span class="str">"final_answer"</span>,
+)
+
+root_agent <span class="op">=</span> <span class="fn">SequentialAgent</span>(
+    name<span class="op">=</span><span class="str">'research_pipeline'</span>,
+    sub_agents<span class="op">=</span>[researcher, writer],
+    description<span class="op">=</span><span class="str">"Researches then writes."</span>,
+)</code></pre>
+
+  <p>The <code>SequentialAgent</code> runs <code>researcher</code>, waits for it to write <code>state["research_notes"]</code>, then runs <code>writer</code> — whose instruction interpolates that key. Two lines of wiring for a two-stage pipeline.</p>
+
+  <h2>Shape 2 — <code>ParallelAgent</code></h2>
+
+<pre><code><span class="kw">from</span> google.adk.agents.parallel_agent <span class="kw">import</span> ParallelAgent
+
+api_health_researcher <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'api_health_researcher'</span>,
+    instruction<span class="op">=</span><span class="str">"Look up API health for the org."</span>,
+    tools<span class="op">=</span>[lookup_api_health],
+    output_key<span class="op">=</span><span class="str">"api_health_result"</span>,
+)
+
+deploy_history_researcher <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'deploy_history_researcher'</span>,
+    instruction<span class="op">=</span><span class="str">"Look up recent deployments for the org."</span>,
+    tools<span class="op">=</span>[lookup_deployments],
+    output_key<span class="op">=</span><span class="str">"deploy_history_result"</span>,
+)
+
+parallel_research <span class="op">=</span> <span class="fn">ParallelAgent</span>(
+    name<span class="op">=</span><span class="str">'parallel_research'</span>,
+    sub_agents<span class="op">=</span>[api_health_researcher, deploy_history_researcher],
+)</code></pre>
+
+  <p>Both researchers start at ~the same time — <code>ParallelAgent</code> calls <code>run_async</code> on each and lets them run concurrently. When both finish, <code>Session.state</code> contains both <code>api_health_result</code> and <code>deploy_history_result</code>.</p>
+
+  <div class="callout callout-warn">
+    <strong>Important — parallel sub-agents don't see each other's conversation history</strong> during execution. From the docs: "no automatic sharing of conversation history or state between these branches during execution." Each parallel branch is essentially isolated until it completes. If branch A needs branch B's output, you're not in a parallel pattern — you're in a sequential one.
+  </div>
+
+  <p>To do anything useful with the two results, you almost always wrap the whole thing in a <code>SequentialAgent</code> with a "merger" downstream:</p>
+
+<pre><code>merger <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'merger'</span>,
+    instruction<span class="op">=</span><span class="str">"""Summarise both research findings into one health report.</span>
+<span class="str">API health: {api_health_result}</span>
+<span class="str">Deploy history: {deploy_history_result}"""</span>,
+    output_key<span class="op">=</span><span class="str">"health_report"</span>,
+)
+
+root_agent <span class="op">=</span> <span class="fn">SequentialAgent</span>(
+    name<span class="op">=</span><span class="str">'health_check_pipeline'</span>,
+    sub_agents<span class="op">=</span>[parallel_research, merger],
+)</code></pre>
+
+  <p>Workflow agents compose. This is the ADK equivalent of "hierarchical" from L25 — subgraphs as nodes — but you nest workflow-agent classes instead.</p>
+
+  <h2>Shape 3 — <code>LoopAgent</code></h2>
+
+  <p>Loops need two things: a way to <em>iterate</em>, and a way to <em>stop</em>.</p>
+
+  <p><strong>Iterate:</strong> pass <code>max_iterations=N</code> to cap the loop. Prevents runaway costs.</p>
+
+  <p><strong>Stop early:</strong> a sub-agent calls a tool that sets <code>tool_context.actions.escalate = True</code>. That's the signal-from-within pattern.</p>
+
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> LoopAgent, LlmAgent
+<span class="kw">from</span> google.adk.tools <span class="kw">import</span> ToolContext
+
+<span class="kw">def</span> <span class="fn">exit_loop</span>(tool_context: ToolContext):
+    <span class="str">"""Signal the loop to terminate — call this when the draft is good enough."""</span>
+    tool_context.actions.escalate <span class="op">=</span> <span class="kw">True</span>
+    <span class="kw">return</span> {}
+
+drafter <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'drafter'</span>,
+    instruction<span class="op">=</span><span class="str">"""Write or refine a draft answering the user's question.</span>
+<span class="str">Previous draft (if any): {draft}</span>
+<span class="str">Previous critique (if any): {critique}"""</span>,
+    output_key<span class="op">=</span><span class="str">"draft"</span>,
+)
+
+critic <span class="op">=</span> <span class="fn">LlmAgent</span>(
+    name<span class="op">=</span><span class="str">'critic'</span>,
+    instruction<span class="op">=</span><span class="str">"""Critique the draft. If it fully answers the question, call exit_loop.</span>
+<span class="str">Otherwise output specific improvements needed.</span>
+<span class="str">Draft: {draft}"""</span>,
+    tools<span class="op">=</span>[exit_loop],
+    output_key<span class="op">=</span><span class="str">"critique"</span>,
+)
+
+root_agent <span class="op">=</span> <span class="fn">LoopAgent</span>(
+    name<span class="op">=</span><span class="str">'refinement_loop'</span>,
+    sub_agents<span class="op">=</span>[drafter, critic],
+    max_iterations<span class="op">=</span><span class="num">5</span>,
+)</code></pre>
+
+  <div class="callout callout-syntax">
+    <strong>New syntax — <code>tool_context.actions.escalate = True</code>.</strong><br>
+    You've seen <code>tool_context.state</code> (L28). <code>tool_context.actions</code> is a sibling — it's how a tool can send <em>control signals</em> back up to the framework. <code>escalate=True</code> is specifically for exiting a <code>LoopAgent</code>. Other action flags exist (like <code>skip_summarization</code>) but this is the one that matters.
+  </div>
+
+  <div class="callout callout-tip">
+    <strong>Always set <code>max_iterations</code>.</strong> If your <code>critic</code> forgets to call <code>exit_loop</code>, you don't want the loop running forever charging you for tokens. <code>max_iterations=5</code> is a good default for demos; production critics may need higher.
+  </div>
+
+  <h2>Compared to L25 (LangGraph multi-agent)</h2>
+
+  <table>
+    <thead><tr><th>LangGraph L25 pattern</th><th>Closest ADK shape</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Supervisor (star)</td>
+        <td><code>SequentialAgent</code> where the first agent picks the next</td>
+        <td>ADK's built-in isn't a perfect fit — for a true supervisor with routing, use ADK's <a href="#">agent transfer</a> feature (later lesson)</td>
+      </tr>
+      <tr>
+        <td>Swarm (peer hand-off)</td>
+        <td>Agent-to-agent transfer via <code>transfer_to_agent</code></td>
+        <td>ADK covers this via sub-agents + transfer tool — different mechanic (covered in L30)</td>
+      </tr>
+      <tr>
+        <td>Hierarchical (subgraphs)</td>
+        <td>Workflow agents composed inside workflow agents</td>
+        <td>Direct match — nest a <code>ParallelAgent</code> inside a <code>SequentialAgent</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The three ADK shapes are not a 1:1 mapping to L25's patterns — they're a different <em>slicing</em> of the same problem space. Once you internalise both slicings, you can walk into any customer's multi-agent design conversation with two vocabularies.</p>
+
+  <h2>The MuleSoft angle</h2>
+
+  <p>Enterprise integration workflows are <em>overwhelmingly</em> shaped like one of these three:</p>
+  <ul>
+    <li><strong>Sequential — the "onboarding pipeline".</strong> Validate customer data → enrich from CRM → format for the target system → post. This is 60% of MuleSoft flows in the wild.</li>
+    <li><strong>Parallel — the "360-degree view".</strong> A single customer query fans out to CRM + billing + support ticket system + inventory, then a merger produces the "customer 360" answer. Perfect ADK <code>ParallelAgent</code> use case.</li>
+    <li><strong>Loop — the "retry with correction".</strong> Send order to fulfillment. If rejected, LLM inspects the reason, corrects the payload, retries. Bounded by <code>max_iterations</code> so it can't loop forever.</li>
+  </ul>
+
+  <p>These are exactly the enterprise stories you should be telling. ADK ships them as three lines each — the demo speed alone is a compelling narrative.</p>
+
+  <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+  <h2>Exercise 1 — <span class="exercise-tag">Guided</span></h2>
+
+  <div class="exercise-box">
+    <h3>Build a two-stage <code>SequentialAgent</code>: researcher → writer</h3>
+
+    <p><strong>Goal.</strong> Build a pipeline where a research agent produces bullet-point notes, and a writer agent turns those notes into a polished 3-sentence answer. This is the "hello world" of workflow agents.</p>
+
+    <p><strong>Folder structure:</strong></p>
+<pre><code>research_writer/
+├── agent.py
+├── __init__.py
+└── .env</code></pre>
+
+    <p><strong>Skeleton</strong> (fill in the TODOs):</p>
+
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> LlmAgent
+<span class="kw">from</span> google.adk.agents.sequential_agent <span class="kw">import</span> SequentialAgent
+
+<span class="cm"># TODO 1: build the researcher LlmAgent.</span>
+<span class="cm">#   - name: 'researcher'</span>
+<span class="cm">#   - model: 'gemini-flash-latest'</span>
+<span class="cm">#   - instruction: research the user's question, output 3-5 bullet points</span>
+<span class="cm">#   - output_key: "research_notes"</span>
+researcher <span class="op">=</span> ...
+
+<span class="cm"># TODO 2: build the writer LlmAgent.</span>
+<span class="cm">#   - name: 'writer'</span>
+<span class="cm">#   - instruction MUST include the {research_notes} placeholder</span>
+<span class="cm">#   - ask for a polished 3-sentence answer (no bullets, no markdown)</span>
+<span class="cm">#   - output_key: "final_answer"</span>
+writer <span class="op">=</span> ...
+
+<span class="cm"># TODO 3: wrap both in a SequentialAgent named 'research_pipeline'.</span>
+<span class="cm">#   - sub_agents in the correct order (researcher first, writer second)</span>
+<span class="cm">#   - This must be assigned to `root_agent` — ADK's mandatory variable name</span>
+root_agent <span class="op">=</span> ...</code></pre>
+
+    <details>
+      <summary>Hint 1 — Why order matters</summary>
+      <p>The <code>sub_agents</code> list is ordered. <code>SequentialAgent</code> runs them left-to-right. If you put the writer first, it will try to interpolate <code>{research_notes}</code> from empty state — you'll get a literal <code>{research_notes}</code> in the prompt and the LLM will be very confused.</p>
+    </details>
+
+    <details>
+      <summary>Hint 2 — What "instruction MUST include {research_notes}" means</summary>
+      <p>Writing <code>instruction="Write a 3-sentence answer."</code> won't work — the writer has no idea what research was done. It needs <code>instruction="Write a 3-sentence answer using these notes: {research_notes}"</code>. The interpolation is the only mechanism that ties the two agents together.</p>
+    </details>
+
+    <p><strong>Verify:</strong></p>
+    <ol>
+      <li>Run <code>adk web</code>, pick <code>research_pipeline</code>.</li>
+      <li>Ask: "What is MuleSoft Anypoint Platform?"</li>
+      <li>In the trace panel, confirm you see <em>two</em> LLM calls: one for researcher, one for writer. The researcher's output should be bullets; the writer's should be prose.</li>
+      <li>Click the "State" tab — you should see both <code>research_notes</code> and <code>final_answer</code>.</li>
+    </ol>
+
+    <p>Paste back <code>agent.py</code> plus the trace events for review.</p>
+  </div>
+
+  <h2>Exercise 2 — <span class="exercise-tag">Guided</span></h2>
+
+  <div class="exercise-box">
+    <h3>Fan out then merge — <code>ParallelAgent</code> inside a <code>SequentialAgent</code></h3>
+
+    <p><strong>Goal.</strong> Build a "MuleSoft org health check" that fires two research agents in parallel, then a merger summarises both. This is composition — a workflow agent inside a workflow agent.</p>
+
+    <p><strong>The shape:</strong></p>
+<pre><code>SequentialAgent
+├── ParallelAgent
+│   ├── api_health_researcher   → state["api_health_result"]
+│   └── deploy_history_researcher → state["deploy_history_result"]
+└── merger  (reads both keys, produces state["health_report"])</code></pre>
+
+    <p><strong>Skeleton:</strong></p>
+
+<pre><code><span class="kw">from</span> google.adk.agents <span class="kw">import</span> LlmAgent
+<span class="kw">from</span> google.adk.agents.sequential_agent <span class="kw">import</span> SequentialAgent
+<span class="kw">from</span> google.adk.agents.parallel_agent <span class="kw">import</span> ParallelAgent
+
+<span class="cm"># --- fake tools for demo purposes ---</span>
+<span class="kw">def</span> <span class="fn">lookup_api_health</span>(org_id: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="kw">return</span> {<span class="str">"org_id"</span>: org_id, <span class="str">"healthy_apis"</span>: <span class="num">18</span>, <span class="str">"failing_apis"</span>: <span class="num">2</span>}
+
+<span class="kw">def</span> <span class="fn">lookup_deployments</span>(org_id: <span class="ty">str</span>) <span class="op">-></span> <span class="ty">dict</span>:
+    <span class="kw">return</span> {<span class="str">"org_id"</span>: org_id, <span class="str">"last_deploy"</span>: <span class="str">"2 hours ago"</span>, <span class="str">"deploys_today"</span>: <span class="num">5</span>}
+
+<span class="cm"># TODO 1: build two researchers, each with a tool and an output_key.</span>
+<span class="cm">#   - api_health_researcher: uses lookup_api_health, output_key "api_health_result"</span>
+<span class="cm">#   - deploy_history_researcher: uses lookup_deployments, output_key "deploy_history_result"</span>
+api_health_researcher <span class="op">=</span> ...
+deploy_history_researcher <span class="op">=</span> ...
+
+<span class="cm"># TODO 2: build a ParallelAgent named 'parallel_research'</span>
+<span class="cm">#   containing both researchers. No output_key on ParallelAgent itself —</span>
+<span class="cm">#   the sub-agents' output_keys are what matters.</span>
+parallel_research <span class="op">=</span> ...
+
+<span class="cm"># TODO 3: build a merger LlmAgent.</span>
+<span class="cm">#   - instruction MUST interpolate BOTH keys: {api_health_result} and {deploy_history_result}</span>
+<span class="cm">#   - Ask for a single-paragraph health report</span>
+<span class="cm">#   - output_key: "health_report"</span>
+merger <span class="op">=</span> ...
+
+<span class="cm"># TODO 4: root_agent = SequentialAgent containing [parallel_research, merger]</span>
+root_agent <span class="op">=</span> ...</code></pre>
+
+    <details>
+      <summary>Hint — Why put <code>ParallelAgent</code> inside a <code>SequentialAgent</code>?</summary>
+      <p>Because <code>ParallelAgent</code> doesn't produce a single output — it writes multiple state keys. To <em>use</em> those keys (aggregate, summarise, act on them), you need a downstream agent. The idiomatic pattern in ADK is: <code>SequentialAgent(sub_agents=[ParallelAgent(...), merger])</code>. This is the ADK equivalent of "fan-out then join" in traditional pipeline languages.</p>
+    </details>
+
+    <p><strong>Verify:</strong></p>
+    <ol>
+      <li>Ask: "What's the health of org acme-prod?"</li>
+      <li>Both researchers should fire concurrently (check the trace timeline — you'll see two LLM calls with overlapping start/end times).</li>
+      <li>The merger runs after both complete and produces a single paragraph combining both.</li>
+      <li>State should contain three keys: <code>api_health_result</code>, <code>deploy_history_result</code>, <code>health_report</code>.</li>
+    </ol>
+
+    <p><strong>Reflection:</strong> If you had wired the researchers <em>sequentially</em> instead, how much slower would it feel? (Ballpark — count LLM calls and multiply by the average latency you saw in L27.)</p>
+  </div>
+
+  <h2>Exercise 3 — <span class="exercise-tag">Stretch</span></h2>
+
+  <div class="exercise-box">
+    <h3>Draft → critique → refine, terminating with <code>exit_loop</code></h3>
+
+    <p><strong>Goal.</strong> Build a <code>LoopAgent</code> where a drafter writes an answer, a critic scores it, and the loop repeats until the critic says "good enough" by calling <code>exit_loop</code>.</p>
+
+    <p><strong>You get less scaffolding on this one</strong> — that's the stretch. You have all the pieces from L28 (<code>ToolContext</code>) and this lesson's LoopAgent code snippet. Build it end-to-end.</p>
+
+    <p><strong>Requirements:</strong></p>
+    <ul>
+      <li>Folder: <code>refinement_loop/</code></li>
+      <li>A tool <code>exit_loop(tool_context: ToolContext)</code> that sets <code>tool_context.actions.escalate = True</code></li>
+      <li>Two <code>LlmAgent</code>s: <code>drafter</code> and <code>critic</code>. Only the critic gets <code>exit_loop</code> in its tools.</li>
+      <li>Both agents must read <code>{draft}</code> and/or <code>{critique}</code> from state so the loop actually refines instead of restarting each iteration.</li>
+      <li><code>root_agent = LoopAgent(sub_agents=[drafter, critic], max_iterations=5)</code></li>
+      <li>Critic's instruction must be explicit: "If the draft is high quality, CALL <code>exit_loop</code>. Otherwise output specific improvements."</li>
+    </ul>
+
+    <p><strong>Test prompt:</strong> "Write a one-sentence definition of MuleSoft Anypoint Platform." Watch the trace — you should see the loop run 2-3 times before the critic escalates.</p>
+
+    <p><strong>Reflection questions:</strong></p>
+    <ol>
+      <li>What happens if you forget <code>max_iterations</code>? What safety concern does this raise for production?</li>
+      <li>Why does the drafter's instruction need <code>{draft}</code> in it? What happens without it?</li>
+      <li>Compare this to a LangGraph cycle (L21/L25). Which is easier to read? Easier to debug? Easier to extend with a third participant?</li>
+    </ol>
+
+    <details>
+      <summary>Stuck? — big hint</summary>
+      <p>The drafter's instruction should be something like: <em>"Write or refine a draft answering the user's question. If a previous draft and critique exist, incorporate the feedback. Previous draft: {draft}. Previous critique: {critique}. Output only the new draft."</em> On iteration 1 both interpolations will be empty — that's fine, the drafter treats it as "no previous work".</p>
+    </details>
+  </div>
+
+  <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+  <h2>Quick quiz</h2>
+
+  <div class="quiz">
+    <p class="quiz-q">1. In a <code>SequentialAgent</code>, how does agent B receive agent A's output?</p>
+    <details><summary>Show answer</summary>
+      <p>Not by function argument or message-passing. A writes to <code>Session.state[A.output_key]</code>. B's instruction interpolates the same key with <code>{key}</code>. The wiring is via shared session state, not direct hand-off. This is why every sub-agent in a workflow agent typically declares an <code>output_key</code>.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">2. Two sub-agents in a <code>ParallelAgent</code>. Can one call the other's tool mid-execution?</p>
+    <details><summary>Show answer</summary>
+      <p>No. Parallel branches are isolated during execution — "no automatic sharing of conversation history or state between these branches" (from the ADK docs). If branch A needs branch B's output, you're not doing parallel — you're doing sequential. Refactor to <code>SequentialAgent</code>.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">3. What are the <em>two</em> ways a <code>LoopAgent</code> can terminate?</p>
+    <details><summary>Show answer</summary>
+      <p>(1) It hits <code>max_iterations</code> — the hard cap. (2) A sub-agent calls a tool that sets <code>tool_context.actions.escalate = True</code> — the soft, semantic exit. Every well-designed loop should have both: <code>max_iterations</code> as the safety net, <code>escalate</code> as the "we're actually done" signal.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <p class="quiz-q">4. You want fan-out research + a summary. What's the idiomatic ADK composition?</p>
+    <details><summary>Show answer</summary>
+      <p><code>SequentialAgent(sub_agents=[ParallelAgent(sub_agents=[researcher_A, researcher_B]), merger])</code>. The <code>ParallelAgent</code> writes multiple state keys concurrently. The <code>merger</code> interpolates them into a single instruction and produces the summary. Workflow agents compose — that's the point.</p>
+    </details>
+  </div>
+
+  <h2>What's next</h2>
+  <p>L30 — <strong>Agent transfer and dynamic routing</strong>: what to do when the shape <em>isn't</em> statically known. Agent-to-agent hand-off with <code>transfer_to_agent</code>, sub-agents-as-routing-targets, and how ADK covers the "supervisor" and "swarm" patterns from L25 without workflow-agent classes.</p>
+
+  <div class="footer-links">
+    <p>Previous: <a href="0028-adk-state-memory-sessions.html">L28 — State &amp; memory</a> &nbsp;·&nbsp;
+       Series so far: <a href="0026-adk-basics-agent-tools-runner.html">L26</a> ·
+       <a href="0027-adk-tools-builtins-mcp.html">L27</a> ·
+       <a href="0028-adk-state-memory-sessions.html">L28</a> · L29 ·
+       L30 (upcoming) · L31 (upcoming)</p>
+    <p style="margin-top:0.4rem">LangGraph parallels: <a href="0025-multi-agent-patterns.html">L25 — Multi-agent: supervisor, swarm, hierarchical</a></p>
+  </div>
+
+</div>
+</body>
+</html>
