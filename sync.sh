@@ -31,6 +31,13 @@ cp "$SOURCE_DIR/lessons/"*.html "$PUBLIC_DIR/lessons/"
 echo "Copying reference docs..."
 cp "$SOURCE_DIR/reference/"*.html "$PUBLIC_DIR/reference/"
 
+# Copy lesson images (if any). -r is safe because we only sync from a known source subtree.
+if [[ -d "$SOURCE_DIR/lessons/img" ]]; then
+  echo "Copying lesson images..."
+  mkdir -p "$PUBLIC_DIR/lessons/img"
+  cp -r "$SOURCE_DIR/lessons/img/." "$PUBLIC_DIR/lessons/img/"
+fi
+
 # --- Show what changed ---
 echo ""
 echo "Changes:"
@@ -56,7 +63,7 @@ if [[ -z "$MSG" ]]; then
 fi
 
 # --- Commit + push ---
-git add lessons/ reference/ index.html
+git add lessons/ reference/ index.html sync.sh
 git commit -m "$MSG"
 git push
 

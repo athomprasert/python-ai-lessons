@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L44 — Anypoint Studio: build an agent with MuleSoft AI Chain (MAC)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 840px; margin: 0 auto; }
+
+    header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .eyebrow { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.35rem; font-size: 0.95rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.7rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+    }
+    h3 { font-size: 1.02rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.25rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.87rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    pre.code {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      margin: 0.6rem 0 1rem;
+    }
+    pre.code .cm { color: #6c7086; font-style: italic; }
+    pre.code .kw { color: #cba6f7; }
+    pre.code .str { color: #a6e3a1; }
+    pre.code .tag { color: #89dceb; }
+    pre.code .attr { color: #f9e2af; }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      margin: 0.5rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer { color: #f9e2af; font-weight: 700; }
+    .arch .cm { color: #6c7086; font-style: italic; }
+    .arch .arrow { color: #89dceb; }
+
+    .callout { border-radius: 6px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.92rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-new  { background: #ecfdf5; border-color: #10b981; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.93rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    /* Screenshot placeholder styling */
+    .screenshot {
+      margin: 0.8rem 0 1.2rem;
+      border: 3px dashed #dc2626;
+      border-radius: 8px;
+      background: #fef2f2;
+      padding: 0.6rem;
+    }
+    .screenshot .ss-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #dc2626;
+      margin-bottom: 0.4rem;
+    }
+    .screenshot img {
+      max-width: 100%;
+      display: block;
+      border-radius: 4px;
+      background: #fff;
+    }
+    .screenshot .capture {
+      background: #fff;
+      border-left: 3px solid #dc2626;
+      padding: 0.5rem 0.7rem;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: #7f1d1d;
+    }
+    .screenshot .capture strong { color: #7f1d1d; }
+
+    .steps {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .steps ol { margin: 0.3rem 0 0 1.3rem; }
+
+    .quiz { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
+    .quiz h3 { margin-top: 0; color: #14532d; }
+    .quiz ol { margin-left: 1.3rem; }
+    .quiz details { margin-top: 0.4rem; }
+    .quiz summary { cursor: pointer; color: #16a34a; font-weight: 600; font-size: 0.88rem; }
+    .quiz .ans { background: #fff; border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.83rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">Lesson 44 · Anypoint Studio · MuleSoft AI Chain</p>
+    <h1>Build an agent inside Anypoint Studio with MuleSoft AI Chain</h1>
+    <p class="tagline">Same tool-using agent as L18/L20/L26/L32/L38 — but built as a Mule flow in Anypoint Studio using the MuleSoft AI Chain (MAC) connectors. Studio-first walkthrough with 8 screenshot slots for you to capture.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">What you'll build</div>
+    A running Mule application in Anypoint Studio that answers questions using an LLM, calls an external API as a "tool", and returns a structured response over HTTP. Same job as your Python framework lessons — different tool. By the end, you'll see when MAC beats a code-first framework and when it doesn't.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — read before you install</div>
+    MuleSoft AI Chain (MAC) connectors are actively evolving. Names, operations, and package coordinates have shifted between releases (e.g. <code>mac-agents</code>, <code>ms-inference</code>, <code>mulechain-ai</code>). This lesson uses the current MAC connector family circa 2026 but <strong>verify the exact operation names on Anypoint Exchange before you drop them into your flow</strong>. Screenshots you capture will be authoritative for the version you have installed.
+  </div>
+
+  <!-- ───────────────────────── PREREQS ───────────────────────── -->
+  <h2>Prerequisites</h2>
+  <ul>
+    <li><strong>Anypoint Studio</strong> installed (Windows/Mac/Linux) — the Eclipse-based IDE from MuleSoft</li>
+    <li>An <strong>Anypoint Platform account</strong> so Studio can pull connectors from Exchange</li>
+    <li>An <strong>LLM API key</strong> — this lesson uses Anthropic Claude (any provider MAC supports also works: OpenAI, Azure OpenAI, Ollama)</li>
+    <li>Basic Studio comfort: dragging components onto the canvas, editing the XML view, running a project locally</li>
+  </ul>
+
+  <!-- ───────────────────────── PART 1 — THE JOB ───────────────────────── -->
+  <h2>Part 1 · The agent we're building</h2>
+  <p>To keep this comparable to your Python lessons, we're building the same little agent from L18, L20, L26, L32, and L38:</p>
+
+  <div class="arch"><span class="cm"># The task — a tool-using assistant</span>
+
+<span class="layer">User</span>  <span class="cm"># "What is the weather in Bangkok, and search our internal docs for 'invoice policy'"</span>
+   <span class="arrow">↓  HTTP POST /ask</span>
+<span class="layer">MAC Agent Flow                </span>  <span class="cm"># decide which tool(s) to call</span>
+   <span class="arrow">├─ tool 1 → weather API</span>
+   <span class="arrow">└─ tool 2 → doc search (mock or vector store)</span>
+   <span class="arrow">↓</span>
+<span class="layer">LLM final answer              </span>  <span class="cm"># stitches results into natural language</span>
+   <span class="arrow">↓  HTTP 200 JSON</span>
+<span class="layer">Response                      </span></div>
+
+  <p>The same agent shape you built five times in Python — this time as a Mule flow that Anypoint runs, monitors, and can deploy to CloudHub or Runtime Fabric with no extra code.</p>
+
+  <!-- ───────────────────────── PART 2 — INSTALL MAC ───────────────────────── -->
+  <h2>Part 2 · Install the MAC connectors</h2>
+
+  <div class="steps">
+    <strong>Steps:</strong>
+    <ol>
+      <li>Open Anypoint Studio → <em>File → New → Mule Project</em>. Name it <code>mac-agent-demo</code>. Click <em>Finish</em>.</li>
+      <li>In the Mule Palette (right panel), click <em>Search in Exchange</em>.</li>
+      <li>Log in to Anypoint if prompted.</li>
+      <li>Search: <strong>MuleSoft AI Chain</strong>. You'll see several connectors — <code>MuleSoft AI Chain</code>, <code>MuleSoft Inference</code>, <code>MuleSoft Vectors</code>, <code>MuleSoft Embeddings</code> are the common ones.</li>
+      <li>Add <em>MuleSoft AI Chain</em> and <em>MuleSoft Inference</em> to your selections. Click <em>Finish</em>.</li>
+      <li>Studio downloads the connectors and adds them to the palette.</li>
+    </ol>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 01 · New Mule Project dialog</div>
+    <img src="img/l44/01-new-mule-project.png" alt="Screenshot placeholder — New Mule Project dialog" />
+    <div class="capture"><strong>Capture instructions:</strong> After clicking <em>File → New → Mule Project</em>, screenshot the dialog with <code>mac-agent-demo</code> typed as the project name — <em>before</em> clicking Finish. Save as <code>lessons/img/l44/01-new-mule-project.png</code>.</div>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 02 · Search Exchange for "MuleSoft AI Chain"</div>
+    <img src="img/l44/02-mac-connector-search.png" alt="Screenshot placeholder — Exchange connector search" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the Exchange search dialog showing MAC connector results. Save as <code>lessons/img/l44/02-mac-connector-search.png</code>.</div>
+  </div>
+
+  <!-- ───────────────────────── PART 3 — LLM CONFIG ───────────────────────── -->
+  <h2>Part 3 · Configure the LLM connector</h2>
+
+  <div class="callout callout-new">
+    <div class="callout-label">New concept · Connector configuration</div>
+    In Mule, a <strong>configuration</strong> is a reusable block of settings (API keys, URLs, model names) that any operation in the flow can point to. You create it once per project. Think of it as the Mule equivalent of the <code>OpenAIChatCompletionClient(...)</code> object in L38 — one config, many operation calls.
+  </div>
+
+  <div class="steps">
+    <strong>Steps:</strong>
+    <ol>
+      <li>In the flow canvas, drag <em>MuleSoft AI Chain → Chat answer prompt</em> (or the equivalent inference operation for your MAC version) onto the canvas.</li>
+      <li>With the operation selected, look at the <em>Configuration</em> field (bottom-right). Click the green <strong>+</strong>.</li>
+      <li>In the config dialog:
+        <ul>
+          <li><strong>LLM Type:</strong> <code>ANTHROPIC</code> (or <code>OPENAI</code>, <code>OLLAMA</code>, etc.)</li>
+          <li><strong>Model Name:</strong> <code>claude-haiku-4-5</code></li>
+          <li><strong>API Key:</strong> <code>${anthropic.api.key}</code> — reference a property, don't paste the raw key</li>
+          <li><strong>Temperature:</strong> <code>0.2</code></li>
+        </ul>
+      </li>
+      <li>Create a <code>src/main/resources/config.yaml</code> with the key. Add <em>Configuration Properties</em> in the Global Elements pointing at it.</li>
+      <li>Click <em>Test Connection</em>. Green tick = ready.</li>
+    </ol>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 03 · LLM connector configuration dialog</div>
+    <img src="img/l44/03-llm-config.png" alt="Screenshot placeholder — LLM configuration dialog" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the LLM config dialog with LLM Type, Model Name, and property-reference API key filled in — the moment of clicking Test Connection is ideal. Save as <code>lessons/img/l44/03-llm-config.png</code>.</div>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Never paste the raw key</div>
+    Even in a demo project. Studio's config dialog will happily accept the raw string — but the moment you commit or share the project the key is out. Use <code>${property.name}</code> and put the actual value in <code>config.yaml</code> which is <code>.gitignore</code>d. Same rule as L06 <em>System &amp; environment</em>.
+  </div>
+
+  <!-- ───────────────────────── PART 4 — BUILD THE FLOW ───────────────────────── -->
+  <h2>Part 4 · Build the agent flow</h2>
+  <p>Now assemble the flow — HTTP entry, LLM call with tools, response.</p>
+
+  <div class="steps">
+    <strong>Steps:</strong>
+    <ol>
+      <li>Drag <em>HTTP → Listener</em> onto a new flow. Path: <code>/ask</code>, method <code>POST</code>. Create a new HTTP Listener config on <code>0.0.0.0:8081</code>.</li>
+      <li>After the listener, drag <em>MuleSoft AI Chain → Agent (tool-calling)</em>. Point it at the LLM config from Part 3.</li>
+      <li>In the operation config, add two tools (the exact UI varies by MAC version — this is the concept):
+        <ul>
+          <li><strong>Tool 1: <code>get_weather</code></strong> — description "Get current weather for a city", takes <code>city</code> string. Points at an HTTP Request to a weather API.</li>
+          <li><strong>Tool 2: <code>search_docs</code></strong> — description "Search internal docs", takes <code>query</code> string. Points at a Choice / static mock for now (returns "Invoices due within 30 days per policy X-123").</li>
+        </ul>
+      </li>
+      <li>Set the <em>Prompt</em> input to <code>#[payload.question]</code> so the flow reads the incoming question.</li>
+      <li>After the agent operation, add a <em>Transform Message</em> to shape the response: <code>{ answer: payload.response }</code>.</li>
+      <li>Save. The XML view (bottom tab of the canvas) shows the underlying flow definition — read it once to build intuition.</li>
+    </ol>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 04 · Assembled flow on the canvas</div>
+    <img src="img/l44/04-flow-canvas.png" alt="Screenshot placeholder — the assembled flow" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the flow canvas showing HTTP Listener → MAC Agent (with tools attached) → Transform Message. Include the palette on the right so the reader sees which connectors were used. Save as <code>lessons/img/l44/04-flow-canvas.png</code>.</div>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 05 · Tool definitions inside the agent operation</div>
+    <img src="img/l44/05-tools-config.png" alt="Screenshot placeholder — tools configured on the agent" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the agent operation's <em>Tools</em> panel with both <code>get_weather</code> and <code>search_docs</code> listed. Save as <code>lessons/img/l44/05-tools-config.png</code>.</div>
+  </div>
+
+  <!-- ───────────────────────── PART 5 — XML REFERENCE ───────────────────────── -->
+  <h2>Part 5 · The XML Studio generates (for reference)</h2>
+  <p>Studio is a designer over Mule XML. Once you're comfortable, you can read and edit the XML directly. Here's the approximate shape of what Parts 3-4 produce:</p>
+
+<pre class="code"><span class="cm">&lt;!-- src/main/mule/agent-flow.xml — abridged for readability --&gt;</span>
+<span class="tag">&lt;mule</span> <span class="attr">xmlns:mac</span>=<span class="str">"http://www.mulesoft.org/schema/mule/mulesoft-ai-chain"</span>
+      <span class="attr">xmlns:http</span>=<span class="str">"http://www.mulesoft.org/schema/mule/http"</span><span class="tag">&gt;</span>
+
+  <span class="tag">&lt;mac:config</span> <span class="attr">name</span>=<span class="str">"AI_Chain_Config"</span>
+              <span class="attr">llmType</span>=<span class="str">"ANTHROPIC"</span>
+              <span class="attr">modelName</span>=<span class="str">"claude-haiku-4-5"</span>
+              <span class="attr">apiKey</span>=<span class="str">"${anthropic.api.key}"</span> <span class="tag">/&gt;</span>
+
+  <span class="tag">&lt;http:listener-config</span> <span class="attr">name</span>=<span class="str">"HTTP_Listener_Config"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;http:listener-connection</span> <span class="attr">host</span>=<span class="str">"0.0.0.0"</span> <span class="attr">port</span>=<span class="str">"8081"</span><span class="tag">/&gt;</span>
+  <span class="tag">&lt;/http:listener-config&gt;</span>
+
+  <span class="tag">&lt;flow</span> <span class="attr">name</span>=<span class="str">"ask-agent"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;http:listener</span> <span class="attr">config-ref</span>=<span class="str">"HTTP_Listener_Config"</span> <span class="attr">path</span>=<span class="str">"/ask"</span><span class="tag">/&gt;</span>
+
+    <span class="tag">&lt;mac:agent-tool-calling</span> <span class="attr">config-ref</span>=<span class="str">"AI_Chain_Config"</span>
+                             <span class="attr">prompt</span>=<span class="str">"#[payload.question]"</span><span class="tag">&gt;</span>
+      <span class="tag">&lt;mac:tools&gt;</span>
+        <span class="tag">&lt;mac:tool</span> <span class="attr">name</span>=<span class="str">"get_weather"</span>
+                  <span class="attr">description</span>=<span class="str">"Get current weather for a city"</span><span class="tag">&gt;</span>
+          <span class="cm">&lt;!-- flow reference or inline HTTP request --&gt;</span>
+        <span class="tag">&lt;/mac:tool&gt;</span>
+        <span class="tag">&lt;mac:tool</span> <span class="attr">name</span>=<span class="str">"search_docs"</span>
+                  <span class="attr">description</span>=<span class="str">"Search internal docs"</span><span class="tag">&gt;</span>
+          <span class="cm">&lt;!-- static or vector-store-backed lookup --&gt;</span>
+        <span class="tag">&lt;/mac:tool&gt;</span>
+      <span class="tag">&lt;/mac:tools&gt;</span>
+    <span class="tag">&lt;/mac:agent-tool-calling&gt;</span>
+
+    <span class="tag">&lt;ee:transform&gt;</span>
+      <span class="tag">&lt;ee:message&gt;</span>
+        <span class="tag">&lt;ee:set-payload&gt;</span><span class="str">%dw 2.0
+output application/json
+---
+{ answer: payload.response }</span><span class="tag">&lt;/ee:set-payload&gt;</span>
+      <span class="tag">&lt;/ee:message&gt;</span>
+    <span class="tag">&lt;/ee:transform&gt;</span>
+  <span class="tag">&lt;/flow&gt;</span>
+<span class="tag">&lt;/mule&gt;</span></pre>
+
+  <div class="callout callout-new">
+    <div class="callout-label">New concept · DataWeave in one line</div>
+    <code>%dw 2.0 / output application/json / --- / { answer: payload.response }</code> is <strong>DataWeave</strong> — Mule's transformation language. Every Mule flow ends up using it somewhere. Think of it as a purpose-built alternative to Python dict comprehensions, but for shape transformation across formats (JSON, XML, CSV, Java).
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Element names may vary</div>
+    <code>mac:agent-tool-calling</code> is illustrative — your installed MAC connector version may use <code>mac:chat-answer-prompt-with-tools</code>, <code>mulechain-ai:agent</code>, or a different name. Inspect the actual XML your Studio generates. The <em>shape</em> (config + operation + tools) is stable across versions.
+  </div>
+
+  <!-- ───────────────────────── PART 6 — RUN IT ───────────────────────── -->
+  <h2>Part 6 · Run and test</h2>
+
+  <div class="steps">
+    <strong>Steps:</strong>
+    <ol>
+      <li>Right-click the project → <em>Run As → Mule Application</em>.</li>
+      <li>Watch the console. Wait for <code>DEPLOYED</code>.</li>
+      <li>In a terminal, hit the endpoint:
+        <pre class="code">curl -X POST http://localhost:8081/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Weather in Bangkok, and search docs for invoice policy"}'</pre>
+      </li>
+      <li>Expected JSON response: <code>{ "answer": "..." }</code> where the LLM has stitched together weather + doc results.</li>
+      <li>Watch the Studio console — you'll see the tool calls being invoked as the agent decides which ones to use.</li>
+    </ol>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 06 · Studio console showing DEPLOYED</div>
+    <img src="img/l44/06-console-deployed.png" alt="Screenshot placeholder — console showing deployed status" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the Studio console output at the moment of successful deployment. Save as <code>lessons/img/l44/06-console-deployed.png</code>.</div>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 07 · curl / Postman response</div>
+    <img src="img/l44/07-curl-response.png" alt="Screenshot placeholder — successful response to the agent" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot your terminal (or Postman) showing the JSON response with the agent's answer. Save as <code>lessons/img/l44/07-curl-response.png</code>.</div>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 08 · Console showing tool-call trace</div>
+    <img src="img/l44/08-tool-trace.png" alt="Screenshot placeholder — tool call logs in console" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the Studio console log section that shows both <code>get_weather</code> and <code>search_docs</code> being invoked. Save as <code>lessons/img/l44/08-tool-trace.png</code>.</div>
+  </div>
+
+  <!-- ───────────────────────── PART 7 — COMPARE ───────────────────────── -->
+  <h2>Part 7 · Same task, six implementations</h2>
+  <p>You've now built this agent six times. Here's the honest comparison:</p>
+
+  <table>
+    <thead>
+      <tr><th>Lesson</th><th>Framework</th><th>Runtime</th><th>Lines of code</th><th>Best-fit use case</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>L18</td><td>Native Gemini SDK</td><td>Local Python</td><td>~80</td><td>Learning / prototyping</td></tr>
+      <tr><td>L20-25</td><td>LangGraph</td><td>Python + LangGraph Cloud / self-host</td><td>~120</td><td>Complex reasoning loops, HITL, checkpointing</td></tr>
+      <tr><td>L26-31</td><td>Google ADK</td><td>Vertex Agent Engine</td><td>~60</td><td>Google-native shops, declarative multi-agent</td></tr>
+      <tr><td>L32-37</td><td>AWS Strands</td><td>Bedrock AgentCore</td><td>~70</td><td>AWS-native shops, managed memory/identity</td></tr>
+      <tr><td>L38-43</td><td>AutoGen</td><td>Azure AI Foundry</td><td>~90</td><td>Microsoft-native shops, async multi-agent</td></tr>
+      <tr><td><strong>L44</strong></td><td><strong>MAC on Anypoint</strong></td><td><strong>CloudHub / Runtime Fabric / on-prem</strong></td><td><strong>~0 (visual)</strong></td><td><strong>Tool-heavy single agent; integration-team ownership</strong></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The honest decision tree</div>
+    <ul style="margin:0">
+      <li><strong>Single agent + many enterprise systems (SAP, mainframe, Workday, ServiceNow)</strong> → <strong>MAC on Anypoint</strong>. You inherit 300+ connectors and enterprise-grade governance for free.</li>
+      <li><strong>Complex reasoning loop, HITL, replay/time-travel</strong> → <strong>LangGraph</strong>. Visual flows are awkward for stateful graphs.</li>
+      <li><strong>Multi-agent orchestration (supervisor / swarm / handoff)</strong> → <strong>code-first framework</strong> (ADK / Strands / AutoGen) on its cloud runtime.</li>
+      <li><strong>Rapid prompt experimentation</strong> → <strong>Python framework</strong>. Faster iteration cycle than a flow editor.</li>
+      <li><strong>Integration developers own the agent, Python team doesn't exist</strong> → <strong>MAC</strong>. Same team, same tool.</li>
+    </ul>
+  </div>
+
+  <blockquote class="talk">
+    "The customer question isn't 'MAC or LangGraph?' — it's 'where does the value of this agent come from?' If the value is <em>which systems it can reach</em>, MAC on Anypoint is the shortest path because the connectors are already there. If the value is <em>how sophisticated its reasoning is</em>, a code-first framework wins. Most enterprise agents I see are the first kind — service desk, order status, HR self-service. That's why MAC is a real answer, not marketing filler."
+  </blockquote>
+
+  <!-- ───────────────────────── QUIZ ───────────────────────── -->
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <h3>Test your understanding</h3>
+    <ol>
+      <li>Why do we put the API key in <code>config.yaml</code> and reference it as <code>${anthropic.api.key}</code> instead of pasting it into the connector dialog?
+        <details><summary>Show answer</summary><div class="ans">So it doesn't get committed to source control. Studio will happily accept the raw string, but the moment you push the project, the key is out. Same rule as L06 — never commit secrets.</div></details>
+      </li>
+      <li>Which layer of the MuleSoft agent stack (from the positioning reference) does this lesson build on?
+        <details><summary>Show answer</summary><div class="ans">Anypoint Platform — the integration layer. MAC is a connector family that runs inside Anypoint's Mule runtime. Omni Gateway and Agent Fabric sit above it.</div></details>
+      </li>
+      <li>Name one scenario where you'd pick LangGraph over MAC even though the agent needs to hit SAP.
+        <details><summary>Show answer</summary><div class="ans">A stateful multi-turn workflow with human-in-the-loop approvals and checkpoint/replay — LangGraph's <code>interrupt()</code> and checkpointing are much cleaner in code than as a Mule flow. You'd still put Anypoint underneath as the SAP integration layer — LangGraph calls the Anypoint API as a tool.</div></details>
+      </li>
+      <li>What is DataWeave?
+        <details><summary>Show answer</summary><div class="ans">Mule's transformation language for shape-shifting data between formats (JSON, XML, CSV, Java, YAML). Every non-trivial Mule flow uses it. Roughly analogous to writing dict comprehensions and format converters in Python — but purpose-built for integration.</div></details>
+      </li>
+      <li>The comparison table shows MAC at "~0 lines of code". Is that literally true?
+        <details><summary>Show answer</summary><div class="ans">No — it's shorthand. You still write DataWeave transformations and configure XML behind the scenes. But you don't write imperative agent-loop code; the connector does that. The real trade-off is code-lines-saved vs flow-editor-clicks. Non-Python teams pick the second every time.</div></details>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────── WHERE TO GO ───────────────────────── -->
+  <h2>Where to go from here</h2>
+  <ul>
+    <li>Swap the mock <code>search_docs</code> tool for a real vector store — the <em>MuleSoft Vectors</em> connector supports pgvector, Chroma, and others. Rebuild L09-L10 as a Mule flow.</li>
+    <li>Deploy the flow to CloudHub 2.0 — <em>Right-click → Anypoint Platform → Deploy to CloudHub</em>. Now you have a managed, monitored, autoscaled agent.</li>
+    <li>Expose the same flow as an MCP endpoint — MAC + Omni Gateway (see the positioning reference) makes one flow available to both REST callers and MCP-aware agents.</li>
+    <li>Compare deployment paths: L31 Vertex Agent Engine, L37 AgentCore Runtime, L43 Azure Foundry, and now CloudHub. Same agent, four managed platforms.</li>
+  </ul>
+
+  <div class="footer">
+    <a href="0043-autogen-deploy-end-to-end.html">← L43 Azure capstone</a>
+    <a href="../reference/mulesoft-agent-stack-positioning.html">MuleSoft agent stack positioning</a>
+    <a href="../reference/mcp-integration-positioning.html">MCP integration positioning</a>
+    <a href="../reference/agentforce-positioning.html">Agentforce positioning</a>
+    <p style="margin-top:0.7rem">Ask me anything unclear — that's how you learn. If a MAC connector name has drifted from what's shown here, tell me and we'll update the lesson.</p>
+  </div>
+
+</div>
+</body>
+</html>
