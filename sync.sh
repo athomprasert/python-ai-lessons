@@ -56,7 +56,7 @@ if [[ -z "$MSG" ]]; then
 fi
 
 # --- Commit + push ---
-git add lessons/ reference/
+git add lessons/ reference/ index.html
 git commit -m "$MSG"
 git push
 
