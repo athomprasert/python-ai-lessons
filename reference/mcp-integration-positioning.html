@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — MCP Integration Positioning (AgentCore Gateway vs MuleSoft)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 880px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    .callout { border-radius: 6px; padding: 0.7rem 0.9rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.9rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.92rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer  { color: #f9e2af; font-weight: 700; }
+    .arch .cm     { color: #6c7086; font-style: italic; }
+    .arch .arrow  { color: #89dceb; }
+    .arch .sys    { color: #a6e3a1; }
+
+    .decision { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+    .decision strong { color: #0f172a; }
+    .decision ul { margin-top: 0.3rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Positioning · MuleSoft SE</p>
+    <h1>MCP integration: AgentCore Gateway vs Anypoint vs MuleSoft MCP</h1>
+    <p class="tagline">A pre-customer-call reference. Two comparisons, two SE talk tracks, one architecture diagram, one decision tree — designed to open on your phone five minutes before a meeting.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">One-line summary</div>
+    <strong>AgentCore Gateway</strong> is a lightweight MCP wrapper for clean REST/Lambda backends. <strong>Anypoint Platform</strong> is an integration platform — it exists whether or not you have agents. <strong>MuleSoft MCP</strong> exposes existing Anypoint APIs as MCP tools. The right answer for most enterprises is <em>both</em>: Gateway (or MuleSoft MCP) as the agent-facing layer, Anypoint underneath doing the actual integration work.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — read before customer call</div>
+    MuleSoft's MCP story is shipping in pieces (MCP Connector for Mule, MCP capabilities on Flex Gateway, MCP in Anypoint Code Builder) and product names keep evolving. AgentCore Gateway is AWS-managed and GA'd late 2025 but the docs churn. Verify current product names and features before quoting anything specific. The <em>architectural framings</em> in this doc are stable.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three-layer picture</h2>
+  <p>The diagram worth memorising. Every conversation returns to this.</p>
+
+  <div class="arch"><span class="cm"># The natural stack — three layers, three jobs</span>
+
+<span class="layer">Agent</span>                                 <span class="cm"># Strands / LangGraph / Pydantic AI / ADK</span>
+   <span class="arrow">↓  MCP tool call</span>
+<span class="layer">AgentCore Gateway  OR  MuleSoft MCP</span>   <span class="cm"># Protocol façade, auth, tool discovery</span>
+   <span class="arrow">↓  REST call</span>
+<span class="layer">Anypoint System / Process APIs</span>       <span class="cm"># DataWeave, orchestration, connectors</span>
+   <span class="arrow">↓  connector protocols</span>
+<span class="sys">Salesforce · SAP · ServiceNow · DB · Mainframe · Files</span>
+</div>
+
+  <p>Delete a layer and you rebuild what it gave you. Delete Gateway/MCP → you write an MCP server. Delete Anypoint → you rewrite the same SAP/SFDC connectors in Lambda for the tenth time. That's the whole positioning story compressed.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>Comparison 1 · Gateway vs Anypoint (stacked, not swapped)</h2>
+  <p>These aren't competitors. Different layers. If a customer asks "do we need Anypoint if we have Gateway?" the answer depends on what their backends look like.</p>
+
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>AgentCore Gateway</th><th>Anypoint Platform</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Primary job</td><td>Expose backends <em>to agents</em> via MCP</td><td>Expose backends <em>to any consumer</em> via REST/SOAP/GraphQL/events</td></tr>
+      <tr><td>Protocol</td><td>MCP (native), REST inbound</td><td>REST, SOAP, GraphQL, JMS, files, DB, custom</td></tr>
+      <tr><td>Transformation</td><td>None — pass-through</td><td>DataWeave — the whole point</td></tr>
+      <tr><td>Orchestration</td><td>One tool call = one backend hit</td><td>Process APIs orchestrate multiple System APIs</td></tr>
+      <tr><td>Connector library</td><td>You bring the REST endpoint</td><td>300+ prebuilt (SFDC, SAP, ServiceNow, DB, mainframe)</td></tr>
+      <tr><td>Auth to backend</td><td>Per-user OAuth (Cognito / Okta / OIDC)</td><td>Client contracts, OAuth, JWT, mTLS, SLA tiers</td></tr>
+      <tr><td>API lifecycle</td><td>Register endpoint + schema. Done.</td><td>Design → build → deploy → govern → deprecate</td></tr>
+      <tr><td>SLA / monetization / tiers</td><td>No</td><td>Yes</td></tr>
+      <tr><td>Deployment surface</td><td>AWS-only, managed</td><td>CloudHub, RTF, Flex Gateway — anywhere</td></tr>
+      <tr><td>Semantic tool selection (100+ tools)</td><td>Yes</td><td>Not the job — do it upstream</td></tr>
+      <tr><td>Cost model</td><td>Per-request Gateway</td><td>Runtime + core count + entitlements</td></tr>
+    </tbody>
+  </table>
+
+  <blockquote class="talk">
+    "AgentCore Gateway is the AWS-native front door for agent-to-tool. Anypoint is your integration platform underneath. Gateway doesn't replace Anypoint any more than API Manager replaces DataWeave — different layers. If you're AWS-committed and building agents, Gateway saves you from writing an MCP server. Anypoint saves you from writing the same Salesforce/SAP/ServiceNow connector for the tenth time. Customers who try to skip Anypoint end up rebuilding it in Lambda."
+  </blockquote>
+
+  <!-- ───────────────────────────── -->
+  <h2>Comparison 2 · Gateway vs MuleSoft MCP (actually competitive)</h2>
+  <p>This is where a real choice happens. Both put MCP in front of backends. The question is what those backends look like and where governance lives.</p>
+
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>AgentCore Gateway</th><th>MuleSoft MCP (Bridge / Connector / Flex)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Runtime</td><td>AWS-managed serverless</td><td>Mule runtime (CloudHub2, RTF, Flex, self-hosted)</td></tr>
+      <tr><td>What it wraps</td><td>REST endpoint or Lambda</td><td>Any Anypoint API — SAP, SFDC, mainframe, files, DB…</td></tr>
+      <tr><td>Transformation before MCP response</td><td>None</td><td>DataWeave — reshape, filter, enrich, redact</td></tr>
+      <tr><td>Orchestration</td><td>One tool call = one hit</td><td>One tool call = a Mule flow (N systems + business logic)</td></tr>
+      <tr><td>Connector library</td><td>Bring your own</td><td>300+ prebuilt</td></tr>
+      <tr><td>Auth</td><td>Cognito / Okta / generic OIDC</td><td>Full Anypoint auth: contracts, OAuth, JWT, mTLS, SLAs</td></tr>
+      <tr><td>Deployment surface</td><td>AWS only</td><td>Anywhere Mule runs — multi-cloud, on-prem, edge (Flex)</td></tr>
+      <tr><td>Governance / catalog</td><td>Basic list of registered targets</td><td>Full Anypoint API Manager — versioning, deprecation, monetization</td></tr>
+      <tr><td>Semantic tool selection over N</td><td>Yes — native</td><td>Not out of the box (add upstream or in flow)</td></tr>
+      <tr><td>Observability</td><td>AgentCore Observability → CloudWatch/X-Ray</td><td>Anypoint Monitoring, Titanium, or your APM</td></tr>
+      <tr><td>Data residency</td><td>Your AWS region</td><td>Wherever Mule runs — you control it</td></tr>
+      <tr><td>Same tool callable as REST too</td><td>No — MCP only</td><td>Yes — same flow, both interfaces</td></tr>
+      <tr><td>Cost model</td><td>Per-request Gateway</td><td>Existing Mule runtime — no per-tool premium</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The critical insight:</strong> AgentCore Gateway is a lightweight MCP wrapper. MuleSoft MCP is a full integration platform that happens to speak MCP. That framing determines the choice — is MCP a protocol translation problem (Gateway) or the new API contract on top of your existing estate (MuleSoft)?</p>
+
+  <blockquote class="talk">
+    "AgentCore Gateway is great when you're wrapping already-clean AWS-hosted endpoints — think of it as 'API Gateway for MCP.' Where MuleSoft's MCP pulls ahead is on everything an integration platform gives you that a proxy can't: connectors to SAP and mainframe, DataWeave to reshape ugly responses into what an LLM can actually use, orchestration when one agent call needs to touch three systems, and Anypoint governance so MCP tools live in the same catalog as your REST APIs — same versioning, same SLAs, same monetization. If your customer is 100% AWS and their backends are already Lambda-clean, Gateway is fine. Everyone with an SAP, a mainframe, or a central IT function ends up needing MuleSoft on the path — regardless of which cloud hosts the agent."
+  </blockquote>
+
+  <!-- ───────────────────────────── -->
+  <h2>Decision tree — when to pick just one</h2>
+
+  <div class="decision">
+    <strong>Just AgentCore Gateway, no Anypoint / MuleSoft MCP:</strong>
+    <ul>
+      <li>Startup or greenfield build</li>
+      <li>Backends are already clean REST APIs / Lambda</li>
+      <li>Nothing needs transforming or orchestrating</li>
+      <li>Small integration footprint (few backends, no legacy)</li>
+      <li>Buyer is an AWS-committed engineering team, not central IT</li>
+    </ul>
+  </div>
+
+  <div class="decision">
+    <strong>Just MuleSoft (MCP + Anypoint), no Gateway:</strong>
+    <ul>
+      <li>Multi-cloud, on-prem, or data-residency constraints rule out AWS-only</li>
+      <li>Central IT owns the integration story and wants MCP under the same governance as REST</li>
+      <li>Backends are messy (SAP, mainframe) — DataWeave + connectors save weeks</li>
+      <li>You want the same flow callable by agents (MCP) and traditional apps (REST)</li>
+      <li>Anypoint is already in place — no reason to introduce a parallel layer</li>
+    </ul>
+  </div>
+
+  <div class="decision">
+    <strong>Both, stacked (the most common enterprise pattern):</strong>
+    <ul>
+      <li>AWS-committed for the AI layer, but the integration estate is broader</li>
+      <li>Gateway handles agent-facing concerns (semantic tool selection, per-user OAuth to backend, MCP protocol)</li>
+      <li>Anypoint (with or without MCP) handles the actual integration under the hood</li>
+      <li>Bonus: keeps AWS agent code portable — swap Gateway for MuleSoft MCP later without changing the agent</li>
+    </ul>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Common objections and how to handle them</h2>
+
+  <table>
+    <thead><tr><th>Objection</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>"We're 100% AWS — why do we need MuleSoft?"</td>
+        <td>You don't, if your backends are already REST and clean. The moment SAP, mainframe, or complex SFDC enters the picture, Gateway alone forces you to build the transformation and connector work in Lambda. That's rebuilding Anypoint, badly.</td>
+      </tr>
+      <tr>
+        <td>"MuleSoft is too heavy for a simple agent."</td>
+        <td>Correct — for a simple agent. If the agent's job is to call three clean endpoints, use Gateway. If the agent's job is to reason across your systems of record, you need what Anypoint does regardless of whether MCP is involved.</td>
+      </tr>
+      <tr>
+        <td>"AWS said Gateway is all we need."</td>
+        <td>Gateway is <em>all you need for the MCP layer</em>. It's not an integration platform, and AWS docs don't claim otherwise. The question isn't Gateway vs Anypoint — it's what sits under Gateway.</td>
+      </tr>
+      <tr>
+        <td>"We'll write our own MCP server."</td>
+        <td>Fair — many teams do. Track the cost: auth, per-user OAuth flows to backends, tool discovery, semantic selection over N tools, observability, versioning, catalog. That's the shopping list Gateway or MuleSoft MCP gives you managed. Build vs buy applies here like anywhere else.</td>
+      </tr>
+      <tr>
+        <td>"Doesn't MCP replace REST APIs entirely?"</td>
+        <td>No — MCP is agent-to-tool. Traditional apps, integrations, and B2B partners still speak REST/SOAP/events. Building MCP-only means the same flow exists twice. MuleSoft MCP lets one flow serve both callers.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <div class="callout callout-mule">
+    <div class="callout-label">The strategic MuleSoft SE frame</div>
+    Gateway isn't a threat — it expands your addressable conversation. Every AgentCore Gateway deployment is a candidate customer for MuleSoft underneath it. Lead with honest positioning ("Gateway is great for the MCP layer") and the follow-up on integration depth writes itself. Trying to win by saying "MuleSoft has MCP too, skip Gateway" is a losing argument on AWS-committed accounts — you'd be defending a layer, not expanding the deal.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Related lessons in this workspace</h2>
+  <ul>
+    <li><a href="../lessons/0017-agent-framework-landscape.html">L17 — Agent framework landscape</a> — where MCP fits among agent frameworks</li>
+    <li><a href="../lessons/0019-frameworks-side-by-side.html">L19 — Frameworks side-by-side</a> — Tier-1 vs Tier-2 framework framing</li>
+    <li><a href="../lessons/0027-adk-tools-builtins-mcp.html">L27 — ADK tools + MCP</a> — using MCP servers as tools from an agent</li>
+    <li><a href="../lessons/0034-bedrock-agentcore-runtime.html">L34 — AgentCore Runtime</a> — where Gateway would sit in the AgentCore stack</li>
+    <li><a href="../lessons/0036-strands-multi-agent.html">L36 — Multi-agent</a> — the MuleSoft-as-System-APIs analogy for LLM agents</li>
+    <li><a href="../lessons/0037-strands-deploy-end-to-end.html">L37 — Deploy end-to-end</a> — the shippable AWS-native architecture Gateway plugs into</li>
+  </ul>
+
+  <div class="footer">
+    <a href="../lessons/0037-strands-deploy-end-to-end.html">← L37</a>
+    <a href="../MISSION.md">Mission</a>
+    <p style="margin-top:0.7rem">This is positioning, not product spec. Product names and features drift; the framings on this page are the durable part.</p>
+  </div>
+
+</div>
+</body>
+</html>
