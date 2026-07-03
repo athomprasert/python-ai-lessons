@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — Agentforce vs Agent Frameworks &amp; Cloud Platforms</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 880px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    .callout { border-radius: 6px; padding: 0.7rem 0.9rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.9rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-sf   { background: #ecfeff; border-color: #0891b2; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.92rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer  { color: #f9e2af; font-weight: 700; }
+    .arch .cm     { color: #6c7086; font-style: italic; }
+    .arch .arrow  { color: #89dceb; }
+    .arch .sys    { color: #a6e3a1; }
+
+    .decision { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+    .decision strong { color: #0f172a; }
+    .decision ul { margin-top: 0.3rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Positioning · Salesforce SE</p>
+    <h1>Agentforce vs agent frameworks &amp; cloud platforms</h1>
+    <p class="tagline">A pre-customer-call reference. Where Agentforce sits vs LangGraph/ADK/Strands/AutoGen (frameworks) and vs Foundry/AgentCore/Agent Engine (cloud runtimes) — with the SE talk tracks you'll actually use.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">One-line summary</div>
+    <strong>Agentforce</strong> is a Salesforce-native agent <em>product</em> — a low-code agent platform grounded in Data Cloud with prebuilt CRM actions. <strong>LangGraph / ADK / Strands / AutoGen</strong> are code-first <em>frameworks</em>. <strong>Foundry / AgentCore / Vertex Agent Engine</strong> are cloud <em>runtimes</em>. Different layers. The most common enterprise pattern: Agentforce for CRM-adjacent conversations, framework/runtime for non-CRM workloads, MuleSoft as the shared integration layer under both.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — read before customer call</div>
+    Agentforce is shipping in waves (Atlas reasoning engine, Agent Builder, Prompt Builder, Data Cloud grounding, prebuilt "Employee Agent" and "Service Agent" personas, Agentforce actions). Product names and capabilities keep evolving. Verify current features against <a href="https://www.salesforce.com/agentforce/">salesforce.com/agentforce</a> and Trailhead before quoting specifics. The <em>positioning framings</em> below are stable.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The stack picture</h2>
+  <p>The diagram to whiteboard when a customer asks "how does Agentforce fit with everything else?"</p>
+
+  <div class="arch"><span class="cm"># Four layers, four jobs — Agentforce is the top-of-stack SaaS agent product</span>
+
+<span class="layer">Agentforce                    </span>  <span class="cm"># Product: low-code agents, CRM-native, Data Cloud grounded</span>
+   <span class="arrow">or</span>
+<span class="layer">Framework + Cloud Runtime     </span>  <span class="cm"># Code: LangGraph/ADK/Strands/AutoGen on Foundry/AgentCore/Vertex</span>
+   <span class="arrow">↓  tool / action call</span>
+<span class="layer">MuleSoft Anypoint Platform    </span>  <span class="cm"># Integration: connectors, DataWeave, governance, MCP</span>
+   <span class="arrow">↓  connector protocols</span>
+<span class="sys">Salesforce · SAP · ServiceNow · Workday · Mainframe · Files</span>
+</div>
+
+  <p>Agentforce and the code-first path are <em>alternatives</em> at the top layer — not stacked. What sits under either one is often the same: MuleSoft, then systems of record. That's the durable positioning insight.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>Comparison 1 · Agentforce vs open-source frameworks</h2>
+  <p>The fundamental split: product vs framework. Different buyers, different build/buy tradeoffs, different failure modes.</p>
+
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>Agentforce</th><th>LangGraph / ADK / Strands / AutoGen</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>What it is</td><td>SaaS product</td><td>Open-source Python framework (Apache 2 / MIT)</td></tr>
+      <tr><td>Build model</td><td>Low-code: Agent Builder, Prompt Builder, declarative topics + instructions</td><td>Code-first: write agents, tools, graphs in Python</td></tr>
+      <tr><td>Reasoning engine</td><td>Atlas (Salesforce-managed)</td><td>Any LLM you plug in (OpenAI, Anthropic, Gemini, open-weights)</td></tr>
+      <tr><td>Grounding / RAG</td><td>Data Cloud native — CRM data, unstructured docs, Data Spaces</td><td>Bring-your-own — Chroma, pgvector, Foundry File Search, whatever</td></tr>
+      <tr><td>Actions / tools</td><td>Prebuilt library: Apex actions, Flow actions, MuleSoft-invoked, prompt actions</td><td>Whatever you write — plain functions, MCP servers, external APIs</td></tr>
+      <tr><td>Deployment surface</td><td>Salesforce cloud (Hyperforce). No self-hosting.</td><td>Anywhere Python runs — laptop, VNet, sovereign cloud, edge</td></tr>
+      <tr><td>Identity / permissions</td><td>Salesforce user + permission-set model, native</td><td>Bring your own (Entra ID, Okta, Cognito, IAM)</td></tr>
+      <tr><td>Data residency / privacy</td><td>Salesforce trust boundary, Einstein Trust Layer (data masking, zero retention)</td><td>You architect it (VNet, private endpoints, prompt sanitization)</td></tr>
+      <tr><td>Observability</td><td>Agentforce built-in event log + audit</td><td>You wire OpenTelemetry, LangSmith, Phoenix, App Insights, etc.</td></tr>
+      <tr><td>Multi-agent</td><td>Topic-based routing + sub-agent invocation (declarative)</td><td>Supervisor / swarm / graph patterns in code (L25, L36, L42)</td></tr>
+      <tr><td>Buyer</td><td>CRM/business owner, sales ops, service ops</td><td>Platform engineering, ML/data teams, central IT</td></tr>
+      <tr><td>Time-to-first-agent</td><td>Hours (click-through)</td><td>Days-to-weeks (design, code, deploy)</td></tr>
+      <tr><td>Ceiling</td><td>Bounded by what Agent Builder + custom Apex/Flow exposes</td><td>Unbounded — anything you can code</td></tr>
+      <tr><td>Cost model</td><td>Per-conversation, licensed by Salesforce</td><td>Model inference + infra you run</td></tr>
+    </tbody>
+  </table>
+
+  <blockquote class="talk">
+    "Agentforce and the framework path aren't competitors — they're different products for different jobs. If the conversation is CRM-adjacent (service, sales, marketing) and your data lives in Salesforce, Agentforce is the shortest path to a working agent. If the conversation is a non-CRM workload — an internal developer copilot, a data-engineering assistant, a compliance-review bot — a code-first framework gives you the ceiling and portability Agentforce isn't designed for. Enterprises almost always end up with both, and that's fine."
+  </blockquote>
+
+  <!-- ───────────────────────────── -->
+  <h2>Comparison 2 · Agentforce vs cloud runtimes</h2>
+  <p>Foundry Agents Service, Bedrock AgentCore, and Vertex Agent Engine are the managed <em>runtimes</em> for code-first frameworks. Agentforce competes with the whole package (framework + runtime + grounding) at the CRM layer.</p>
+
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>Agentforce</th><th>Foundry / AgentCore / Vertex Agent Engine</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Layer</td><td>Product (agent + runtime + grounding, all bundled)</td><td>Runtime only — you bring the framework and design</td></tr>
+      <tr><td>Where it runs</td><td>Salesforce Hyperforce</td><td>Azure / AWS / GCP</td></tr>
+      <tr><td>Managed features</td><td>Reasoning, actions, grounding, audit, identity — all in one product</td><td>Managed threads/memory, identity, observability, content safety — but you write the agent</td></tr>
+      <tr><td>Built-in data sources</td><td>Data Cloud (CRM + unstructured + Data Spaces)</td><td>Cloud-native (Foundry File Search, Bedrock KBs, Vertex Search) — bring your own</td></tr>
+      <tr><td>Model choice</td><td>Atlas + Bring-Your-Own-LLM (Azure OpenAI, Anthropic, Gemini, xAI, etc.)</td><td>Cloud's model catalog (Azure Model Catalog / Bedrock / Model Garden)</td></tr>
+      <tr><td>Extensibility</td><td>Custom Apex, Flow, MuleSoft actions</td><td>Any Python code, any Python tool</td></tr>
+      <tr><td>Cross-cloud portability</td><td>No — Salesforce-only</td><td>Framework code is portable across clouds; runtime is not</td></tr>
+      <tr><td>Sovereign / on-prem story</td><td>Hyperforce regions</td><td>AgentCore/Foundry regions + Vertex + on-prem via framework alone (drop the managed runtime)</td></tr>
+      <tr><td>Ideal workload</td><td>Customer/employee experience, CRM-anchored conversations</td><td>Custom, non-CRM, cross-system agents (dev tooling, internal ops, embedded copilots)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-sf">
+    <div class="callout-label">Where they actually stack</div>
+    Agentforce can <em>call</em> a framework-built agent as an "external action" (e.g. via MuleSoft or a REST endpoint), and a framework-built agent can call Agentforce via the Salesforce APIs. So the choice isn't always binary — you'll see enterprises with Agentforce as the customer-facing conversation and one or more code-first agents behind it for specialised workflows.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Decision tree — which to pick when</h2>
+
+  <div class="decision">
+    <strong>Just Agentforce, no code-first agents:</strong>
+    <ul>
+      <li>Salesforce is the system of record for the conversation (Service, Sales, Marketing, Commerce)</li>
+      <li>Buyer is a business owner / ops leader, not platform engineering</li>
+      <li>Time-to-value in weeks matters more than architectural ceiling</li>
+      <li>Data Cloud is already in place (or is being adopted)</li>
+      <li>You want Einstein Trust Layer + Salesforce audit / permission model out of the box</li>
+    </ul>
+  </div>
+
+  <div class="decision">
+    <strong>Just framework + cloud runtime, no Agentforce:</strong>
+    <ul>
+      <li>Workload isn't CRM-anchored (internal dev tools, data engineering, compliance, security ops)</li>
+      <li>You need control over model choice, prompt shape, and eval methodology</li>
+      <li>Sovereign / VNet / on-prem deployment constraints rule out SaaS</li>
+      <li>Cross-cloud portability is a durable requirement</li>
+      <li>Your data lives outside Salesforce (SAP, Snowflake, Databricks, mainframe)</li>
+    </ul>
+  </div>
+
+  <div class="decision">
+    <strong>Both, with MuleSoft between (the enterprise pattern):</strong>
+    <ul>
+      <li>Agentforce owns the customer-facing surface (Service Cloud, digital channels)</li>
+      <li>Code-first agents own non-CRM specialists (dev, ops, internal knowledge)</li>
+      <li>Both call the same catalog of Anypoint APIs — no duplicated integration work</li>
+      <li>MuleSoft handles the transformation / connector / governance so neither agent stack rebuilds it</li>
+      <li>User identity flows via Entra ID / Okta on the code side and native Salesforce identity on the Agentforce side, unified at the integration layer</li>
+    </ul>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Common objections and how to handle them</h2>
+
+  <table>
+    <thead><tr><th>Objection</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>"We already have Agentforce — why would we need a framework?"</td>
+        <td>Agentforce is great for CRM-anchored conversations. When the workload sits outside Salesforce — internal developer copilots, security ops, data-engineering assistants, workflows spanning SAP/mainframe — the code-first path gives you the ceiling and portability Agentforce isn't designed for. It's an "and," not an "or."</td>
+      </tr>
+      <tr>
+        <td>"We're going all-in on LangGraph / Strands / AutoGen — why look at Agentforce?"</td>
+        <td>Because your service reps, sales reps, and CX team live in Salesforce. Building the CRM-facing agent in a framework means rebuilding what Agentforce ships (Data Cloud grounding, prebuilt CRM actions, Trust Layer). If the conversation is CRM-anchored, Agentforce is dramatically shorter time-to-value.</td>
+      </tr>
+      <tr>
+        <td>"Agentforce is locked to Salesforce's LLM."</td>
+        <td>Not since Bring-Your-Own-LLM shipped. Customers wire in Azure OpenAI, Anthropic on Bedrock, Gemini on Vertex, or xAI. What Agentforce owns is the agent product surface — the model is now a choice.</td>
+      </tr>
+      <tr>
+        <td>"Data Cloud is too expensive — can't we just RAG our own docs?"</td>
+        <td>You can — Agentforce supports uploaded knowledge and retrieval outside Data Cloud. Data Cloud earns its keep when you need unified customer profiles across systems, or when unstructured grounding is at CRM scale. Not always required.</td>
+      </tr>
+      <tr>
+        <td>"Framework agents are more powerful — why compromise with Agentforce?"</td>
+        <td>Powerful ≠ appropriate. For a service agent that needs to open cases, look up account history, and follow business rules, Agentforce ships with the actions and audit trail in hours. A framework build gives you a longer runway with no immediate delta in customer outcome. Optimise per-workload.</td>
+      </tr>
+      <tr>
+        <td>"If we use both, we'll have two agent stacks to run."</td>
+        <td>Correct — and that's fine. Enterprises already have Salesforce for CRM and something else for engineering platforms. Two stacks with clear responsibilities beats one stack that's forced to do everything badly. MuleSoft under both is what keeps the integration story sane.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where Agentforce is genuinely differentiated</h2>
+  <ul>
+    <li><strong>Prebuilt CRM actions.</strong> Case creation, opportunity update, lead conversion, entitlement check — actions that are muscle-memory in Salesforce ship as agent tools day one.</li>
+    <li><strong>Data Cloud as grounding.</strong> Unified customer profile + unstructured knowledge in one queryable surface. Non-trivial to replicate outside Salesforce.</li>
+    <li><strong>Einstein Trust Layer.</strong> Data masking, zero-retention, toxicity/bias scoring wired into every prompt/response. In frameworks you assemble this yourself.</li>
+    <li><strong>Salesforce identity + permissions.</strong> Agent inherits the invoking user's permission set — an agent literally can't read what the user can't read. Cheap to explain to compliance.</li>
+    <li><strong>Deployment surface = Salesforce UI.</strong> No app to build for service agents / sales reps — they already live in Salesforce and the agent is right there.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where frameworks are genuinely differentiated</h2>
+  <ul>
+    <li><strong>Ceiling.</strong> Anything you can code — recursive graphs, custom termination, novel tool patterns, tight in-process multi-agent, streaming custom UIs.</li>
+    <li><strong>Portability.</strong> Same LangGraph or AutoGen code runs on your laptop, in a sovereign cloud, on-prem, or on any of the three big clouds.</li>
+    <li><strong>Model + provider choice.</strong> Fine-grained per-call. Route reasoning to Claude, routing to a small model, and JSON extraction to a cheap tier — trivially.</li>
+    <li><strong>Non-CRM domains.</strong> Anything not anchored in Salesforce — dev copilots, data pipelines, security ops, embedded copilots inside third-party products.</li>
+    <li><strong>Deep evaluation discipline.</strong> Custom eval loops, golden datasets, offline replay — the practices that separate a demo from prod.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft angle — the reason this positioning matters</div>
+    Every Agentforce action that touches a non-Salesforce system is a MuleSoft call in disguise. Same for every code-first agent that reaches into SAP, ServiceNow, or mainframe. Both stacks converge at Anypoint. That means:
+    <ul style="margin:0.4rem 0 0">
+      <li>Anypoint APIs get reused twice — once by Agentforce actions, once by framework tools</li>
+      <li>Governance (versioning, SLAs, entitlements) lives in one place across both</li>
+      <li>MuleSoft MCP endpoints can be consumed by <em>either</em> stack — Agentforce via MuleSoft actions, frameworks natively</li>
+      <li>Talking about Agentforce <em>expands</em> the MuleSoft conversation because you're not defending one agent path — you're describing the shared integration layer under both</li>
+    </ul>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <div class="callout callout-sf">
+    <div class="callout-label">The strategic frame</div>
+    Don't position Agentforce as competing with LangGraph/AutoGen/Strands — position it as competing with <em>hand-building a CRM agent from scratch</em>. And don't position frameworks as replacing Agentforce — position them as covering the non-CRM ground Agentforce isn't built for. That way both conversations expand rather than collide, and MuleSoft is the beneficiary of both.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Related lessons in this workspace</h2>
+  <ul>
+    <li><a href="../lessons/0017-agent-framework-landscape.html">L17 — Agent framework landscape</a> — where frameworks fit vs SaaS agent products</li>
+    <li><a href="../lessons/0019-frameworks-side-by-side.html">L19 — Frameworks side-by-side</a> — Tier-1 vs Tier-2 vs product framing</li>
+    <li><a href="../lessons/0031-adk-deploy-agent-engine.html">L31 — Vertex Agent Engine</a> — the Google managed-runtime equivalent</li>
+    <li><a href="../lessons/0037-strands-deploy-end-to-end.html">L37 — AgentCore capstone</a> — the AWS managed-runtime shippable</li>
+    <li><a href="../lessons/0043-autogen-deploy-end-to-end.html">L43 — Foundry capstone</a> — the Azure managed-runtime shippable</li>
+    <li><a href="mcp-integration-positioning.html">REF — MCP integration positioning</a> — sibling positioning doc on Gateway vs Anypoint vs MuleSoft MCP</li>
+  </ul>
+
+  <div class="footer">
+    <a href="../lessons/0043-autogen-deploy-end-to-end.html">← L43</a>
+    <a href="mcp-integration-positioning.html">MCP positioning</a>
+    <a href="../MISSION.md">Mission</a>
+    <p style="margin-top:0.7rem">This is positioning, not product spec. Product names and features drift; the framings on this page are the durable part.</p>
+  </div>
+
+</div>
+</body>
+</html>
