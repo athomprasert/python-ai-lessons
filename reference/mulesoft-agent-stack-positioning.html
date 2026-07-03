@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — MuleSoft Agent Stack: Omni Gateway, Agent Fabric, Anypoint</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 880px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    .callout { border-radius: 6px; padding: 0.7rem 0.9rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.9rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-sf   { background: #ecfeff; border-color: #0891b2; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.92rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer  { color: #f9e2af; font-weight: 700; }
+    .arch .cm     { color: #6c7086; font-style: italic; }
+    .arch .arrow  { color: #89dceb; }
+    .arch .sys    { color: #a6e3a1; }
+
+    .piece {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      margin: 0.6rem 0 0.9rem;
+      font-size: 0.9rem;
+    }
+    .piece h3 { margin: 0 0 0.3rem 0; font-size: 0.95rem; color: #0f172a; }
+    .piece p:last-child { margin-bottom: 0; }
+
+    .decision { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+    .decision strong { color: #0f172a; }
+    .decision ul { margin-top: 0.3rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Positioning · MuleSoft SE</p>
+    <h1>MuleSoft Agent Stack: Omni Gateway, Agent Fabric, Anypoint</h1>
+    <p class="tagline">A pre-customer-call reference. How MuleSoft's evolving agent-era stack — Omni Gateway, Agent Fabric, Anypoint Platform — positions against code-first frameworks and Agentforce. One diagram, five pieces, and the SE talk tracks you'll actually use.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">One-line summary</div>
+    <strong>Anypoint Platform</strong> integrates enterprise systems (stable, 15 years). <strong>Omni Gateway</strong> is the unified API + MCP + model gateway in front of it (recent). <strong>Agent Fabric</strong> is the agent-to-agent broker across vendors (newest). Together, they form Salesforce/MuleSoft's answer to "how do agents — Agentforce or code-first — safely reach enterprise systems and each other, with governance." Frameworks and Agentforce sit <em>above</em> this stack; systems of record sit <em>below</em>.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — read before customer call</div>
+    Omni Gateway and Agent Fabric are recent Salesforce/MuleSoft announcements and the products are shipping in pieces. Names, feature scope, and packaging keep evolving. Anypoint Platform positioning is stable and well-documented. Verify current product names, feature availability, and pricing against <a href="https://www.mulesoft.com">mulesoft.com</a> and <a href="https://www.salesforce.com/agentforce/">salesforce.com/agentforce</a> before quoting specifics. The <em>architectural framings</em> on this page are the durable part.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The five-layer picture</h2>
+  <p>This is the whiteboard diagram. Every customer conversation returns to it.</p>
+
+  <div class="arch"><span class="cm"># Five layers, five jobs — MuleSoft owns the middle three</span>
+
+<span class="layer">Caller                        </span>  <span class="cm"># Human user, another agent, a channel (Slack, Teams, mobile, voice)</span>
+   <span class="arrow">↓</span>
+<span class="layer">Agent                         </span>  <span class="cm"># Agentforce  OR  LangGraph/ADK/Strands/AutoGen on Foundry/AgentCore/Vertex</span>
+   <span class="arrow">↓  A2A protocol  ────────────────────────────────┐</span>
+<span class="layer">Agent Fabric                  </span>  <span class="cm"># Multi-vendor agent broker: A2A routing, discovery, trust, audit</span>
+   <span class="arrow">↓  tool call / MCP / REST</span>
+<span class="layer">Omni Gateway                  </span>  <span class="cm"># Unified API+MCP+model gateway: auth, rate limit, redaction, cost, catalog</span>
+   <span class="arrow">↓  REST / SOAP / connector</span>
+<span class="layer">Anypoint Platform             </span>  <span class="cm"># Integration: Experience/Process/System APIs, DataWeave, connectors, governance</span>
+   <span class="arrow">↓  connector protocols</span>
+<span class="sys">Salesforce · SAP · ServiceNow · Workday · Snowflake · Mainframe</span>
+</div>
+
+  <p>Delete a layer and you rebuild what it gave you. Delete Anypoint → you write connectors and transformations in the gateway. Delete Omni Gateway → agents wire directly to every API with per-agent auth. Delete Agent Fabric → cross-vendor agent-to-agent traffic becomes point-to-point spaghetti. Each layer earns its keep by the mess you'd have to build without it.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The three pieces, one paragraph each</h2>
+
+  <div class="piece">
+    <h3>1. Anypoint Platform (stable, well-documented)</h3>
+    <p>The integration platform. Design → build → deploy → govern → deprecate for APIs across REST, SOAP, GraphQL, JMS, files, DB, and 300+ prebuilt connectors (SFDC, SAP, ServiceNow, Workday, Snowflake, mainframe). DataWeave for transformation. API-led connectivity (Experience / Process / System APIs) for reuse. Runs anywhere Mule runs — CloudHub, Runtime Fabric, Flex Gateway, self-hosted. This is the layer that has always existed — everything else in the agent stack builds on top.</p>
+  </div>
+
+  <div class="piece">
+    <h3>2. Omni Gateway (the unified agent-era gateway)</h3>
+    <p>A single gateway that speaks <strong>API + MCP + model</strong> traffic — the three surfaces an agent touches. In front of Anypoint (and increasingly in front of your model providers), it does policy enforcement (auth, rate limit, quota, per-caller entitlements), redaction and PII masking, cost tracking / chargeback per user or agent, and a governed catalog of tools/models available to agents. Think of it as API Gateway extended for the agent era — the same governance you already have for REST, now covering MCP tool discovery and model call metering too. Because it fronts Anypoint, one flow can be exposed as REST, MCP, and a model-aware endpoint with the same policies applied.</p>
+  </div>
+
+  <div class="piece">
+    <h3>3. Agent Fabric (multi-vendor agent broker)</h3>
+    <p>Cross-vendor agent-to-agent (A2A) coordination. When an Agentforce agent needs a specialised code-first agent (or vice versa), when Slack's agent needs to hand off to a partner's agent, when your enterprise has three or four agent stacks in production — Agent Fabric is the broker that lets them find, invoke, and audit each other with consistent identity and trust. Think "service mesh for agents" — discovery, routing, audit, quota — for a world where no single vendor owns every agent your enterprise runs. Not a runtime; a coordination layer sitting alongside agents.</p>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Comparison 1 · MuleSoft agent stack vs code-first frameworks</h2>
+  <p>Frameworks (LangGraph, ADK, Strands, AutoGen) sit <em>above</em> the MuleSoft stack — they don't compete with it. Each MuleSoft piece plugs in at a specific point.</p>
+
+  <table>
+    <thead>
+      <tr><th>Framework need</th><th>Where MuleSoft plugs in</th><th>What you save</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Tool that calls an enterprise API</td><td><strong>Anypoint</strong> System/Process API</td><td>300+ prebuilt connectors, DataWeave transformation, governance</td></tr>
+      <tr><td>MCP server exposing enterprise tools</td><td><strong>Anypoint</strong> flow reused as MCP + <strong>Omni Gateway</strong> MCP endpoint</td><td>One flow, both REST and MCP callers, same governance</td></tr>
+      <tr><td>Per-user OAuth to backends</td><td><strong>Omni Gateway</strong> policy</td><td>No auth glue in each agent</td></tr>
+      <tr><td>Redaction / PII masking before backend</td><td><strong>Omni Gateway</strong> policy</td><td>Compliance moved out of agent code</td></tr>
+      <tr><td>Cost + usage tracking per user</td><td><strong>Omni Gateway</strong> metering</td><td>Chargeback across model and API calls in one place</td></tr>
+      <tr><td>Catalog of available tools for agents</td><td><strong>Omni Gateway</strong> + Anypoint Exchange</td><td>Semantic discovery, versioning, deprecation</td></tr>
+      <tr><td>Agent needs to call another agent (different vendor)</td><td><strong>Agent Fabric</strong></td><td>Managed A2A rather than point-to-point HTTP</td></tr>
+      <tr><td>Audit trail across "agent decided → tool ran → backend responded"</td><td><strong>Omni Gateway</strong> + <strong>Anypoint</strong> monitoring</td><td>One correlated timeline instead of three tools</td></tr>
+    </tbody>
+  </table>
+
+  <blockquote class="talk">
+    "Frameworks give you agent logic — reasoning loops, multi-agent coordination, prompt engineering. What they don't give you is a governed way to reach enterprise systems, meter model spend, or let agents from different vendors work together. That's the MuleSoft agent stack. Anypoint has done the integration part for 15 years. Omni Gateway extends the same governance to MCP tools and model calls. Agent Fabric solves the multi-vendor agent-to-agent problem no framework can solve alone — because it's above them, not inside any one of them."
+  </blockquote>
+
+  <!-- ───────────────────────────── -->
+  <h2>Comparison 2 · MuleSoft agent stack vs Agentforce</h2>
+  <p>Agentforce isn't the alternative to this stack — it's a <em>caller</em> of it. Every Agentforce action that touches a non-Salesforce system, or that needs enterprise-grade governance, flows through the MuleSoft agent stack.</p>
+
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>Agentforce</th><th>MuleSoft agent stack</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Layer</td><td>The agent product (reasoning + actions + UI)</td><td>Everything between the agent and systems of record</td></tr>
+      <tr><td>Actions to non-Salesforce systems</td><td>Invokes MuleSoft-backed actions</td><td>Exposes them as Anypoint APIs (via Omni Gateway if used)</td></tr>
+      <tr><td>Multi-agent across vendors</td><td>Native for Salesforce agents</td><td>Agent Fabric brokers across Agentforce + other agent vendors</td></tr>
+      <tr><td>Governance surface</td><td>Salesforce trust + permission model</td><td>Anypoint API Manager + Omni Gateway policies</td></tr>
+      <tr><td>Cost/usage attribution</td><td>Salesforce billing</td><td>Omni Gateway metering (chargeback per user across API + model + MCP)</td></tr>
+      <tr><td>Where they meet</td><td>Agentforce action → MuleSoft flow / MCP endpoint</td><td>Exposes the same governed tool to Agentforce and to code-first agents</td></tr>
+    </tbody>
+  </table>
+
+  <blockquote class="talk">
+    "Agentforce doesn't compete with the MuleSoft agent stack — it consumes it. When an Agentforce action needs to update SAP, look up Workday, or write to a mainframe, the shortest path is a MuleSoft-backed Agentforce action calling Anypoint. When enterprise-grade governance matters — per-user auth to backends, redaction, chargeback — that lives naturally in Omni Gateway. When Agentforce needs to hand off to a specialised code-first agent (or a partner's agent, or a Slack agent), Agent Fabric is what makes that multi-vendor coordination governable. The mental model is simple: Agentforce owns the CRM-facing conversation, MuleSoft owns the integration and governance layer underneath."
+  </blockquote>
+
+  <!-- ───────────────────────────── -->
+  <h2>Decision tree — three enterprise patterns</h2>
+
+  <div class="decision">
+    <strong>Framework-only + Anypoint (small-to-mid, code-first shop):</strong>
+    <ul>
+      <li>Building agents in LangGraph / Strands / AutoGen; no Agentforce yet</li>
+      <li>Anypoint handles the integration; agents call Anypoint APIs as tools</li>
+      <li>Omni Gateway / Agent Fabric can be added later — start with the layer that pays back fastest</li>
+      <li>Simplest to reason about; two products, clear responsibilities</li>
+    </ul>
+  </div>
+
+  <div class="decision">
+    <strong>Agentforce + Anypoint (Salesforce-anchored enterprise):</strong>
+    <ul>
+      <li>Service, sales, marketing conversations live in Agentforce</li>
+      <li>Every action that touches non-Salesforce data flows through Anypoint</li>
+      <li>Omni Gateway earns its keep when redaction, per-user OAuth to backend, or chargeback matter</li>
+      <li>Agent Fabric optional until multi-vendor agent coordination becomes real</li>
+    </ul>
+  </div>
+
+  <div class="decision">
+    <strong>Hybrid at scale (the full stack — large, multi-vendor enterprises):</strong>
+    <ul>
+      <li>Agentforce for CRM conversations; code-first framework agents for non-CRM specialists (dev, data, security, ops)</li>
+      <li>Omni Gateway fronts everything — API, MCP, and model traffic — with unified policy</li>
+      <li>Agent Fabric brokers agent-to-agent across Agentforce, in-house frameworks, and partner agents</li>
+      <li>Anypoint underneath, doing the integration work it has always done</li>
+      <li>One governance model, one audit surface, one chargeback story — regardless of which agent stack the request came from</li>
+    </ul>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Common objections and how to handle them</h2>
+
+  <table>
+    <thead><tr><th>Objection</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>"That's three MuleSoft products for one job."</td>
+        <td>Three products, three jobs. Anypoint integrates systems. Omni Gateway governs traffic (API + MCP + model). Agent Fabric brokers across agent vendors. Each addresses a distinct enterprise problem — you'd rebuild each one badly if you skipped it. Start with Anypoint (foundational) and add the others when the specific pain shows up.</td>
+      </tr>
+      <tr>
+        <td>"Why do we need Omni Gateway if we already have Anypoint API Manager?"</td>
+        <td>API Manager governs API traffic. Omni Gateway extends the same governance model to MCP traffic and model traffic — the two surfaces agents introduced that didn't exist before. If your agents call only REST, API Manager is fine. Once they call MCP tools or LLM providers directly, you want one governance layer, not three.</td>
+      </tr>
+      <tr>
+        <td>"How is Omni Gateway different from AgentCore Gateway or Azure API Management?"</td>
+        <td>AgentCore Gateway is an AWS-managed MCP wrapper for AWS-hosted endpoints. API Management gateways don't natively govern MCP or model traffic. Omni Gateway is the cross-cloud, integration-platform-native gateway that speaks all three (API + MCP + model). See also the MCP integration positioning reference.</td>
+      </tr>
+      <tr>
+        <td>"Agent Fabric sounds like an agent framework. Is it competing with LangGraph / AutoGen?"</td>
+        <td>No — it's <em>above</em> them. Agent Fabric doesn't reason, doesn't call LLMs, doesn't hold prompts. It brokers cross-vendor agent-to-agent calls with discovery, trust, and audit. Frameworks build individual agents; Agent Fabric coordinates agents built in different frameworks by different teams (or vendors).</td>
+      </tr>
+      <tr>
+        <td>"We're 100% Agentforce — do we need any of this?"</td>
+        <td>Yes if your Agentforce agents touch non-Salesforce systems, need enterprise-grade governance, or ever need to coordinate with an agent your customer or partner runs. Anypoint is almost certainly involved on day one. Omni Gateway when governance matters. Agent Fabric when multi-vendor becomes real.</td>
+      </tr>
+      <tr>
+        <td>"Isn't this just marketing — bundling old products with an 'agent' label?"</td>
+        <td>Anypoint is the mature product; that's fair. Omni Gateway and Agent Fabric are genuinely new categories because MCP traffic, model traffic, and cross-vendor A2A didn't exist as governance concerns two years ago. What's <em>not</em> new is the pattern: an integration platform is the durable middle layer, and this stack is what that middle layer looks like in the agent era.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <div class="callout callout-mule">
+    <div class="callout-label">The strategic MuleSoft SE frame</div>
+    Every agent conversation — Agentforce, LangGraph, AutoGen, Strands, ADK — ends at "how does this thing safely reach our systems and interoperate with our other agents?" That is the MuleSoft agent stack's home turf. You don't have to pick agent stacks for the customer. You just have to be present in the layer <em>underneath</em> whichever one they choose. Position:
+    <ul style="margin:0.4rem 0 0">
+      <li><strong>Anypoint</strong> — the durable middle layer between agents and systems of record</li>
+      <li><strong>Omni Gateway</strong> — one governance surface for API + MCP + model traffic</li>
+      <li><strong>Agent Fabric</strong> — the multi-vendor coordination layer no single agent stack can solve alone</li>
+    </ul>
+    That framing works whether the customer is 100% Agentforce, 100% AWS-native, 100% Azure-native, or hybrid. MuleSoft doesn't have to win the "which agent stack" argument — it wins by being the layer they all depend on.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where the abstraction leaks</h2>
+  <ul>
+    <li><strong>Product names will drift.</strong> Omni Gateway / Agent Fabric are new-enough that packaging and naming may change. Anchor your customer conversation on the <em>job</em> each layer does, not the current SKU.</li>
+    <li><strong>Feature completeness varies.</strong> Not every capability described here is GA today. Confirm before promising specific policies, metering breakdowns, or A2A protocol coverage.</li>
+    <li><strong>Overlap with cloud-native gateways.</strong> Omni Gateway overlaps in scope with AgentCore Gateway, Azure API Management, Apigee. Position by <em>what MuleSoft uniquely brings</em> — integration platform native, cross-cloud, MCP + API + model in one governance model.</li>
+    <li><strong>Agent Fabric is early.</strong> Cross-vendor A2A standards are still solidifying. Expect the product to evolve as A2A protocols mature.</li>
+    <li><strong>You still need agents.</strong> This stack doesn't build agents — it connects them. Every conversation still needs an Agentforce agent or a framework agent above it.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <div class="callout callout-sf">
+    <div class="callout-label">One customer conversation, three checkpoints</div>
+    When walking a customer through the stack, hit these in order:
+    <ol style="margin:0.4rem 0 0">
+      <li><strong>"Where does your agent's tool call go today?"</strong> → surfaces Anypoint (or the absence of it)</li>
+      <li><strong>"How do you govern who can call what, with what quotas, redacting what?"</strong> → surfaces Omni Gateway</li>
+      <li><strong>"When Agentforce needs to talk to your dev-copilot agent — or your partner's agent — how does that happen?"</strong> → surfaces Agent Fabric</li>
+    </ol>
+    Three questions. Three problems. Three MuleSoft answers.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Related references and lessons</h2>
+  <ul>
+    <li><a href="mcp-integration-positioning.html">REF — MCP integration positioning</a> — Omni Gateway vs AgentCore Gateway vs Anypoint MCP, deep dive</li>
+    <li><a href="agentforce-positioning.html">REF — Agentforce positioning</a> — how Agentforce compares to frameworks and cloud runtimes</li>
+    <li><a href="../lessons/0017-agent-framework-landscape.html">L17 — Agent framework landscape</a> — where frameworks fit vs products</li>
+    <li><a href="../lessons/0027-adk-tools-builtins-mcp.html">L27 — ADK tools + MCP</a> — an agent consuming an MCP server</li>
+    <li><a href="../lessons/0037-strands-deploy-end-to-end.html">L37 — AgentCore capstone</a> — where MuleSoft plugs into the AWS-native shippable</li>
+    <li><a href="../lessons/0043-autogen-deploy-end-to-end.html">L43 — Foundry capstone</a> — where MuleSoft plugs into the Azure-native shippable</li>
+  </ul>
+
+  <div class="footer">
+    <a href="mcp-integration-positioning.html">← MCP positioning</a>
+    <a href="agentforce-positioning.html">Agentforce positioning</a>
+    <a href="../MISSION.md">Mission</a>
+    <p style="margin-top:0.7rem">This is positioning, not product spec. Product names and features drift; the framings on this page are the durable part. Cross-check current product state before customer commitments.</p>
+  </div>
+
+</div>
+</body>
+</html>
