@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L45 — MCP &amp; A2A: the two protocols that let agents use tools and talk to each other</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 840px; margin: 0 auto; }
+
+    header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .eyebrow { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.35rem; font-size: 0.95rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.7rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+    }
+    h3 { font-size: 1.02rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.25rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.87rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    pre.code {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      margin: 0.6rem 0 1rem;
+    }
+    pre.code .cm { color: #6c7086; font-style: italic; }
+    pre.code .kw { color: #cba6f7; }
+    pre.code .str { color: #a6e3a1; }
+    pre.code .tag { color: #89dceb; }
+    pre.code .attr { color: #f9e2af; }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      margin: 0.5rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer { color: #f9e2af; font-weight: 700; }
+    .arch .cm { color: #6c7086; font-style: italic; }
+    .arch .arrow { color: #89dceb; }
+
+    .callout { border-radius: 6px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.92rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-new  { background: #ecfdf5; border-color: #10b981; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.93rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    /* TODO scaffold — white-space: pre keeps the indentation of the skeleton */
+    .todo {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border: 2px dashed #f9e2af;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 0.6rem 0 1rem;
+    }
+    .todo .cm { color: #f9e2af; font-style: italic; }
+
+    .steps {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .steps ol { margin: 0.3rem 0 0 1.3rem; }
+
+    .quiz { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
+    .quiz h3 { margin-top: 0; color: #14532d; }
+    .quiz ol { margin-left: 1.3rem; }
+    .quiz details { margin-top: 0.4rem; }
+    .quiz summary { cursor: pointer; color: #16a34a; font-weight: 600; font-size: 0.88rem; }
+    .quiz .ans { background: #fff; border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.83rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">Lesson 45 · Agent interoperability · MCP &amp; A2A</p>
+    <h1>MCP &amp; A2A: how agents use tools, and how agents talk to each other</h1>
+    <p class="tagline">Two open protocols, one clean split. You already <em>used</em> MCP in L27 and L44 — now see what it actually is under the hood, meet its sibling A2A, and finish a tiny Python MCP client that discovers and calls a tool.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>MCP</strong> connects one agent to its <strong>tools and data</strong> (a database, an API, a file). <strong>A2A</strong> connects one agent to <strong>other agents</strong> so they can delegate work to each other. They are complementary layers, not rivals — an agent uses MCP to reach its own tools, and A2A to collaborate with peers. In the hands-on section you complete a Python MCP client and watch it run the exact three-step lifecycle — <code>initialize → list tools → call tool</code> — you saw fly past in the L44 logs.
+  </div>
+
+  <!-- ───────────────────────── WHY THIS MATTERS ───────────────────────── -->
+  <h2>Why this matters to you</h2>
+  <p>
+    As a MuleSoft SE, your whole world is <em>systems talking to systems through contracts</em>. These two protocols are that same idea aimed at AI:
+  </p>
+  <ul>
+    <li><strong>MCP is like a connector spec.</strong> It standardises how an agent plugs into a tool or data source — so any MCP-aware agent can use any MCP server, the way any HTTP client can call any REST API.</li>
+    <li><strong>A2A is like an API contract between services</strong> — except the "services" are autonomous agents that reason and delegate. It standardises how one agent discovers and hands a task to another, even across vendors and frameworks.</li>
+  </ul>
+  <p>
+    MuleSoft has already staked out the MCP layer (an <em>MCP Bridge</em> on the Omni/Flex Gateway that turns any API into agent-ready tools —
+    <a href="https://www.mulesoft.com/platform/ai/model-context-protocol">mulesoft.com/platform/ai/model-context-protocol</a>).
+    A2A is younger, and Salesforce (MuleSoft's parent) sits on its steering committee. Knowing both lets you speak credibly to the "how will our agents interoperate?" question customers are starting to ask.
+  </p>
+
+  <!-- ───────────────────────── PART 1 — MCP ───────────────────────── -->
+  <h2>Part 1 · MCP in one picture</h2>
+  <p>
+    The <strong>Model Context Protocol (MCP)</strong> is an open standard (originated by Anthropic) for connecting an AI application to external tools and data. It has three roles:
+  </p>
+
+  <div class="arch"><span class="cm"># MCP roles</span>
+<span class="layer">HOST</span>        <span class="cm"># the AI app the user talks to (Claude Desktop, an IDE, your agent)</span>
+  └─ <span class="layer">CLIENT</span>   <span class="cm"># a connector inside the host — one per server — speaks the protocol</span>
+       <span class="arrow">│  JSON-RPC 2.0  (initialize → list → call)</span>
+       ▼
+     <span class="layer">SERVER</span>   <span class="cm"># exposes TOOLS, RESOURCES, PROMPTS (your Python file, or a Mule flow)</span></div>
+
+  <p>An MCP server exposes three kinds of things:</p>
+  <ul>
+    <li><strong>Tool</strong> — a function the model can <em>call</em> to take an action (think a <code>POST</code> endpoint). Example: <code>get_order_status(order_id)</code>.</li>
+    <li><strong>Resource</strong> — read-only context the model or user can <em>load</em> (think a <code>GET</code> endpoint), addressed by a URI.</li>
+    <li><strong>Prompt</strong> — a reusable, templated message/workflow.</li>
+  </ul>
+
+  <div class="callout callout-new">
+    <div class="callout-label">New idea · JSON-RPC lifecycle</div>
+    Every MCP conversation follows the same three steps: <strong>1) initialize</strong> — client and server agree on a protocol version and exchange capabilities; <strong>2) list</strong> — client asks <code>tools/list</code> to discover what's available; <strong>3) call</strong> — client sends <code>tools/call</code> with arguments and gets a result. This is exactly the handshake you watched succeed in the L44 MCP logs (<code>Client initialize request → Server response → list-tools → call-tool</code>). Transport is <strong>stdio</strong> (local subprocess) or <strong>Streamable HTTP</strong>. <em>(The old standalone SSE transport is now deprecated — see sources.)</em>
+  </div>
+
+  <!-- ───────────────────────── PART 2 — A2A ───────────────────────── -->
+  <h2>Part 2 · A2A in one picture</h2>
+  <p>
+    The <strong>Agent2Agent Protocol (A2A)</strong> was introduced by Google in 2025 and donated to the <strong>Linux Foundation</strong>; its steering committee includes Salesforce, Microsoft, AWS, SAP and others
+    (<a href="https://a2a-protocol.org/latest/">a2a-protocol.org</a>). Where MCP points an agent <em>down</em> at its tools, A2A points an agent <em>sideways</em> at other agents.
+  </p>
+
+  <div class="arch"><span class="cm"># A2A: two autonomous agents collaborating</span>
+<span class="layer">CLIENT AGENT</span>  <span class="arrow">──①  GET /.well-known/agent-card.json  ─▶</span>  <span class="layer">REMOTE AGENT</span>
+     │                                                 │  <span class="cm">(publishes an Agent Card:</span>
+     <span class="arrow">──②  send Message (a Task)  ───────────▶</span>          <span class="cm"> its skills + endpoint)</span>
+     │                                                 │
+     <span class="arrow">◀─③  Task: working → completed (Artifact)</span>        <span class="cm">(does the work, returns result)</span></div>
+
+  <p>The core A2A vocabulary (taught concept-first — the exact field names are still settling, so verify against the live spec before you quote them to a customer):</p>
+  <ul>
+    <li><strong>Agent Card</strong> — a small JSON "business card" a remote agent publishes at <code>/.well-known/agent-card.json</code>. It lists the agent's <em>skills</em>, its endpoint URL, and how to authenticate. This is how one agent <em>discovers</em> another.</li>
+    <li><strong>Task</strong> — the unit of work. It moves through a lifecycle: <em>submitted → working → completed</em> (or failed / canceled / input-required).</li>
+    <li><strong>Message &amp; Parts</strong> — a message is one exchange; it carries <em>parts</em> (text, a file, or a structured data blob).</li>
+    <li><strong>Artifact</strong> — the task's output, kept separate from the back-and-forth conversation.</li>
+  </ul>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — verify before customer commitments</div>
+    A2A hit its first stable release (<strong>spec v1.0.0</strong>) only in April 2026, with breaking changes from the 0.3 line. Tutorials, blog posts, and any model's memory older than mid-2026 likely describe the <em>old</em> terminology (e.g. the card was once <code>agent.json</code>, now <code>agent-card.json</code>). The durable idea — <em>discover an agent via a card, delegate a task, get an artifact back</em> — is stable; the exact field names and SDK class names are not. Always confirm against <a href="https://a2a-protocol.org/latest/specification/">the live spec</a> before a demo. This lesson deliberately teaches the framing, not the fine print.
+  </div>
+
+  <!-- ───────────────────────── PART 3 — COMPARISON ───────────────────────── -->
+  <h2>Part 3 · MCP vs A2A — the one table to remember</h2>
+  <p>
+    The official A2A docs put it best: <em>"A2A is about agents <strong>partnering</strong> on tasks, while MCP is more about agents <strong>using</strong> capabilities"</em>
+    (<a href="https://a2a-protocol.org/latest/topics/a2a-and-mcp/">a2a-protocol.org/topics/a2a-and-mcp</a>).
+  </p>
+  <table>
+    <thead>
+      <tr><th>Dimension</th><th>MCP</th><th>A2A</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Connects an agent to…</strong></td><td>its <strong>tools, data, context</strong> (DBs, APIs, files)</td><td><strong>other agents</strong> (peer collaboration)</td></tr>
+      <tr><td>One-line framing</td><td>agents <em>using</em> capabilities</td><td>agents <em>partnering</em> on tasks</td></tr>
+      <tr><td>Discovery</td><td>server lists its tools (<code>tools/list</code>)</td><td>Agent Card at <code>/.well-known/agent-card.json</code></td></tr>
+      <tr><td>Unit of work</td><td>a tool call / resource read</td><td>a <strong>Task</strong> (with a lifecycle)</td></tr>
+      <tr><td>Transport</td><td>stdio, Streamable HTTP (JSON-RPC 2.0)</td><td>JSON-RPC 2.0 over HTTP; SSE + webhook push</td></tr>
+      <tr><td>Steward</td><td>Anthropic-originated open spec</td><td>Google → <strong>Linux Foundation</strong></td></tr>
+      <tr><td>Python SDK</td><td><code>pip install "mcp"</code></td><td><code>pip install a2a-sdk</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The mental model that ties it together</div>
+    They stack. A single agent can be an <strong>A2A server</strong> to its peers (offering a skill via an Agent Card) <em>and</em> an <strong>MCP client</strong> internally (reaching its own tools/data to actually do the work). MCP is the agent's hands; A2A is the agent's phone line to colleagues.
+  </div>
+
+  <!-- ───────────────────────── PART 4 — HANDS-ON ───────────────────────── -->
+  <h2>Part 4 · Hands-on — finish a Python MCP client</h2>
+  <p>
+    Two tiny files live in <code>lessons/examples/l45/</code>: a finished <strong>server</strong> (<code>mcp_server.py</code>) that exposes a <code>get_order_status</code> tool, and a <strong>client</strong> (<code>mcp_client.py</code>) that's done except for the final tool call. Your job is to write that call — the payoff step of the whole protocol.
+  </p>
+
+  <div class="steps">
+    <strong>Setup &amp; run</strong>
+    <ol>
+      <li>Install the official SDK (stable v1 line):<br><code>pip install "mcp[cli]>=1.27,&lt;2"</code></li>
+      <li>From the <code>lessons/examples/l45/</code> folder, run:<br><code>python mcp_client.py</code></li>
+      <li>Right now it prints the tool list, then a placeholder line. You'll replace the placeholder.</li>
+    </ol>
+  </div>
+
+  <p>Here is the section of <code>mcp_client.py</code> you complete — the <code>initialize</code> and <code>list</code> steps are done for you:</p>
+
+  <div class="todo"><span class="cm"># STEP 1 — initialize: negotiate protocol version + capabilities.</span>
+await session.initialize()
+
+<span class="cm"># STEP 2 — discover: ask the server what tools it exposes.</span>
+tools = await session.list_tools()
+print("Available tools:", [t.name for t in tools.tools])
+
+<span class="cm"># STEP 3 — call a tool.  &lt;&lt;&lt; YOUR TASK &gt;&gt;&gt;</span>
+<span class="cm"># TODO: call "get_order_status" with order_id "A100".</span>
+<span class="cm">#   result = await session.call_tool(&lt;name&gt;, arguments=&lt;dict&gt;)</span>
+<span class="cm">#   the text is at:  result.content[0].text</span>
+<span class="cm">#   then:  print("Order A100 status:", &lt;that text&gt;)</span></div>
+
+  <div class="callout callout-new">
+    <div class="callout-label">New syntax · <code>async</code> / <code>await</code></div>
+    MCP's Python API is <strong>asynchronous</strong>. <code>await</code> means "pause here until this network call finishes, without blocking the whole program." You can only use <code>await</code> inside a function defined with <code>async def</code>, and you kick the whole thing off with <code>asyncio.run(main())</code>. For now, just follow the pattern — treat <code>await</code> as "wait for the reply." We'll go deeper on async in a later lesson if you want.
+  </div>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">Success looks like</div>
+    When your STEP 3 is right, running <code>python mcp_client.py</code> prints:
+    <pre class="code">Available tools: ['get_order_status']
+Order A100 status: shipped — arriving tomorrow</pre>
+    (A couple of grey <code>INFO</code> lines from the server may appear too — that's normal logging, not an error.)
+  </div>
+
+  <div class="quiz">
+    <h3>Check yourself</h3>
+    <ol>
+      <li>Your teammate says "let's use A2A so our agent can query the orders database." Right protocol?
+        <details><summary>Show answer</summary><div class="ans">No — a database is a <em>tool/data source</em>, so that's an <strong>MCP</strong> job. A2A would be right if the agent needed to hand a task to <em>another agent</em> (say, a separate fulfilment agent).</div></details>
+      </li>
+      <li>In the demo, which of the three lifecycle steps actually runs the business logic on the server?
+        <details><summary>Show answer</summary><div class="ans"><strong>Step 3, <code>call_tool</code></strong>. <code>initialize</code> just does the handshake; <code>list_tools</code> only discovers what's available; <code>call_tool</code> is what invokes <code>get_order_status</code> and returns its result.</div></details>
+      </li>
+      <li>Where would another agent look to discover what your A2A agent can do?
+        <details><summary>Show answer</summary><div class="ans">At its <strong>Agent Card</strong>, served at <code>/.well-known/agent-card.json</code> — it lists the agent's skills, endpoint, and auth.</div></details>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────── WHERE TO GO ───────────────────────── -->
+  <h2>Where to go from here</h2>
+  <ul>
+    <li><strong>L46 (next):</strong> we deepen the MCP server — add a real <code>http:request</code>-style tool and expose it over Streamable HTTP, then point <em>this same</em> Python client at it. That's the bridge back to the MuleSoft MCP server you ran in L44.</li>
+    <li>Browse the official MCP reference servers you can run locally (<code>npx</code>/<code>uvx</code>): <a href="https://modelcontextprotocol.io/examples">modelcontextprotocol.io/examples</a>. Point <code>mcp_client.py</code> at one.</li>
+    <li>Read the official A2A ⇄ MCP distinction in full: <a href="https://a2a-protocol.org/latest/topics/a2a-and-mcp/">a2a-protocol.org/topics/a2a-and-mcp</a>. Later we'll build a minimal A2A agent with <code>a2a-sdk</code>.</li>
+  </ul>
+
+  <blockquote class="talk">
+    "MCP and A2A aren't competitors — they're two layers of the same stack. MCP is how your agent reaches into a system of record; A2A is how your agent delegates to another team's agent. MuleSoft already governs the tool layer with an MCP Bridge on the gateway. As agent-to-agent standards mature, that same governance story extends to who your agents are allowed to <em>talk to</em> — not just what they can <em>touch</em>."
+  </blockquote>
+
+  <div class="footer">
+    <a href="0044-anypoint-mac-agent.html">← L44 MuleSoft MAC agent</a>
+    <a href="../reference/mcp-integration-positioning.html">MCP integration positioning</a>
+    <a href="https://modelcontextprotocol.io/specification/latest">MCP spec</a>
+    <a href="https://a2a-protocol.org/latest/">A2A spec</a>
+    <p style="margin-top:0.7rem">Stuck on the <code>async</code>/<code>await</code> part, or want to see the finished client? Just ask — I'm your teacher, that's how you learn. If a protocol detail here has drifted from the live spec, tell me and we'll update the lesson.</p>
+  </div>
+
+</div>
+</body>
+</html>
