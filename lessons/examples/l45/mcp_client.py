@@ -8,8 +8,10 @@ This mirrors EXACTLY the three lifecycle steps you saw over the wire in L44:
     initialize  ->  list tools  ->  call tool
 
 HOW TO RUN
-    pip install "mcp[cli]>=1.27,<2"
-    python mcp_client.py
+    # The project .venv already has the SDK; on this Mac use python3 / the venv,
+    # not a bare `python` / `pip` (those aren't on PATH). Simplest:
+    ~/ai/claude/projects/python/.venv/bin/python mcp_client.py
+    # Fresh machine without the venv? Install once:  pip3 install "mcp[cli]>=1.27,<2"
 
 You will complete ONE step (marked TODO). When it works you should see:
     Available tools: ['get_order_status']

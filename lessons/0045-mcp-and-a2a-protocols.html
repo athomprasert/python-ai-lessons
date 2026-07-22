@@ -264,10 +264,11 @@
   <div class="steps">
     <strong>Setup &amp; run</strong>
     <ol>
-      <li>Install the official SDK (stable v1 line):<br><code>pip install "mcp[cli]>=1.27,&lt;2"</code></li>
-      <li>From the <code>lessons/examples/l45/</code> folder, run:<br><code>python mcp_client.py</code></li>
+      <li>This project's virtual environment already has the <code>mcp</code> SDK installed — <strong>no install step needed</strong>. (On this Mac the command is <code>python3</code>, not <code>python</code>, so the easiest thing is to use the venv's own interpreter.)</li>
+      <li>From the <code>lessons/examples/l45/</code> folder, run:<br><code>~/ai/claude/projects/python/.venv/bin/python mcp_client.py</code><br><span style="font-size:0.85em;color:#555;">…or <code>source ~/ai/claude/projects/python/.venv/bin/activate</code> first, then just <code>python mcp_client.py</code>.</span></li>
       <li>Right now it prints the tool list, then a placeholder line. You'll replace the placeholder.</li>
     </ol>
+    <span style="font-size:0.85em;color:#555;">Fresh machine with no venv? Install once with <code>pip3 install "mcp[cli]>=1.27,&lt;2"</code> (note <code>pip3</code>, not <code>pip</code>).</span>
   </div>
 
   <p>Here is the section of <code>mcp_client.py</code> you complete — the <code>initialize</code> and <code>list</code> steps are done for you:</p>

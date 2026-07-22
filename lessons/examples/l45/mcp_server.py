@@ -6,9 +6,9 @@ API lookup) that any MCP client — your Python client, Claude Desktop, an IDE �
 can discover and call. Compare this to the MuleSoft MCP server you built in L44:
 same idea (each function = one tool), expressed in Python instead of a Mule flow.
 
-Run it on its own to sanity-check:
-    pip install "mcp[cli]>=1.27,<2"
-    python mcp_server.py
+Run it on its own to sanity-check (use the project venv; bare `python` isn't
+on PATH on this Mac):
+    ~/ai/claude/projects/python/.venv/bin/python mcp_server.py
 (it will wait on stdin — that's correct; the client launches it for you.)
 
 Verified against the official MCP Python SDK v1.x (FastMCP API):
