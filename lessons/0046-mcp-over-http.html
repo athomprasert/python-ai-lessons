@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L46 — Run an MCP server over HTTP (and see why L44 worked that way)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 840px; margin: 0 auto; }
+
+    header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .eyebrow { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.35rem; font-size: 0.95rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.7rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+    }
+    h3 { font-size: 1.02rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.25rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.87rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    pre.code {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      margin: 0.6rem 0 1rem;
+    }
+    pre.code .cm { color: #6c7086; font-style: italic; }
+    pre.code .kw { color: #cba6f7; }
+    pre.code .str { color: #a6e3a1; }
+    pre.code .tag { color: #89dceb; }
+    pre.code .attr { color: #f9e2af; }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      margin: 0.5rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer { color: #f9e2af; font-weight: 700; }
+    .arch .cm { color: #6c7086; font-style: italic; }
+    .arch .arrow { color: #89dceb; }
+
+    .callout { border-radius: 6px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.92rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-new  { background: #ecfdf5; border-color: #10b981; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.93rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    /* TODO scaffold — white-space: pre keeps the indentation of the skeleton */
+    .todo {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border: 2px dashed #f9e2af;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 0.6rem 0 1rem;
+    }
+    .todo .cm { color: #f9e2af; font-style: italic; }
+
+    .steps {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .steps ol { margin: 0.3rem 0 0 1.3rem; }
+
+    .quiz { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
+    .quiz h3 { margin-top: 0; color: #14532d; }
+    .quiz ol { margin-left: 1.3rem; }
+    .quiz details { margin-top: 0.4rem; }
+    .quiz summary { cursor: pointer; color: #16a34a; font-weight: 600; font-size: 0.88rem; }
+    .quiz .ans { background: #fff; border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.83rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">Lesson 46 · Agent interoperability · MCP transports</p>
+    <h1>Run an MCP server over HTTP — the transport your MuleSoft server used</h1>
+    <p class="tagline">L45 used stdio (the client launched the server). Now flip to Streamable HTTP: the server runs on its own URL, and clients connect to it — exactly how the MuleSoft MCP server behaved in L44. Two terminals, one new gotcha, one tool you add yourself.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">TL;DR</div>
+    Same MCP protocol as L45, different <strong>transport</strong>. You'll start a Python MCP server with <code>mcp.run(transport="streamable-http")</code> so it listens on <code>http://127.0.0.1:8000/mcp</code>, then connect a client by <strong>URL</strong> from a second terminal. Along the way you fix the one real difference — the HTTP client hands back a <strong>3-tuple</strong>, not a 2-tuple — and add a second tool (<code>cancel_order</code>) to the server.
+  </div>
+
+  <!-- ───────────────────────── PART 1 — THE FORK ───────────────────────── -->
+  <h2>Part 1 · Two transports, one protocol</h2>
+  <p>
+    In L45's last question you asked <em>"how did the client find the server without running it first?"</em> — the answer was <strong>stdio</strong>: the client launched the server as a subprocess and spoke over pipes. That's great for a local tool, but it can't work when the server is a shared service on another machine. For that you use <strong>Streamable HTTP</strong>: the server is always-on at a URL, and any number of clients connect to it.
+  </p>
+  <table>
+    <thead>
+      <tr><th>&nbsp;</th><th>stdio (L45)</th><th>Streamable HTTP (L46, &amp; L44's Mule server)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Who starts the server?</td><td>the client, as a subprocess</td><td>you, separately (it's long-lived)</td></tr>
+      <tr><td>How the client finds it</td><td>a command to run</td><td>a URL + port (<code>http://127.0.0.1:8000/mcp</code>)</td></tr>
+      <tr><td>Good for</td><td>local, single-user tools</td><td>shared / remote / multi-client services</td></tr>
+      <tr><td>Terminals needed</td><td>one</td><td>two (server, then client)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="arch"><span class="cm"># Streamable HTTP: server runs on its own, client connects by URL</span>
+<span class="layer">TERMINAL 1</span>  python mcp_http_server.py   <span class="arrow">─▶</span>  listening on <span class="layer">http://127.0.0.1:8000/mcp</span>
+                                              ▲
+<span class="layer">TERMINAL 2</span>  python mcp_http_client.py  <span class="arrow">──── connects by URL ────┘</span></div>
+
+  <!-- ───────────────────────── PART 2 — THE SERVER ───────────────────────── -->
+  <h2>Part 2 · The server (and your first task)</h2>
+  <p>
+    Open <code>lessons/examples/l46/mcp_http_server.py</code>. It's the same idea as L45 — functions become tools via <code>@mcp.tool()</code> — with two changes: the constructor sets a host/port, and it runs with the HTTP transport:
+  </p>
+  <pre class="code"><span class="kw">from</span> mcp.server.fastmcp <span class="kw">import</span> FastMCP
+
+<span class="cm"># host/port are set here; the HTTP endpoint defaults to "/mcp"</span>
+mcp = FastMCP(<span class="str">"l46-http-server"</span>, host=<span class="str">"127.0.0.1"</span>, port=<span class="num">8000</span>)
+
+<span class="attr">@mcp.tool()</span>
+<span class="kw">def</span> get_order_status(order_id: str) -> str:
+    <span class="str">"""Look up the delivery status of a customer order by its ID."""</span>
+    ...
+
+<span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
+    mcp.run(transport=<span class="str">"streamable-http"</span>)   <span class="cm"># &lt;- the key line</span></pre>
+
+  <p><strong>Your task (part A):</strong> add a second tool named <code>cancel_order</code>. The scaffold marks the spot:</p>
+  <div class="todo"><span class="cm"># TODO: add a SECOND tool called "cancel_order" that takes an order_id (str)</span>
+<span class="cm">#       and returns a str.</span>
+<span class="cm">#   1. Copy the @mcp.tool() decorator line above.</span>
+<span class="cm">#   2. Define:  def cancel_order(order_id: str) -> str:</span>
+<span class="cm">#   3. Give it a one-line docstring (that's the description the LLM reads).</span>
+<span class="cm">#   4. Return a message, e.g.  f"order {order_id} has been canceled"</span></div>
+
+  <div class="callout callout-new">
+    <div class="callout-label">Reminder · the decorator IS the registration</div>
+    You don't wire the new tool up anywhere else. The <code>@mcp.tool()</code> line is what makes <code>cancel_order</code> discoverable — its name, type hints, and docstring become the tool's schema and description automatically. Same pattern you learned in L45; you're just repeating it.
+  </div>
+
+  <!-- ───────────────────────── PART 3 — THE CLIENT ───────────────────────── -->
+  <h2>Part 3 · The client (and the one real gotcha)</h2>
+  <p>
+    Open <code>lessons/examples/l46/mcp_http_client.py</code>. It connects by URL instead of launching a subprocess. Everything after connecting — <code>initialize → list → call</code> — is identical to L45. But the connect line has a deliberate bug for you to fix.
+  </p>
+
+  <div class="callout callout-new">
+    <div class="callout-label">New idea · the HTTP client returns THREE values</div>
+    L45's <code>stdio_client(...)</code> gave you two streams: <code>(read, write)</code>. The HTTP transport also tracks a <strong>session id</strong> (HTTP is stateless, so MCP threads a session through headers), so <code>streamablehttp_client(url)</code> hands back <strong>three</strong> values: <code>(read, write, get_session_id)</code>. You don't need the id here — but Python forces you to unpack all three, or you get a <code>ValueError: too many values to unpack</code>.
+  </div>
+
+  <p><strong>Your task (part B):</strong> fix the unpacking, then uncomment the call to your new tool.</p>
+  <div class="todo"><span class="cm"># TODO (part B1): the line below unpacks only TWO values but gets THREE.</span>
+<span class="cm">#   change:   as (read, write):</span>
+<span class="cm">#   to:       as (read, write, _get_session_id):</span>
+async with streamablehttp_client(SERVER_URL) as (read, write):
+    async with ClientSession(read, write) as session:
+        await session.initialize()
+        tools = await session.list_tools()
+        print("Available tools:", [t.name <span class="kw">for</span> t <span class="kw">in</span> tools.tools])
+
+        result = await session.call_tool("get_order_status", arguments={"order_id": "A100"})
+        print("Order A100 status:", result.content[0].text)
+
+        <span class="cm"># TODO (part B2): after adding cancel_order to the server, uncomment:</span>
+        <span class="cm"># cancelled = await session.call_tool("cancel_order", arguments={"order_id": "A200"})</span>
+        <span class="cm"># print("Cancel A200:", cancelled.content[0].text)</span></div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Why "_" for the third value?</div>
+    Naming a variable <code>_</code> (or prefixing with <code>_</code>) is the Python convention for "I have to receive this value, but I'm not going to use it." It signals intent to the next reader — nothing magic, just a name.
+  </div>
+
+  <!-- ───────────────────────── PART 4 — RUN IT ───────────────────────── -->
+  <h2>Part 4 · Run it — two terminals</h2>
+  <div class="steps">
+    <strong>Terminal 1 — start the server (leave it running):</strong>
+    <ol>
+      <li><code>source ~/ai/claude/projects/python/.venv/bin/activate</code></li>
+      <li><code>cd ~/ai/claude/projects/python/lessons/examples/l46</code></li>
+      <li><code>python mcp_http_server.py</code> — wait for <code>Uvicorn running on http://127.0.0.1:8000</code>. Leave this terminal alone.</li>
+    </ol>
+    <strong>Terminal 2 — run the client:</strong>
+    <ol>
+      <li><code>source ~/ai/claude/projects/python/.venv/bin/activate</code></li>
+      <li><code>cd ~/ai/claude/projects/python/lessons/examples/l46</code></li>
+      <li><code>python mcp_http_client.py</code></li>
+    </ol>
+    <span style="font-size:0.85em;color:#555;">Stop the server with <code>Ctrl-C</code> in terminal 1 when you're done.</span>
+  </div>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">Success looks like</div>
+    <pre class="code">Available tools: ['get_order_status', 'cancel_order']
+Order A100 status: shipped — arriving tomorrow
+Cancel A200: order A200 has been canceled</pre>
+    If you see <code>ValueError: too many values to unpack</code>, you haven't done part B1. If <code>cancel_order</code> is missing from the tools list, the server tool (part A) isn't defined or the server wasn't restarted after editing it — <strong>Ctrl-C and rerun terminal 1</strong> after any server change.
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The bridge back to L44</div>
+    This is <em>exactly</em> what your MuleSoft MCP server did. In L44 the Mule app listened on <code>http://localhost:8082</code> and your client used a base URL — Streamable HTTP, same as here. The lesson: an MCP server is just "a thing at a URL that speaks the protocol." Whether it's 20 lines of Python or a Mule flow with an <em>MCP Bridge</em> on the gateway, <strong>any</strong> MCP client can talk to it. That interchangeability is the whole point of a protocol.
+  </div>
+
+  <div class="quiz">
+    <h3>Check yourself</h3>
+    <ol>
+      <li>You edit the server to add a third tool, but the client still lists only two. What did you forget?
+        <details><summary>Show answer</summary><div class="ans">To <strong>restart the server</strong>. A running Python process holds the old code — Ctrl-C in terminal 1 and rerun <code>python mcp_http_server.py</code> so it picks up your change.</div></details>
+      </li>
+      <li>Why does the HTTP client return three values when the stdio client returned two?
+        <details><summary>Show answer</summary><div class="ans">HTTP is stateless, so MCP tracks a <strong>session id</strong> across requests; the transport gives you a <code>get_session_id</code> helper as the third value. stdio is a single persistent pipe, so it needs no session id.</div></details>
+      </li>
+      <li>Your MuleSoft MCP server from L44 and this Python server both listen on an HTTP URL. Could the L46 Python client call the Mule server?
+        <details><summary>Show answer</summary><div class="ans">Yes — that's the point of a shared protocol. Point <code>SERVER_URL</code> at the Mule server's base URL + its MCP path and the same <code>initialize → list → call</code> flow works. (Mind L44's same-app SSE quirk, but a standalone Mule MCP server is fair game.)</div></details>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────── WHERE TO GO ───────────────────────── -->
+  <h2>Where to go from here</h2>
+  <ul>
+    <li><strong>L47 (next):</strong> the other protocol — build a minimal <strong>A2A</strong> agent with <code>a2a-sdk</code>: publish an Agent Card, and have a client discover and delegate a task to it. That's agent-to-agent, versus the agent-to-tools you've done here.</li>
+    <li>Point this client at an official reference server instead of your own — run one with <code>uvx</code> and change <code>SERVER_URL</code>: <a href="https://modelcontextprotocol.io/examples">modelcontextprotocol.io/examples</a>.</li>
+    <li>Read how the spec defines Streamable HTTP (sessions, the <code>/mcp</code> endpoint, why standalone SSE was deprecated): <a href="https://modelcontextprotocol.io/specification/latest">modelcontextprotocol.io/specification/latest</a>.</li>
+  </ul>
+
+  <blockquote class="talk">
+    "Whether the MCP server is a Python script or a Mule flow doesn't matter to the client — it's just a URL that speaks the protocol. That's the pitch: expose your existing APIs as MCP servers on the gateway once, and every agent your customer builds — Python, Agentforce, Claude Desktop — can use them without bespoke integration. The protocol is the reuse story."
+  </blockquote>
+
+  <div class="footer">
+    <a href="0045-mcp-and-a2a-protocols.html">← L45 MCP &amp; A2A concepts</a>
+    <a href="0044-anypoint-mac-agent.html">L44 MuleSoft MAC agent</a>
+    <a href="https://modelcontextprotocol.io/specification/latest">MCP spec</a>
+    <p style="margin-top:0.7rem">Two-terminal juggling feeling awkward, or hit an error I didn't predict? Paste it — I'm your teacher, we'll read it together.</p>
+  </div>
+
+</div>
+</body>
+</html>
