@@ -15,6 +15,9 @@
 *.pem
 *.key
 
+# Lesson example configs that hold real API keys (keep the .example templates)
+lessons/examples/**/config.yaml
+
 # Python
 __pycache__/
 *.py[cod]

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:ms-inference="http://www.mulesoft.org/schema/mule/ms-inference"
+      xmlns:mcp="http://www.mulesoft.org/schema/mule/mcp"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/mcp http://www.mulesoft.org/schema/mule/mcp/current/mule-mcp.xsd
+http://www.mulesoft.org/schema/mule/ms-inference http://www.mulesoft.org/schema/mule/ms-inference/current/mule-ms-inference.xsd">
+
+    <!-- ============================================================
+         LEVEL 2: MCP version of the agent.
+
+         The tools live in a reusable MCP *server* instead of being
+         hand-written into the agent flow. The agent DISCOVERS them at
+         runtime (mcp:list-tools) and INVOKES them over MCP (mcp:call-tool)
+         — no hand-authored tools JSON, no hand-wired HTTP per tool.
+
+         This file plays BOTH roles for an easy local demo:
+           - an MCP server (SSE transport) on http://localhost:8082
+           - an agent HTTP endpoint on http://localhost:8081/ask
+         In production these are usually two separate apps.
+
+         WHY SSE + long timeouts + explicit list/call (not the one-step
+         [MCP] Tooling op)? This mirrors the one official MuleSoft example
+         that runs an MCP server and client in the SAME app
+         (MuleSoft-AI-Chain-Project/example-mule-apps → mcp_demo). The
+         one-step streamable-HTTP self-call hung during the handshake in
+         testing; this shape is the proven one.
+
+         DEMO LIMITATION — ONE REQUEST PER DEPLOY:
+         Because the SSE client and server live in the SAME app, the
+         long-lived SSE stream isn't re-established between requests. The
+         FIRST POST /ask works fully; a SECOND one fails with
+         "Trying to write in a closed buffer". Redeploy for another run.
+         In a real deployment the server and client are two separate apps,
+         each with its own connection lifecycle, and this does not happen.
+         ============================================================ -->
+
+    <!-- Reads config.yaml so the API key never lives in this file -->
+    <configuration-properties file="config.yaml" />
+
+    <!-- Agent endpoint listener (port 8081) -->
+    <http:listener-config name="HTTP_Listener_Config">
+        <http:listener-connection host="localhost" port="8081" />
+    </http:listener-config>
+
+    <!-- MCP server transport listener (port 8082).
+         High readTimeout: an SSE connection is long-lived, so a short
+         timeout would kill it mid-stream. -->
+    <http:listener-config name="MCP_HTTP_Listener_Config">
+        <http:listener-connection host="localhost" port="8082" readTimeout="30000000" />
+    </http:listener-config>
+
+    <!-- The LLM config: OpenAI + gpt-4o-mini -->
+    <ms-inference:text-generation-config name="OpenAI_Config">
+        <ms-inference:openai-connection openAIModelName="gpt-4o-mini"
+                                        apiKey="${apiKey}"
+                                        timeout="60000" />
+    </ms-inference:text-generation-config>
+
+    <!-- ===================== MCP SERVER SIDE ===================== -->
+
+    <!-- Declares this app as an MCP server over SSE transport. -->
+    <mcp:server-config name="MCP_Server"
+                       serverName="l44-demo-server"
+                       serverVersion="1.0.0">
+        <mcp:sse-server-connection listenerConfig="MCP_HTTP_Listener_Config" />
+    </mcp:server-config>
+
+    <!-- TOOL 1: get_weather. parameters-schema is standard JSON Schema.
+         NOTE: mcp:tool-listener is a message SOURCE — it holds only
+         description/parameters-schema/responses. The tool's actual work
+         goes AFTER it as normal flow steps (the Transform below). -->
+    <flow name="tool-get-weather">
+        <mcp:tool-listener config-ref="MCP_Server" name="get_weather">
+            <mcp:description><![CDATA[Get the current weather for a city.]]></mcp:description>
+            <mcp:parameters-schema><![CDATA[{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "city": { "type": "string", "description": "The city name" }
+  },
+  "required": ["city"],
+  "additionalProperties": false
+}]]></mcp:parameters-schema>
+            <mcp:responses>
+                <mcp:text-tool-response-content text="#[payload]" priority="1" />
+            </mcp:responses>
+        </mcp:tool-listener>
+
+        <!-- On entry 'payload' holds the arguments the caller supplied,
+             e.g. { city: 'Bangkok' }. Swap for an <http:request> to a real API. -->
+        <ee:transform doc:name="Mock weather">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"It is 33 C and sunny in " ++ (payload.city default "your city") ++ "."]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <!-- TOOL 2: search_docs -->
+    <flow name="tool-search-docs">
+        <mcp:tool-listener config-ref="MCP_Server" name="search_docs">
+            <mcp:description><![CDATA[Search internal company documents.]]></mcp:description>
+            <mcp:parameters-schema><![CDATA[{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "query": { "type": "string", "description": "What to search for" }
+  },
+  "required": ["query"],
+  "additionalProperties": false
+}]]></mcp:parameters-schema>
+            <mcp:responses>
+                <mcp:text-tool-response-content text="#[payload]" priority="1" />
+            </mcp:responses>
+        </mcp:tool-listener>
+
+        <!-- Swap for a Vectors/DB lookup. -->
+        <ee:transform doc:name="Mock doc search">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Invoices are due within 30 days per policy X-123."]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <!-- ===================== MCP CLIENT SIDE ===================== -->
+
+    <!-- Points at the MCP server above (base URL only; the SSE client
+         handles the /sse and /message paths itself). requestTimeout is
+         generous because the LLM + tool round-trip takes a few seconds. -->
+    <mcp:client-config name="MCP_Client"
+                       clientName="l44-demo-client"
+                       clientVersion="1.0.0">
+        <mcp:sse-client-connection serverUrl="http://localhost:8082" requestTimeout="600" />
+    </mcp:client-config>
+
+    <!-- ===================== AGENT FLOW ===================== -->
+
+    <flow name="ask-agent-mcp">
+        <!-- POST /ask  with body: { "question": "..." } -->
+        <http:listener config-ref="HTTP_Listener_Config" path="/ask" />
+
+        <!-- Keep the user's question for later steps -->
+        <set-variable variableName="question" value="#[payload.question]" doc:name="Keep question" />
+
+        <!-- STEP 1: Discover the tools the MCP server exposes. -->
+        <mcp:list-tools config-ref="MCP_Client" doc:name="[MCP] List tools" />
+
+        <!-- STEP 2: Convert the discovered tools into OpenAI function-calling
+                    JSON (the shape the Inference [Tools] op expects). -->
+        <ee:transform doc:name="Tools to OpenAI format">
+            <ee:variables>
+                <ee:set-variable variableName="tools"><![CDATA[%dw 2.0
+output application/json
+---
+{
+  tools: payload map (item) -> {
+    "type": "function",
+    function: {
+      name: item.name,
+      description: item.description,
+      parameters: {
+        "type": "object",
+        properties: (read(item.inputSchema, "application/json").properties default {}),
+        required:   (read(item.inputSchema, "application/json").required default [])
+      }
+    }
+  }
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+
+        <!-- STEP 3: Ask the LLM WHICH tool(s) to call (reasoning only).
+                    'target' stores the result in vars.plan without touching payload. -->
+        <ms-inference:tools-native-template config-ref="OpenAI_Config" target="plan" doc:name="[Tools] reason">
+            <ms-inference:template>You are a helpful assistant.</ms-inference:template>
+            <ms-inference:instructions>Answer politely. Call a tool when it helps. Call each tool at most once.</ms-inference:instructions>
+            <ms-inference:data>#[vars.question]</ms-inference:data>
+            <ms-inference:tools>#[vars.tools.tools]</ms-inference:tools>
+        </ms-inference:tools-native-template>
+
+        <!-- STEP 4: Execute each chosen tool THROUGH MCP (mcp:call-tool),
+                    accumulating results into vars.toolResults. -->
+        <set-variable variableName="toolResults" value="#[[]]" doc:name="Init results" />
+        <foreach collection="#[vars.plan.tools default []]" doc:name="For each chosen tool">
+            <!-- payload here is the current tool-call object -->
+            <set-variable variableName="currentTool" value="#[payload]" doc:name="Current tool" />
+
+            <mcp:call-tool config-ref="MCP_Client"
+                           toolName="#[vars.currentTool.function.name]"
+                           doc:name="[MCP] Call tool">
+                <!-- function.arguments is a JSON string; read() parses it to an object -->
+                <mcp:arguments><![CDATA[#[read(vars.currentTool.function.arguments default "{}", "application/json")]]]></mcp:arguments>
+            </mcp:call-tool>
+
+            <!-- 'output application/json' is REQUIRED here: payload (the tool result)
+                 is application/java and the array literal is json — without an
+                 explicit output type DataWeave can't pick one and errors.
+                 NOTE: core set-variable takes its value from the value= attribute,
+                 not a child body. An inline #[ ] expression may carry an output directive. -->
+            <set-variable variableName="toolResults"
+                          value="#[output application/json --- (vars.toolResults default []) ++ [{ tool: vars.currentTool.function.name, result: payload }]]"
+                          doc:name="Append result" />
+        </foreach>
+
+        <!-- STEP 5: Feed the tool results back so the LLM writes the final answer -->
+        <ms-inference:chat-answer-prompt config-ref="OpenAI_Config" doc:name="[Chat] compose answer">
+            <ms-inference:prompt><![CDATA[#["User question: " ++ (vars.question default "") ++
+"\n\nTool results:\n" ++ write(vars.toolResults, "application/json") ++
+"\n\nUsing the tool results above, answer the user politely in plain language."]]]></ms-inference:prompt>
+        </ms-inference:chat-answer-prompt>
+
+        <!-- STEP 6: Shape the HTTP response as { "answer": "..." } -->
+        <ee:transform doc:name="Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{ answer: payload.response }]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>

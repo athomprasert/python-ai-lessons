@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:ms-inference="http://www.mulesoft.org/schema/mule/ms-inference"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/ms-inference http://www.mulesoft.org/schema/mule/ms-inference/current/mule-ms-inference.xsd">
+
+    <!-- Reads config.yaml so the API key never lives in this file -->
+    <configuration-properties file="config.yaml" />
+
+    <!-- HTTP entry point on port 8081.
+         host="localhost" (not 0.0.0.0) keeps it local-only, which satisfies the
+         Mule 4.9+ security validation "Connection is not secure. Should use HTTPS"
+         without needing TLS certs. For a real deployment, add a TLS context instead. -->
+    <http:listener-config name="HTTP_Listener_Config">
+        <http:listener-connection host="localhost" port="8081" />
+    </http:listener-config>
+
+    <!-- The LLM config: OpenAI + gpt-4o-mini. One config, reused by both operations below -->
+    <ms-inference:text-generation-config name="OpenAI_Config">
+        <ms-inference:openai-connection openAIModelName="gpt-4o-mini"
+                                        apiKey="${apiKey}"
+                                        timeout="60000" />
+    </ms-inference:text-generation-config>
+
+    <flow name="ask-agent">
+        <!-- POST /ask  with body: { "question": "..." } -->
+        <http:listener config-ref="HTTP_Listener_Config" path="/ask" />
+
+        <!-- STEP 1: Build the request for the LLM, including the two tool definitions.
+                    The 'tools' array is standard OpenAI function-calling JSON. -->
+        <ee:transform doc:name="Build tools request">
+            <ee:variables>
+                <ee:set-variable variableName="req"><![CDATA[%dw 2.0
+output application/json
+---
+{
+    template: "You are a helpful assistant.",
+    instructions: "Answer the request politely. Call a tool when it helps.",
+    dataset: payload.question,
+    tools: [
+        {
+            // 'type' must be quoted: it is a reserved word in DataWeave
+            'type': "function",
+            function: {
+                name: "get_weather",
+                description: "Get the current weather for a city",
+                parameters: {
+                    'type': "object",
+                    properties: { city: { 'type': "string", description: "The city name" } },
+                    required: ["city"]
+                }
+            }
+        },
+        {
+            'type': "function",
+            function: {
+                name: "search_docs",
+                description: "Search internal company documents",
+                parameters: {
+                    'type': "object",
+                    properties: { query: { 'type': "string", description: "What to search for" } },
+                    required: ["query"]
+                }
+            }
+        }
+    ]
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+
+        <!-- STEP 2: Ask the LLM WHICH tool(s) to call. This is "reasoning only" —
+                    it returns { response, tools: [...] } but does NOT run any tool. -->
+        <ms-inference:tools-native-template config-ref="OpenAI_Config" doc:name="[Tools] reason">
+            <ms-inference:template>#[vars.req.template]</ms-inference:template>
+            <ms-inference:instructions>#[vars.req.instructions]</ms-inference:instructions>
+            <ms-inference:data>#[vars.req.dataset]</ms-inference:data>
+            <ms-inference:tools>#[vars.req.tools]</ms-inference:tools>
+        </ms-inference:tools-native-template>
+
+        <!-- STEP 3: YOU execute the chosen tools. Here they are mocks so the flow
+                    runs with no external keys. Replace a branch with <http:request>
+                    to call a real API (see comment below). -->
+        <ee:transform doc:name="Run the tools (mock)">
+            <ee:variables>
+                <ee:set-variable variableName="toolResults"><![CDATA[%dw 2.0
+output application/json
+// The tool-call decisions the LLM returned in step 2:
+var calls = payload.tools default []
+---
+calls map (call) -> {
+    tool: call.function.name,
+    // 'arguments' is a JSON *string*, so read() parses it into an object
+    args: read(call.function.arguments default "{}", "application/json"),
+    result:
+        if (call.function.name == "get_weather")
+            "It is 33 C and sunny."
+        else if (call.function.name == "search_docs")
+            "Invoices are due within 30 days per policy X-123."
+        else
+            "No matching tool."
+}]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+
+        <!-- STEP 4: Feed the tool results back so the LLM writes the final answer -->
+        <ms-inference:chat-answer-prompt config-ref="OpenAI_Config" doc:name="[Chat] compose answer">
+            <ms-inference:prompt><![CDATA[#["User question: " ++ (vars.req.dataset default "") ++
+"\n\nTool results:\n" ++ write(vars.toolResults, "application/json") ++
+"\n\nUsing the tool results above, answer the user politely in plain language."]]]></ms-inference:prompt>
+        </ms-inference:chat-answer-prompt>
+
+        <!-- STEP 5: Shape the HTTP response as { "answer": "..." } -->
+        <ee:transform doc:name="Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{ answer: payload.response }]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>

@@ -1,0 +1,3 @@
+# Put your real OpenAI key here. This file is loaded by <configuration-properties>.
+# NEVER commit the real key — add config.yaml to .gitignore.
+apiKey: "sk-your-openai-key-here"

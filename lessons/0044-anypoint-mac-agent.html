@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>L44 — Anypoint Studio: build an agent with MuleSoft AI Chain (MAC)</title>
+  <title>L44 — Anypoint Studio: build a tool-using agent with the MuleSoft Inference connector</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; }
@@ -168,19 +168,19 @@
 <div class="page">
 
   <header>
-    <p class="eyebrow">Lesson 44 · Anypoint Studio · MuleSoft AI Chain</p>
-    <h1>Build an agent inside Anypoint Studio with MuleSoft AI Chain</h1>
-    <p class="tagline">Same tool-using agent as L18/L20/L26/L32/L38 — but built as a Mule flow in Anypoint Studio using the MuleSoft AI Chain (MAC) connectors. Studio-first walkthrough with 8 screenshot slots for you to capture.</p>
+    <p class="eyebrow">Lesson 44 · Anypoint Studio · MuleSoft Inference connector</p>
+    <h1>Build a tool-using agent inside Anypoint Studio with the MuleSoft Inference connector</h1>
+    <p class="tagline">Same tool-using agent as L18/L20/L26/L32/L38 — but built as a Mule flow in Anypoint Studio using a single connector: MuleSoft Inference. Studio-first walkthrough with 9 screenshot slots for you to capture.</p>
   </header>
 
   <div class="callout callout-tldr">
     <div class="callout-label">What you'll build</div>
-    A running Mule application in Anypoint Studio that answers questions using an LLM, calls an external API as a "tool", and returns a structured response over HTTP. Same job as your Python framework lessons — different tool. By the end, you'll see when MAC beats a code-first framework and when it doesn't.
+    A running Mule application in Anypoint Studio that answers questions using an LLM, decides which "tools" to call, and returns a structured response over HTTP. Same job as your Python framework lessons — different tool, and built with just <strong>one connector</strong>: MuleSoft Inference. By the end, you'll see when this approach beats a code-first framework and when it doesn't.
   </div>
 
   <div class="callout callout-warn">
     <div class="callout-label">Source honesty — read before you install</div>
-    MuleSoft AI Chain (MAC) connectors are actively evolving. Names, operations, and package coordinates have shifted between releases (e.g. <code>mac-agents</code>, <code>ms-inference</code>, <code>mulechain-ai</code>). This lesson uses the current MAC connector family circa 2026 but <strong>verify the exact operation names on Anypoint Exchange before you drop them into your flow</strong>. Screenshots you capture will be authoritative for the version you have installed.
+    The MuleSoft Inference connector is part of the actively-evolving MuleSoft AI Chain (MAC) project. Names, operations, and package coordinates shift between releases. This lesson matches <strong>Inference connector v1.2.0</strong> (Exchange asset <code>com.mulesoft.connectors:mule4-inference-connector</code>, XML namespace <code>ms-inference</code>) but <strong>verify the exact operation names on Anypoint Exchange before you drop them into your flow</strong>. Screenshots you capture will be authoritative for the version you have installed.
   </div>
 
   <!-- ───────────────────────── PREREQS ───────────────────────── -->
@@ -188,7 +188,7 @@
   <ul>
     <li><strong>Anypoint Studio</strong> installed (Windows/Mac/Linux) — the Eclipse-based IDE from MuleSoft</li>
     <li>An <strong>Anypoint Platform account</strong> so Studio can pull connectors from Exchange</li>
-    <li>An <strong>LLM API key</strong> — this lesson uses Anthropic Claude (any provider MAC supports also works: OpenAI, Azure OpenAI, Ollama)</li>
+    <li>An <strong>OpenAI API key</strong> — this lesson uses OpenAI with <code>gpt-4o-mini</code> (the Inference connector also supports Anthropic, Azure OpenAI, Ollama, Groq, and more)</li>
     <li>Basic Studio comfort: dragging components onto the canvas, editing the XML view, running a project locally</li>
   </ul>
 
@@ -200,18 +200,23 @@
 
 <span class="layer">User</span>  <span class="cm"># "What is the weather in Bangkok, and search our internal docs for 'invoice policy'"</span>
    <span class="arrow">↓  HTTP POST /ask</span>
-<span class="layer">MAC Agent Flow                </span>  <span class="cm"># decide which tool(s) to call</span>
-   <span class="arrow">├─ tool 1 → weather API</span>
-   <span class="arrow">└─ tool 2 → doc search (mock or vector store)</span>
-   <span class="arrow">↓</span>
+<span class="layer">Inference [Tools] operation   </span>  <span class="cm"># LLM decides which tool(s) to call</span>
+   <span class="arrow">├─ tool 1 → weather API      </span>  <span class="cm"># you execute this in the flow</span>
+   <span class="arrow">└─ tool 2 → doc search       </span>  <span class="cm"># mock or vector store — you execute it</span>
+   <span class="arrow">↓  feed tool results back to the LLM</span>
 <span class="layer">LLM final answer              </span>  <span class="cm"># stitches results into natural language</span>
    <span class="arrow">↓  HTTP 200 JSON</span>
 <span class="layer">Response                      </span></div>
 
-  <p>The same agent shape you built five times in Python — this time as a Mule flow that Anypoint runs, monitors, and can deploy to CloudHub or Runtime Fabric with no extra code.</p>
+  <p>The same agent shape you built five times in Python — this time as a Mule flow that Anypoint runs, monitors, and can deploy to CloudHub or Runtime Fabric.</p>
 
-  <!-- ───────────────────────── PART 2 — INSTALL MAC ───────────────────────── -->
-  <h2>Part 2 · Install the MAC connectors</h2>
+  <div class="callout callout-mule">
+    <div class="callout-label">Important · "Reasoning only" — you run the tools</div>
+    The Inference connector's tool operation is called <code>[Tools] Native Template (Reasoning only)</code>. That name matters. Unlike a fully-managed agent that runs the whole loop for you, this operation does <strong>one</strong> thing: it sends your prompt plus the tool definitions to the LLM and returns <em>which tool the model wants to call, with what arguments</em>. <strong>You</strong> then wire the actual call (an HTTP Request to the weather API, a database lookup, etc.) in the Mule flow and feed the result back. More explicit, more flow-building — but you see every step, which is exactly the tool-execution the Python frameworks hid from you in L20–L43.
+  </div>
+
+  <!-- ───────────────────────── PART 2 — INSTALL INFERENCE ───────────────────────── -->
+  <h2>Part 2 · Install the Inference connector</h2>
 
   <div class="steps">
     <strong>Steps:</strong>
@@ -219,9 +224,9 @@
       <li>Open Anypoint Studio → <em>File → New → Mule Project</em>. Name it <code>mac-agent-demo</code>. Click <em>Finish</em>.</li>
       <li>In the Mule Palette (right panel), click <em>Search in Exchange</em>.</li>
       <li>Log in to Anypoint if prompted.</li>
-      <li>Search: <strong>MuleSoft AI Chain</strong>. You'll see several connectors — <code>MuleSoft AI Chain</code>, <code>MuleSoft Inference</code>, <code>MuleSoft Vectors</code>, <code>MuleSoft Embeddings</code> are the common ones.</li>
-      <li>Add <em>MuleSoft AI Chain</em> and <em>MuleSoft Inference</em> to your selections. Click <em>Finish</em>.</li>
-      <li>Studio downloads the connectors and adds them to the palette.</li>
+      <li>Search: <strong>MuleSoft Inference</strong>. Pick the connector named <em>Inference Connector - Mule 4</em> (asset id <code>mule4-inference-connector</code>).</li>
+      <li>Add it to your selections. Click <em>Finish</em>. That's the <strong>only</strong> connector this lesson needs.</li>
+      <li>Studio downloads the connector and adds it to the palette.</li>
     </ol>
   </div>
 
@@ -232,33 +237,32 @@
   </div>
 
   <div class="screenshot">
-    <div class="ss-label">Screenshot 02 · Search Exchange for "MuleSoft AI Chain"</div>
+    <div class="ss-label">Screenshot 02 · Search Exchange for "MuleSoft Inference"</div>
     <img src="img/l44/02-mac-connector-search.png" alt="Screenshot placeholder — Exchange connector search" />
-    <div class="capture"><strong>Capture instructions:</strong> Screenshot the Exchange search dialog showing MAC connector results. Save as <code>lessons/img/l44/02-mac-connector-search.png</code>.</div>
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the Exchange search dialog showing the <em>Inference Connector - Mule 4</em> result. Save as <code>lessons/img/l44/02-mac-connector-search.png</code>.</div>
   </div>
 
   <!-- ───────────────────────── PART 3 — LLM CONFIG ───────────────────────── -->
-  <h2>Part 3 · Configure the LLM connector</h2>
+  <h2>Part 3 · Configure the Inference connector</h2>
 
   <div class="callout callout-new">
     <div class="callout-label">New concept · Connector configuration</div>
-    In Mule, a <strong>configuration</strong> is a reusable block of settings (API keys, URLs, model names) that any operation in the flow can point to. You create it once per project. Think of it as the Mule equivalent of the <code>OpenAIChatCompletionClient(...)</code> object in L38 — one config, many operation calls.
+    In Mule, a <strong>configuration</strong> is a reusable block of settings (API keys, URLs, model names) that any operation in the flow can point to. You create it once per project. Think of it as the Mule equivalent of the <code>OpenAIChatCompletionClient(...)</code> object in L38 — one config, many operation calls. For the Inference connector this block is called a <strong>Text Generation config</strong>, and inside it you pick a <strong>connection</strong> (OpenAI, Anthropic, Ollama, …).
   </div>
 
   <div class="steps">
     <strong>Steps:</strong>
     <ol>
-      <li>In the flow canvas, drag <em>MuleSoft AI Chain → Chat answer prompt</em> (or the equivalent inference operation for your MAC version) onto the canvas.</li>
-      <li>With the operation selected, look at the <em>Configuration</em> field (bottom-right). Click the green <strong>+</strong>.</li>
-      <li>In the config dialog:
+      <li>In the flow canvas, drag <em>MuleSoft Inference → [Tools] Native Template (Reasoning only)</em> onto the canvas.</li>
+      <li>With the operation selected, look at the <em>Configuration</em> field (bottom-right). Click the green <strong>+</strong> to create a <em>MuleSoft Inference Text Generation config</em>.</li>
+      <li>In the config dialog, set the <strong>Connection</strong> to <em>OpenAI Connection</em>, then fill in:
         <ul>
-          <li><strong>LLM Type:</strong> <code>ANTHROPIC</code> (or <code>OPENAI</code>, <code>OLLAMA</code>, etc.)</li>
-          <li><strong>Model Name:</strong> <code>claude-haiku-4-5</code></li>
-          <li><strong>API Key:</strong> <code>${anthropic.api.key}</code> — reference a property, don't paste the raw key</li>
-          <li><strong>Temperature:</strong> <code>0.2</code></li>
+          <li><strong>OpenAI Model Name:</strong> <code>gpt-4o-mini</code></li>
+          <li><strong>API Key:</strong> <code>${config.apiKey}</code> — reference a property, don't paste the raw key</li>
+          <li><strong>Timeout:</strong> <code>60000</code> (ms)</li>
         </ul>
       </li>
-      <li>Create a <code>src/main/resources/config.yaml</code> with the key. Add <em>Configuration Properties</em> in the Global Elements pointing at it.</li>
+      <li>Create a <code>src/main/resources/config.yaml</code> with the key (<code>apiKey: sk-...</code>). Add <em>Configuration Properties</em> in the Global Elements pointing at it.</li>
       <li>Click <em>Test Connection</em>. Green tick = ready.</li>
     </ol>
   </div>
@@ -276,35 +280,52 @@
 
   <!-- ───────────────────────── PART 4 — BUILD THE FLOW ───────────────────────── -->
   <h2>Part 4 · Build the agent flow</h2>
-  <p>Now assemble the flow — HTTP entry, LLM call with tools, response.</p>
+  <p>Now assemble the flow — HTTP entry, the LLM tool-reasoning call, <strong>your</strong> tool execution, then a second LLM call to compose the answer. Because the operation is "reasoning only", the tool-running step is yours to build.</p>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">Shortcut · Copy-paste the finished flow</div>
+    Building this click-by-click is fiddly. If you'd rather see it working first and read it after, grab the <strong>complete, runnable flow</strong>: <a href="examples/l44/agent-flow.xml"><code>examples/l44/agent-flow.xml</code></a> plus the key template <a href="examples/l44/config.yaml.example"><code>config.yaml.example</code></a>. Both tools are <em>mocks</em>, so it runs with just an OpenAI key — no external APIs. In Studio: paste the XML into <code>src/main/mule/agent-flow.xml</code>; then copy <code>config.yaml.example</code> to <code>src/main/resources/config.yaml</code>, paste your key into it, and run. Copying to the un-suffixed name matters — <code>config.yaml</code> is <code>.gitignore</code>d so your real key never gets committed.
+  </div>
 
   <div class="steps">
     <strong>Steps:</strong>
     <ol>
-      <li>Drag <em>HTTP → Listener</em> onto a new flow. Path: <code>/ask</code>, method <code>POST</code>. Create a new HTTP Listener config on <code>0.0.0.0:8081</code>.</li>
-      <li>After the listener, drag <em>MuleSoft AI Chain → Agent (tool-calling)</em>. Point it at the LLM config from Part 3.</li>
-      <li>In the operation config, add two tools (the exact UI varies by MAC version — this is the concept):
+      <li>Drag <em>HTTP → Listener</em> onto a new flow. Path: <code>/ask</code>, method <code>POST</code>. Create a new HTTP Listener config on <code>localhost:8081</code>. <em>(Use <code>localhost</code>, not <code>0.0.0.0</code> — on Mule 4.9+ a plain-HTTP listener bound to all interfaces fails deployment with "Connection is not secure. Should use HTTPS". Binding to localhost keeps it local-only and passes.)</em></li>
+      <li>Add a <em>Transform Message</em> (or <em>Set Variable</em>) that builds the tool-reasoning inputs: a <code>template</code> (system role), <code>instructions</code>, the user's <code>data</code> (<code>#[payload.question]</code>), and a <code>tools</code> array in OpenAI function-calling JSON. Define two tools:
         <ul>
-          <li><strong>Tool 1: <code>get_weather</code></strong> — description "Get current weather for a city", takes <code>city</code> string. Points at an HTTP Request to a weather API.</li>
-          <li><strong>Tool 2: <code>search_docs</code></strong> — description "Search internal docs", takes <code>query</code> string. Points at a Choice / static mock for now (returns "Invoices due within 30 days per policy X-123").</li>
+          <li><strong><code>get_weather</code></strong> — description "Get current weather for a city", parameter <code>city</code> (string).</li>
+          <li><strong><code>search_docs</code></strong> — description "Search internal docs", parameter <code>query</code> (string).</li>
         </ul>
       </li>
-      <li>Set the <em>Prompt</em> input to <code>#[payload.question]</code> so the flow reads the incoming question.</li>
-      <li>After the agent operation, add a <em>Transform Message</em> to shape the response: <code>{ answer: payload.response }</code>.</li>
+      <li>Drag <em>MuleSoft Inference → [Tools] Native Template</em> onto the flow, pointing at the Text Generation config from Part 3. Wire <code>template</code>, <code>instructions</code>, <code>data</code>, and <code>tools</code> from the variable above.</li>
+      <li>The operation returns the model's <strong>tool-call decision</strong> as an <em>array</em> (which tool(s), what arguments). Add a <em>Transform</em> that walks the array with <code>map</code> and, for each requested tool, actually runs it:
+        <ul>
+          <li><code>get_weather</code> → a static mock for now (returns "It is 33 C and sunny"); swap for an <em>HTTP Request</em> to a real weather API later.</li>
+          <li><code>search_docs</code> → a static mock for now (returns "Invoices due within 30 days per policy X-123"); swap for the Vectors connector later.</li>
+        </ul>
+        <em>Why a Transform and not a Choice router?</em> The decision is an array — the model can ask for several tools at once — and <code>map</code> handles 0, 1, or many in a single pass. For <strong>real</strong> side-effecting tools (an HTTP call vs. a DB query vs. a Salesforce op), a <em>Choice</em> per tool inside a <code>foreach</code> is the cleaner production pattern; the mock keeps it to one component.
+      </li>
+      <li>Collect the tool results and make a second call — <em>[Chat] Answer Prompt</em> — feeding the results back so the LLM writes the final natural-language answer.</li>
+      <li>End with a <em>Transform Message</em> to shape the response: <code>{ answer: payload.response }</code>.</li>
       <li>Save. The XML view (bottom tab of the canvas) shows the underlying flow definition — read it once to build intuition.</li>
     </ol>
+  </div>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">Why the extra steps vs. Python</div>
+    In L38 AutoGen ran the tool loop invisibly. Here you can <em>see</em> it: reason → route → execute → answer. That transparency is the point — every hop is a Mule component you can log, retry, secure, and monitor in Anypoint. It's more clicks, but nothing is hidden.
   </div>
 
   <div class="screenshot">
     <div class="ss-label">Screenshot 04 · Assembled flow on the canvas</div>
     <img src="img/l44/04-flow-canvas.png" alt="Screenshot placeholder — the assembled flow" />
-    <div class="capture"><strong>Capture instructions:</strong> Screenshot the flow canvas showing HTTP Listener → MAC Agent (with tools attached) → Transform Message. Include the palette on the right so the reader sees which connectors were used. Save as <code>lessons/img/l44/04-flow-canvas.png</code>.</div>
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the flow canvas showing HTTP Listener → Transform (build tools) → [Tools] Native Template → Transform (run tools) → [Chat] Answer Prompt → Transform Message. Include the palette on the right so the reader sees the single Inference connector in use. Save as <code>lessons/img/l44/04-flow-canvas.png</code>.</div>
   </div>
 
   <div class="screenshot">
-    <div class="ss-label">Screenshot 05 · Tool definitions inside the agent operation</div>
-    <img src="img/l44/05-tools-config.png" alt="Screenshot placeholder — tools configured on the agent" />
-    <div class="capture"><strong>Capture instructions:</strong> Screenshot the agent operation's <em>Tools</em> panel with both <code>get_weather</code> and <code>search_docs</code> listed. Save as <code>lessons/img/l44/05-tools-config.png</code>.</div>
+    <div class="ss-label">Screenshot 05 · The tools JSON feeding the [Tools] operation</div>
+    <img src="img/l44/05-tools-config.png" alt="Screenshot placeholder — tools JSON definition" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the Transform Message (or the operation's <em>Tools</em> field) showing the DataWeave/JSON <code>tools</code> array with both <code>get_weather</code> and <code>search_docs</code> defined. Save as <code>lessons/img/l44/05-tools-config.png</code>.</div>
   </div>
 
   <!-- ───────────────────────── PART 5 — XML REFERENCE ───────────────────────── -->
@@ -312,34 +333,38 @@
   <p>Studio is a designer over Mule XML. Once you're comfortable, you can read and edit the XML directly. Here's the approximate shape of what Parts 3-4 produce:</p>
 
 <pre class="code"><span class="cm">&lt;!-- src/main/mule/agent-flow.xml — abridged for readability --&gt;</span>
-<span class="tag">&lt;mule</span> <span class="attr">xmlns:mac</span>=<span class="str">"http://www.mulesoft.org/schema/mule/mulesoft-ai-chain"</span>
+<span class="tag">&lt;mule</span> <span class="attr">xmlns:ms-inference</span>=<span class="str">"http://www.mulesoft.org/schema/mule/ms-inference"</span>
       <span class="attr">xmlns:http</span>=<span class="str">"http://www.mulesoft.org/schema/mule/http"</span><span class="tag">&gt;</span>
 
-  <span class="tag">&lt;mac:config</span> <span class="attr">name</span>=<span class="str">"AI_Chain_Config"</span>
-              <span class="attr">llmType</span>=<span class="str">"ANTHROPIC"</span>
-              <span class="attr">modelName</span>=<span class="str">"claude-haiku-4-5"</span>
-              <span class="attr">apiKey</span>=<span class="str">"${anthropic.api.key}"</span> <span class="tag">/&gt;</span>
+  <span class="cm">&lt;!-- One config, one connection: OpenAI --&gt;</span>
+  <span class="tag">&lt;ms-inference:text-generation-config</span> <span class="attr">name</span>=<span class="str">"OpenAI_Config"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;ms-inference:openai-connection</span> <span class="attr">openAIModelName</span>=<span class="str">"gpt-4o-mini"</span>
+                                    <span class="attr">apiKey</span>=<span class="str">"${config.apiKey}"</span>
+                                    <span class="attr">timeout</span>=<span class="str">"60000"</span><span class="tag">/&gt;</span>
+  <span class="tag">&lt;/ms-inference:text-generation-config&gt;</span>
 
   <span class="tag">&lt;http:listener-config</span> <span class="attr">name</span>=<span class="str">"HTTP_Listener_Config"</span><span class="tag">&gt;</span>
-    <span class="tag">&lt;http:listener-connection</span> <span class="attr">host</span>=<span class="str">"0.0.0.0"</span> <span class="attr">port</span>=<span class="str">"8081"</span><span class="tag">/&gt;</span>
+    <span class="tag">&lt;http:listener-connection</span> <span class="attr">host</span>=<span class="str">"localhost"</span> <span class="attr">port</span>=<span class="str">"8081"</span><span class="tag">/&gt;</span>
   <span class="tag">&lt;/http:listener-config&gt;</span>
 
   <span class="tag">&lt;flow</span> <span class="attr">name</span>=<span class="str">"ask-agent"</span><span class="tag">&gt;</span>
     <span class="tag">&lt;http:listener</span> <span class="attr">config-ref</span>=<span class="str">"HTTP_Listener_Config"</span> <span class="attr">path</span>=<span class="str">"/ask"</span><span class="tag">/&gt;</span>
 
-    <span class="tag">&lt;mac:agent-tool-calling</span> <span class="attr">config-ref</span>=<span class="str">"AI_Chain_Config"</span>
-                             <span class="attr">prompt</span>=<span class="str">"#[payload.question]"</span><span class="tag">&gt;</span>
-      <span class="tag">&lt;mac:tools&gt;</span>
-        <span class="tag">&lt;mac:tool</span> <span class="attr">name</span>=<span class="str">"get_weather"</span>
-                  <span class="attr">description</span>=<span class="str">"Get current weather for a city"</span><span class="tag">&gt;</span>
-          <span class="cm">&lt;!-- flow reference or inline HTTP request --&gt;</span>
-        <span class="tag">&lt;/mac:tool&gt;</span>
-        <span class="tag">&lt;mac:tool</span> <span class="attr">name</span>=<span class="str">"search_docs"</span>
-                  <span class="attr">description</span>=<span class="str">"Search internal docs"</span><span class="tag">&gt;</span>
-          <span class="cm">&lt;!-- static or vector-store-backed lookup --&gt;</span>
-        <span class="tag">&lt;/mac:tool&gt;</span>
-      <span class="tag">&lt;/mac:tools&gt;</span>
-    <span class="tag">&lt;/mac:agent-tool-calling&gt;</span>
+    <span class="cm">&lt;!-- 1. Ask the LLM WHICH tool to call (reasoning only) --&gt;</span>
+    <span class="tag">&lt;ms-inference:tools-native-template</span> <span class="attr">config-ref</span>=<span class="str">"OpenAI_Config"</span><span class="tag">&gt;</span>
+      <span class="tag">&lt;ms-inference:template&gt;</span><span class="str">You are a helpful assistant</span><span class="tag">&lt;/ms-inference:template&gt;</span>
+      <span class="tag">&lt;ms-inference:instructions&gt;</span><span class="str">Answer the request politely</span><span class="tag">&lt;/ms-inference:instructions&gt;</span>
+      <span class="tag">&lt;ms-inference:data&gt;</span><span class="str">#[payload.question]</span><span class="tag">&lt;/ms-inference:data&gt;</span>
+      <span class="tag">&lt;ms-inference:tools&gt;</span><span class="str">#[vars.tools]</span><span class="tag">&lt;/ms-inference:tools&gt;</span>  <span class="cm">&lt;!-- OpenAI function-calling JSON --&gt;</span>
+    <span class="tag">&lt;/ms-inference:tools-native-template&gt;</span>
+
+    <span class="cm">&lt;!-- 2. YOU execute the chosen tool(s) — e.g. route on the returned tool name --&gt;</span>
+    <span class="cm">&lt;!--    &lt;choice&gt; → &lt;http:request&gt; for get_weather, static reply for search_docs --&gt;</span>
+
+    <span class="cm">&lt;!-- 3. Feed results back so the LLM writes the final answer --&gt;</span>
+    <span class="tag">&lt;ms-inference:chat-answer-prompt</span> <span class="attr">config-ref</span>=<span class="str">"OpenAI_Config"</span><span class="tag">&gt;</span>
+      <span class="tag">&lt;ms-inference:prompt&gt;</span><span class="str">#[/* question + tool results */]</span><span class="tag">&lt;/ms-inference:prompt&gt;</span>
+    <span class="tag">&lt;/ms-inference:chat-answer-prompt&gt;</span>
 
     <span class="tag">&lt;ee:transform&gt;</span>
       <span class="tag">&lt;ee:message&gt;</span>
@@ -359,7 +384,93 @@ output application/json
 
   <div class="callout callout-warn">
     <div class="callout-label">Element names may vary</div>
-    <code>mac:agent-tool-calling</code> is illustrative — your installed MAC connector version may use <code>mac:chat-answer-prompt-with-tools</code>, <code>mulechain-ai:agent</code>, or a different name. Inspect the actual XML your Studio generates. The <em>shape</em> (config + operation + tools) is stable across versions.
+    These element names match Inference connector <strong>v1.2.0</strong> (<code>ms-inference:tools-native-template</code>, <code>ms-inference:chat-answer-prompt</code>, <code>ms-inference:openai-connection</code>). A newer version may rename an operation or add a fully-managed agent op. Inspect the actual XML your Studio generates. The <em>shape</em> (config + connection + reasoning op + your tool execution) is what's stable.
+  </div>
+
+  <!-- ───────────────────────── PART 5b — MCP SHORTCUT ───────────────────────── -->
+  <h2>Part 5b · Level 2 — skip the tool JSON with MCP</h2>
+
+  <p>Parts 4-5 taught you the mechanism: hand-write the <code>tools</code> JSON, then route and execute each tool yourself. That's great for understanding — but in real projects you don't want to author tool definitions by hand, especially when the "tool" is just an existing REST API you already run on Anypoint. There's a shortcut: <strong>MCP</strong>.</p>
+
+  <div class="callout callout-new">
+    <div class="callout-label">New concept · MCP (Model Context Protocol)</div>
+    <strong>MCP</strong> is an open standard that lets an LLM discover and call tools exposed by a <em>server</em>, without anyone hand-writing tool schemas into the agent. Think of it as USB-C for AI tools: expose a tool once on an MCP server, and any MCP-aware agent can plug in and use it. MuleSoft ships two pieces that make this a drop-in upgrade to the flow you just built.
+  </div>
+
+  <h3>The two connectors involved</h3>
+  <ul>
+    <li><strong>MCP Connector</strong> (<code>com.mulesoft.connectors:mule-mcp-connector</code>, v1.6.1, namespace <code>mcp</code>) — turns a Mule flow into an <strong>MCP server</strong>. Each <code>mcp:tool-listener</code> is one tool. Wrap an existing REST API (an <code>http:request</code>, or an APIkit flow generated from your RAML/OpenAPI spec) and it becomes a tool automatically — <em>the spec is the tool definition</em>.</li>
+    <li><strong>Inference Connector's <code>[MCP] Tooling</code> operation</strong> — the counterpart to <code>[Tools] Native Template</code>. Instead of a hand-written <code>tools</code> array, you point it at an <strong>MCP client config</strong>. It auto-discovers the tools the server exposes, lets the LLM pick them, <em>and runs them for you</em>. The manual reason→route→execute plumbing from Part 4 disappears.</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The upgrade in one line</div>
+    Part 4 = <em>you</em> define tools (JSON) and <em>you</em> execute them (Transform, or Choice + HTTP for real tools). Part 5b = an <strong>MCP server</strong> defines tools from your existing REST APIs, and <code>[MCP] Tooling</code> executes them for you. Same agent, far less hand-authoring.
+  </div>
+
+  <h3>Shape of the two flows</h3>
+  <p>First, an MCP <strong>server</strong> that exposes an existing REST API (here, a weather API) as a tool:</p>
+
+<pre class="code"><span class="cm">&lt;!-- MCP server: expose an existing REST API as a tool --&gt;</span>
+<span class="tag">&lt;mule</span> <span class="attr">xmlns:mcp</span>=<span class="str">"http://www.mulesoft.org/schema/mule/mcp"</span>
+      <span class="attr">xmlns:http</span>=<span class="str">"http://www.mulesoft.org/schema/mule/http"</span><span class="tag">&gt;</span>
+
+  <span class="tag">&lt;mcp:server-config</span> <span class="attr">name</span>=<span class="str">"MCP_Server"</span> <span class="attr">serverName</span>=<span class="str">"tools-server"</span> <span class="attr">serverVersion</span>=<span class="str">"1.0.0"</span><span class="tag">&gt;</span>
+    <span class="cm">&lt;!-- SSE transport; give the HTTP listener a high readTimeout so the
+         long-lived stream isn't killed mid-handshake --&gt;</span>
+    <span class="tag">&lt;mcp:sse-server-connection</span> <span class="attr">listenerConfig</span>=<span class="str">"HTTP_Listener_Config"</span><span class="tag">/&gt;</span>
+  <span class="tag">&lt;/mcp:server-config&gt;</span>
+
+  <span class="tag">&lt;flow</span> <span class="attr">name</span>=<span class="str">"weather-tool"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;mcp:tool-listener</span> <span class="attr">config-ref</span>=<span class="str">"MCP_Server"</span> <span class="attr">name</span>=<span class="str">"get_weather"</span><span class="tag">&gt;</span>
+      <span class="tag">&lt;mcp:description&gt;</span><span class="str">Get current weather for a city</span><span class="tag">&lt;/mcp:description&gt;</span>
+      <span class="tag">&lt;mcp:parameters-schema&gt;</span><span class="str">{ "type":"object", "properties": { "city": { "type":"string" } }, "required":["city"] }</span><span class="tag">&lt;/mcp:parameters-schema&gt;</span>
+    <span class="tag">&lt;/mcp:tool-listener&gt;</span>
+    <span class="cm">&lt;!-- call the existing REST API — this IS the tool's work --&gt;</span>
+    <span class="tag">&lt;http:request</span> <span class="attr">config-ref</span>=<span class="str">"Weather_API_Config"</span> <span class="attr">path</span>=<span class="str">"/current"</span><span class="tag">/&gt;</span>
+  <span class="tag">&lt;/flow&gt;</span>
+<span class="tag">&lt;/mule&gt;</span></pre>
+
+  <p>Then the agent flow <strong>discovers</strong> the server's tools and <strong>invokes</strong> them over MCP — you never hand-write the <code>tools</code> JSON, and each tool runs via <code>[MCP] Call Tool</code> instead of your own HTTP/Transform:</p>
+
+<pre class="code"><span class="cm">&lt;!-- Agent flow: list tools → LLM reasons → call tool over MCP → answer --&gt;</span>
+<span class="tag">&lt;mcp:client-config</span> <span class="attr">name</span>=<span class="str">"MCP_Client"</span><span class="tag">&gt;</span>
+  <span class="cm">&lt;!-- base URL only; generous requestTimeout for the LLM+tool round-trip --&gt;</span>
+  <span class="tag">&lt;mcp:sse-client-connection</span> <span class="attr">serverUrl</span>=<span class="str">"http://localhost:8082"</span> <span class="attr">requestTimeout</span>=<span class="str">"600"</span><span class="tag">/&gt;</span>
+<span class="tag">&lt;/mcp:client-config&gt;</span>
+
+<span class="cm">&lt;!-- 1) Discover what the server offers --&gt;</span>
+<span class="tag">&lt;mcp:list-tools</span> <span class="attr">config-ref</span>=<span class="str">"MCP_Client"</span><span class="tag">/&gt;</span>
+<span class="cm">&lt;!-- 2) (Transform the tool list into OpenAI function JSON — see the runnable file) --&gt;</span>
+<span class="cm">&lt;!-- 3) LLM decides which tool(s) to call (reasoning only) --&gt;</span>
+<span class="tag">&lt;ms-inference:tools-native-template</span> <span class="attr">config-ref</span>=<span class="str">"OpenAI_Config"</span> <span class="attr">target</span>=<span class="str">"plan"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;ms-inference:data&gt;</span><span class="str">#[vars.question]</span><span class="tag">&lt;/ms-inference:data&gt;</span>
+  <span class="tag">&lt;ms-inference:tools&gt;</span><span class="str">#[vars.tools.tools]</span><span class="tag">&lt;/ms-inference:tools&gt;</span>
+<span class="tag">&lt;/ms-inference:tools-native-template&gt;</span>
+<span class="cm">&lt;!-- 4) Actually run each chosen tool THROUGH MCP --&gt;</span>
+<span class="tag">&lt;mcp:call-tool</span> <span class="attr">config-ref</span>=<span class="str">"MCP_Client"</span> <span class="attr">toolName</span>=<span class="str">"#[vars.currentTool.function.name]"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;mcp:arguments&gt;</span><span class="str">#[read(vars.currentTool.function.arguments, "application/json")]</span><span class="tag">&lt;/mcp:arguments&gt;</span>
+<span class="tag">&lt;/mcp:call-tool&gt;</span></pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Element names &amp; versions</div>
+    Namespaces and elements above match MCP Connector <strong>v1.6.1</strong> and Inference <strong>v1.2.0</strong>. A full copy-paste-runnable version of this MCP flow is in <code>examples/l44/agent-flow-mcp.xml</code> — it mirrors MuleSoft's own same-app MCP example (<code>example-mule-apps → mcp_demo</code>): <strong>SSE transport, long timeouts, and explicit <code>list-tools</code> → reason → <code>call-tool</code></strong>. A connector also ships a one-step <code>[MCP] Tooling</code> operation (<code>ms-inference:mcp-tools-native-template</code>); it's neat, but the discover-reason-call shape above is the one proven to run when the server and client share an app.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Demo limitation — one request per deploy</div>
+    Because <code>agent-flow-mcp.xml</code> runs the MCP <em>server and client in the same app</em>, the long-lived SSE stream isn't re-established between requests. The <strong>first</strong> <code>POST /ask</code> works fully; a <strong>second</strong> one fails with <code>Trying to write in a closed buffer</code> — just redeploy to run it again. In a real deployment the server and client are two separate apps, each with its own connection lifecycle, so this doesn't happen. The point of this file is to prove the MCP discover-reason-call pattern end-to-end, which it does.
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Why this is the better idea for your day job</div>
+    You already build REST APIs on Anypoint every week. With MCP you don't rebuild them as "AI tools" — you expose the ones you have. One API spec → one MCP server → usable by <em>this</em> Mule agent, by Claude Desktop, by Agentforce, by any MCP-aware client. That reuse story is exactly the MuleSoft value proposition, now pointed at AI.
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 09 · [MCP] Tooling operation wired to an MCP client config</div>
+    <img src="img/l44/09-mcp-tooling.png" alt="Screenshot placeholder — MCP Tooling operation configuration" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the <em>[MCP] Tooling</em> operation selected on the canvas with its MCP client config reference visible (and, if you can fit it, the <code>mcp:tool-listener</code> in the server flow). Save as <code>lessons/img/l44/09-mcp-tooling.png</code>.</div>
   </div>
 
   <!-- ───────────────────────── PART 6 — RUN IT ───────────────────────── -->
@@ -378,6 +489,15 @@ output application/json
       <li>Expected JSON response: <code>{ "answer": "..." }</code> where the LLM has stitched together weather + doc results.</li>
       <li>Watch the Studio console — you'll see the tool calls being invoked as the agent decides which ones to use.</li>
     </ol>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Deployment fails? Two common errors on Mule 4.9+</div>
+    Ignore any "<em>Already in lifecycle phase 'dispose'</em>" line — that's just cleanup noise after a failed start. Look higher in the log for the real cause:
+    <ul style="margin:0.3rem 0 0">
+      <li><strong>"Connection is not secure. Should use HTTPS"</strong> — your HTTP listener is bound to <code>0.0.0.0</code>. Change the host to <code>localhost</code> (local dev) or add a TLS context (production).</li>
+      <li><strong>"The name <code>type</code> is a reserved word"</strong> — a DataWeave object key uses a reserved word. Wrap it in single quotes: <code>'type':</code>. Same applies to <code>input</code>, <code>output</code>, <code>default</code>, <code>is</code>, <code>as</code>, and others.</li>
+    </ul>
   </div>
 
   <div class="screenshot">
@@ -412,7 +532,7 @@ output application/json
       <tr><td>L26-31</td><td>Google ADK</td><td>Vertex Agent Engine</td><td>~60</td><td>Google-native shops, declarative multi-agent</td></tr>
       <tr><td>L32-37</td><td>AWS Strands</td><td>Bedrock AgentCore</td><td>~70</td><td>AWS-native shops, managed memory/identity</td></tr>
       <tr><td>L38-43</td><td>AutoGen</td><td>Azure AI Foundry</td><td>~90</td><td>Microsoft-native shops, async multi-agent</td></tr>
-      <tr><td><strong>L44</strong></td><td><strong>MAC on Anypoint</strong></td><td><strong>CloudHub / Runtime Fabric / on-prem</strong></td><td><strong>~0 (visual)</strong></td><td><strong>Tool-heavy single agent; integration-team ownership</strong></td></tr>
+      <tr><td><strong>L44</strong></td><td><strong>MAC Inference on Anypoint</strong></td><td><strong>CloudHub / Runtime Fabric / on-prem</strong></td><td><strong>~0 imperative (visual flow + DataWeave)</strong></td><td><strong>Tool-heavy single agent; integration-team ownership</strong></td></tr>
     </tbody>
   </table>
 
@@ -437,7 +557,7 @@ output application/json
   <div class="quiz">
     <h3>Test your understanding</h3>
     <ol>
-      <li>Why do we put the API key in <code>config.yaml</code> and reference it as <code>${anthropic.api.key}</code> instead of pasting it into the connector dialog?
+      <li>Why do we put the API key in <code>config.yaml</code> and reference it as <code>${openai.api.key}</code> instead of pasting it into the connector dialog?
         <details><summary>Show answer</summary><div class="ans">So it doesn't get committed to source control. Studio will happily accept the raw string, but the moment you push the project, the key is out. Same rule as L06 — never commit secrets.</div></details>
       </li>
       <li>Which layer of the MuleSoft agent stack (from the positioning reference) does this lesson build on?
@@ -449,8 +569,8 @@ output application/json
       <li>What is DataWeave?
         <details><summary>Show answer</summary><div class="ans">Mule's transformation language for shape-shifting data between formats (JSON, XML, CSV, Java, YAML). Every non-trivial Mule flow uses it. Roughly analogous to writing dict comprehensions and format converters in Python — but purpose-built for integration.</div></details>
       </li>
-      <li>The comparison table shows MAC at "~0 lines of code". Is that literally true?
-        <details><summary>Show answer</summary><div class="ans">No — it's shorthand. You still write DataWeave transformations and configure XML behind the scenes. But you don't write imperative agent-loop code; the connector does that. The real trade-off is code-lines-saved vs flow-editor-clicks. Non-Python teams pick the second every time.</div></details>
+      <li>The comparison table shows MAC Inference at "~0 imperative lines". Is that literally true?
+        <details><summary>Show answer</summary><div class="ans">No — it's shorthand. You still write DataWeave transformations, define the tools JSON, and wire the tool-execution routing as Mule components. What you avoid is imperative <em>glue</em> code — HTTP clients, retry loops, JSON parsing — because those are visual components. The real trade-off is code-lines-saved vs flow-editor-clicks. Non-Python teams pick the second every time.</div></details>
       </li>
     </ol>
   </div>
@@ -460,7 +580,7 @@ output application/json
   <ul>
     <li>Swap the mock <code>search_docs</code> tool for a real vector store — the <em>MuleSoft Vectors</em> connector supports pgvector, Chroma, and others. Rebuild L09-L10 as a Mule flow.</li>
     <li>Deploy the flow to CloudHub 2.0 — <em>Right-click → Anypoint Platform → Deploy to CloudHub</em>. Now you have a managed, monitored, autoscaled agent.</li>
-    <li>Expose the same flow as an MCP endpoint — MAC + Omni Gateway (see the positioning reference) makes one flow available to both REST callers and MCP-aware agents.</li>
+    <li>Take the MCP server from Part 5b further — front it with Omni Gateway (see the positioning reference) so the same tools are governed and available to external MCP clients (Claude Desktop, Agentforce) as well as this Mule agent.</li>
     <li>Compare deployment paths: L31 Vertex Agent Engine, L37 AgentCore Runtime, L43 Azure Foundry, and now CloudHub. Same agent, four managed platforms.</li>
   </ul>
 
