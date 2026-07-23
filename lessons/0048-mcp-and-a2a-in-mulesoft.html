@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L48 — MCP server &amp; A2A agent in MuleSoft (Anypoint Studio)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff; color: #1a1a1a; line-height: 1.6; padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 840px; margin: 0 auto; }
+
+    header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .eyebrow { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.35rem; font-size: 0.95rem; }
+
+    h2 {
+      font-weight: 800; margin: 1.7rem 0 0.5rem; padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a; letter-spacing: 0.03em;
+      text-transform: uppercase; font-size: 0.85rem;
+    }
+    h3 { font-size: 1.02rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.25rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.87rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code {
+      background: #f1f1f1; border-radius: 3px; padding: 0.05em 0.35em;
+      font-size: 0.88em; color: #c7254e; font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    pre.code {
+      background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 0.82rem;
+      line-height: 1.55; overflow-x: auto; margin: 0.6rem 0 1rem;
+    }
+    pre.code .cm { color: #6c7086; font-style: italic; }
+    pre.code .kw { color: #cba6f7; }
+    pre.code .str { color: #a6e3a1; }
+    pre.code .attr { color: #f9e2af; }
+    pre.code .tag { color: #89dceb; }
+
+    .arch {
+      background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 0.8rem;
+      line-height: 1.55; margin: 0.5rem 0 1rem; white-space: pre; overflow-x: auto;
+    }
+    .arch .layer { color: #f9e2af; font-weight: 700; }
+    .arch .cm { color: #6c7086; font-style: italic; }
+    .arch .arrow { color: #89dceb; }
+
+    .callout { border-radius: 6px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.92rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-new  { background: #ecfdf5; border-color: #10b981; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff; border-left: 5px solid #0284c7; border-radius: 6px;
+      padding: 0.85rem 1.1rem; margin: 0.7rem 0 1rem; font-size: 0.93rem;
+      font-style: italic; color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track"; display: block; font-size: 0.65rem; font-weight: 800;
+      letter-spacing: 0.1em; color: #0284c7; margin-bottom: 0.4rem; font-style: normal;
+    }
+
+    /* Screenshot placeholder styling */
+    .screenshot { margin: 0.8rem 0 1.2rem; border: 3px dashed #dc2626; border-radius: 8px; background: #fef2f2; padding: 0.6rem; }
+    .screenshot .ss-label { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #dc2626; margin-bottom: 0.4rem; }
+    .screenshot img { max-width: 100%; display: block; border-radius: 4px; background: #fff; }
+    .screenshot .capture { background: #fff; border-left: 3px solid #dc2626; padding: 0.5rem 0.7rem; margin-top: 0.5rem; font-size: 0.85rem; color: #7f1d1d; }
+    .screenshot .capture strong { color: #7f1d1d; }
+
+    .steps { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
+    .steps ol { margin: 0.3rem 0 0 1.3rem; }
+
+    .quiz { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
+    .quiz h3 { margin-top: 0; color: #14532d; }
+    .quiz ol { margin-left: 1.3rem; }
+    .quiz details { margin-top: 0.4rem; }
+    .quiz summary { cursor: pointer; color: #16a34a; font-weight: 600; font-size: 0.88rem; }
+    .quiz .ans { background: #fff; border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.83rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">Lesson 48 · Agent interoperability · MuleSoft</p>
+    <h1>MCP server &amp; A2A agent — the MuleSoft side</h1>
+    <p class="tagline">You built both protocols by hand in Python (L45–47). Now the mirror image: expose an <strong>MCP server</strong> and an <strong>A2A agent</strong> as Mule flows in Anypoint Studio — using the <strong>MCP Connector</strong> and <strong>A2A Connector</strong> — then call each from the same Python clients you already wrote. Studio-first walkthrough with screenshot slots you capture.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">TL;DR</div>
+    Two Anypoint connectors turn a Mule flow into an agent endpoint. The <strong>MCP Connector</strong>'s <code>&lt;mcp:tool-listener&gt;</code> exposes a flow as an MCP tool (call it from your L46 client). The <strong>A2A Connector</strong>'s <code>&lt;a2a:task-listener&gt;</code> exposes a flow as an A2A agent with an Agent Card (call it from your L47 client). Same primitives you coded in Python — now declared in a flow, with Anypoint auth/governance for free.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Version honesty — read before you build</div>
+    Both connectors are new and moving fast. This lesson matches the <strong>MCP Connector</strong> and the <strong>A2A Connector — Mule 4 v1.1.1</strong> (Exchange asset <code>com.mulesoft.connectors:mule4-a2a-connector</code>, published 2026-03-20). Operation and listener names below are verified against Anypoint Exchange and docs.mulesoft.com, but the deep Studio dialog layouts (exact Agent Card field positions) shift between releases and some doc pages were incomplete at capture time. <strong>The screenshots you capture are authoritative for the version you install</strong> — treat the slots as "confirm against your Studio," and verify operation names on Exchange before wiring a customer flow.
+  </div>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>Anypoint Studio installed, and the L46 (<code>mcp_http_client.py</code>) + L47 (<code>a2a_client.py</code>) Python clients from earlier lessons.</li>
+    <li>Your Python <code>.venv</code> active — you'll reuse those clients to call the Mule endpoints.</li>
+    <li>Comfort with L45–47 concepts: MCP tool call, A2A Agent Card + task lifecycle. This lesson assumes them.</li>
+  </ul>
+
+  <!-- ───────────────────── PART 1 ───────────────────── -->
+  <h2>Part 1 · Two connectors, mapped to your Python</h2>
+  <p>Everything you hand-coded has a direct connector equivalent. Learn the mapping and the whole lesson is "the same thing, declared":</p>
+  <table>
+    <thead>
+      <tr><th>You wrote in Python…</th><th>MuleSoft connector equivalent</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>L46: <code>FastMCP</code> server + a tool function</td><td><strong>MCP Connector</strong> · <code>&lt;mcp:tool-listener&gt;</code> — a flow becomes the tool</td></tr>
+      <tr><td>L47: <code>AgentCard(...)</code> in code</td><td><strong>A2A Connector</strong> · Agent Card via <em>Card Json</em> or <em>Card Path</em></td></tr>
+      <tr><td>L47: <code>FxExecutor.execute()</code> drives the task</td><td><strong>A2A Connector</strong> · <code>&lt;a2a:task-listener&gt;</code> — the flow IS the executor</td></tr>
+      <tr><td>L47 client: <code>create_from_url()</code></td><td><code>&lt;a2a:get-card&gt;</code> — fetch a remote agent's card</td></tr>
+      <tr><td>L47 client: <code>send_message()</code> (streaming)</td><td><code>&lt;a2a:send-message&gt;</code> / <code>&lt;a2a:send-stream-message&gt;</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="arch"><span class="cm"># Same clients, new servers — Mule flows instead of Python</span>
+
+<span class="layer">Your L46 Python MCP client</span>  ──▶  <span class="layer">Mule flow + mcp:tool-listener</span>   <span class="cm"># Part 2</span>
+<span class="layer">Your L47 Python A2A client</span>  ──▶  <span class="layer">Mule flow + a2a:task-listener</span>   <span class="cm"># Part 3</span>
+                                        <span class="arrow">└─ Agent Card (Card Json/Path)</span>
+</div>
+
+  <!-- ───────────────────── PART 2 ───────────────────── -->
+  <h2>Part 2 · Expose a flow as an MCP server</h2>
+  <p>The MCP Connector runs in two modes — <strong>server</strong> (expose your flow as MCP tools) and <strong>client</strong> (call a remote MCP server). We want server mode, over Streamable HTTP — exactly the transport your L46 client speaks.</p>
+
+  <div class="steps">
+    <strong>Add the connector &amp; build the tool flow:</strong>
+    <ol>
+      <li><strong>File → New → Mule Project</strong>, name it <code>agent-endpoints-demo</code>.</li>
+      <li>In <strong>Mule Palette → Search in Exchange</strong>, type <code>mcp</code>, add <strong>MCP Connector</strong>, Finish.</li>
+      <li>Drag an <strong>MCP → Tool Listener</strong> source onto a new flow. This is your <code>&lt;mcp:tool-listener&gt;</code> — the flow's logic becomes the tool body.</li>
+      <li>On the listener, set the <strong>tool name</strong>, <strong>description</strong>, and <strong>input schema</strong> — this is the metadata your L45/L46 client saw via <code>list_tools()</code>.</li>
+      <li>Configure the global <strong>MCP config</strong> for <strong>Streamable HTTP</strong> (bind it to an HTTP Listener config, e.g. port <code>8081</code>, path <code>/mcp</code>).</li>
+      <li>In the flow body, add a <strong>Transform Message</strong> that returns the tool result (start hardcoded, like L46's mock rate).</li>
+    </ol>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 01 · MCP Tool Listener configuration</div>
+    <img src="img/l48/01-mcp-tool-listener.png" alt="Screenshot placeholder — MCP Tool Listener config in Studio" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the Tool Listener properties panel showing tool name, description, and input schema filled in. Save as <code>lessons/img/l48/01-mcp-tool-listener.png</code>. <em>Confirm the exact field labels against your installed connector version.</em></div>
+  </div>
+
+  <div class="callout callout-new">
+    <div class="callout-label">Call it from your L46 client</div>
+    Point <code>mcp_http_client.py</code> at <code>http://localhost:8081/mcp</code> instead of the Python server. The client shouldn't care that the server is now a Mule flow — that's the whole promise of an open protocol. If <code>list_tools()</code> shows your tool and a call returns the result, the MuleSoft MCP server works.
+  </div>
+
+  <!-- ───────────────────── PART 3 ───────────────────── -->
+  <h2>Part 3 · Expose a flow as an A2A agent</h2>
+  <p>Now the agent-to-agent half. The A2A Connector also has <strong>server</strong> and <strong>client</strong> connection types. Server mode makes your flow a discoverable agent — the direct analog of your L47 <code>a2a_server.py</code>.</p>
+
+  <div class="steps">
+    <strong>Add the connector &amp; build the agent flow:</strong>
+    <ol>
+      <li>In <strong>Mule Palette → Search in Exchange</strong>, type <code>a2a</code>, add <strong>A2A Connector</strong>, Finish.</li>
+      <li>Drag an <strong>A2A → Task Listener</strong> source onto a new flow. This is <code>&lt;a2a:task-listener&gt;</code> — incoming delegated tasks land here (like <code>FxExecutor.execute()</code> receiving a task).</li>
+      <li>Open the global <strong>A2A Server config</strong>. Set the <strong>Agent Card</strong> via either <strong>Card Json</strong> (paste the JSON inline) or <strong>Card Path</strong> (point to a file). This is your L47 <code>AgentCard(...)</code> — name, description, skills, URL — as declared config.</li>
+      <li>Bind the server config to an HTTP Listener (e.g. port <code>8082</code>). The card is then served for discovery, the connector's equivalent of L47's <code>/.well-known/agent-card.json</code>.</li>
+      <li>In the flow body, produce the task result and let the connector drive the lifecycle back to the caller (submitted → working → completed — the states you drove by hand with <code>TaskUpdater</code>).</li>
+    </ol>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">What I could and couldn't verify</div>
+    Verified from Exchange + docs: the connector exists (v1.1.1), has server/client connection types, the <strong>Task Listener</strong> source, and Agent Card via <strong>Card Json / Card Path</strong>. <em>Not</em> fully verified: the exact Studio dialog layout for entering the card and how much lifecycle the connector automates vs. what you set explicitly. Your captured screenshots are the source of truth here — if a step below doesn't match your Studio, trust Studio and tell me.
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 02 · A2A Agent Card configuration</div>
+    <img src="img/l48/02-a2a-agent-card.png" alt="Screenshot placeholder — A2A Server config Agent Card" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the A2A Server global config showing the Agent Card (Card Json or Card Path) filled in with your agent's name and skills. Save as <code>lessons/img/l48/02-a2a-agent-card.png</code>.</div>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 03 · A2A Task Listener flow</div>
+    <img src="img/l48/03-a2a-task-listener-flow.png" alt="Screenshot placeholder — A2A Task Listener flow on the canvas" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the full flow — Task Listener source plus the body that produces the result — on the Studio canvas. Save as <code>lessons/img/l48/03-a2a-task-listener-flow.png</code>.</div>
+  </div>
+
+  <div class="callout callout-new">
+    <div class="callout-label">Call it from your L47 client</div>
+    Point <code>a2a_client.py</code>'s <code>BASE</code> at your Mule agent (e.g. <code>http://localhost:8082</code>). <code>create_from_url()</code> fetches the Mule-served card; <code>send_message()</code> delegates the task. You should see the same lifecycle lines you saw in L47 — this time driven by a Mule flow. Reuse the <code>Role.ROLE_USER</code> fix you already made.
+  </div>
+
+  <!-- ───────────────────── PART 4 ───────────────────── -->
+  <h2>Part 4 · The client side (Mule calling agents)</h2>
+  <p>You've used Python as the client so far, but a Mule flow can be the <em>caller</em> too — one Mule agent delegating to another. That's the A2A Connector's client operations:</p>
+  <table>
+    <thead><tr><th>Operation</th><th>What it does</th><th>L47 Python analog</th></tr></thead>
+    <tbody>
+      <tr><td><code>&lt;a2a:get-card&gt;</code></td><td>Fetch a remote agent's card (discovery)</td><td><code>create_from_url()</code></td></tr>
+      <tr><td><code>&lt;a2a:send-message&gt;</code></td><td>Send a message/task, get the response</td><td><code>send_message()</code></td></tr>
+      <tr><td><code>&lt;a2a:send-stream-message&gt;</code></td><td>Send + stream status/artifacts over SSE</td><td>the streaming <code>async for</code> loop</td></tr>
+      <tr><td><code>&lt;a2a:task-resubscribe&gt;</code></td><td>Reconnect to an in-flight task's stream after a drop</td><td>(no L47 equivalent — production nicety)</td></tr>
+      <tr><td>Get Task / Cancel Task</td><td>Lifecycle control on an existing task</td><td><code>TaskState</code> checks / cancel</td></tr>
+    </tbody>
+  </table>
+  <p>So a MuleSoft agent can be discovered <em>and</em> discover others — full participant in the A2A mesh, not just a server.</p>
+
+  <!-- ───────────────────── BRIDGE ───────────────────── -->
+  <blockquote class="talk">
+    "Your customer already has the integration estate — APIs, connectors, governance. These two connectors mean they don't stand up a separate Python service to join the agent world: an existing Mule flow becomes an MCP tool or an A2A agent with a listener and a config, inheriting Anypoint's auth, policies, and monitoring. And because it's the open protocols, their Mule agents interoperate with Agentforce, LangGraph, or anyone else's agents. That's the MuleSoft pitch in one line — you don't rebuild for agents, you expose what you already have, governed."
+  </blockquote>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Where this sits in the bigger picture</div>
+    These connectors are the <em>build</em> layer. Above them, <strong>Omni Gateway / Agent Fabric</strong> govern the MCP and A2A endpoints at scale — discovery via the Agent Registry, routing via the Agent Broker, policy at the gateway. See the <a href="../reference/mulesoft-agentic-reference-architecture.html">MuleSoft agentic reference architecture</a> reference doc for how the flow you just built plugs into that fabric.
+  </div>
+
+  <div class="quiz">
+    <h3>Check yourself</h3>
+    <ol>
+      <li>Which listener turns a Mule flow into an MCP tool, and which into an A2A agent?
+        <details><summary>Show answer</summary><div class="ans"><code>&lt;mcp:tool-listener&gt;</code> → MCP tool; <code>&lt;a2a:task-listener&gt;</code> → A2A agent. Different connectors, same "flow-as-endpoint" idea.</div></details>
+      </li>
+      <li>In L47 you wrote <code>AgentCard(...)</code> in Python. Where does that live in the MuleSoft A2A agent?
+        <details><summary>Show answer</summary><div class="ans">In the A2A <strong>Server config</strong>, as <strong>Card Json</strong> (inline) or <strong>Card Path</strong> (file). Same card content — declared instead of coded — and served for discovery like L47's well-known path.</div></details>
+      </li>
+      <li>Why can your unchanged L46/L47 Python clients call these Mule endpoints?
+        <details><summary>Show answer</summary><div class="ans">Because MCP and A2A are <strong>open protocols</strong>. The client only speaks the wire protocol; it doesn't care whether the server is Python or a Mule flow. That interoperability is the entire point.</div></details>
+      </li>
+    </ol>
+  </div>
+
+  <h2>Where to go from here</h2>
+  <ul>
+    <li>Make the MCP tool real: instead of a hardcoded result, have the flow call a backend API (Salesforce, a DB) — the "MCP over your actual estate" story.</li>
+    <li>Chain two Mule agents: one flow uses <code>&lt;a2a:send-message&gt;</code> to delegate to the agent you built in Part 3.</li>
+    <li>Read the connector references (mind the version): <a href="https://docs.mulesoft.com/a2a-connector/latest/">A2A Connector</a> · <a href="https://docs.mulesoft.com/mcp-connector/latest/">MCP Connector</a>.</li>
+  </ul>
+
+  <div class="footer">
+    <a href="0047-a2a-agent-lifecycle.html">← L47 A2A agent (Python)</a>
+    <a href="0046-mcp-over-http.html">L46 MCP over HTTP</a>
+    <a href="../reference/mulesoft-agentic-reference-architecture.html">Agentic reference architecture</a>
+    <p style="margin-top:0.7rem">Studio dialogs move between releases — if a step doesn't match your version, capture the real screenshot and paste it; we'll correct the lesson together.</p>
+  </div>
+
+</div>
+</body>
+</html>
