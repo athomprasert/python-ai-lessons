@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L47 — Build an A2A agent: discovery + the task lifecycle</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff; color: #1a1a1a; line-height: 1.6; padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 840px; margin: 0 auto; }
+
+    header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .eyebrow { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.35rem; font-size: 0.95rem; }
+
+    h2 {
+      font-weight: 800; margin: 1.7rem 0 0.5rem; padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a; letter-spacing: 0.03em;
+      text-transform: uppercase; font-size: 0.85rem;
+    }
+    h3 { font-size: 1.02rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.25rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.87rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code {
+      background: #f1f1f1; border-radius: 3px; padding: 0.05em 0.35em;
+      font-size: 0.88em; color: #c7254e; font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    pre.code {
+      background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 0.82rem;
+      line-height: 1.55; overflow-x: auto; margin: 0.6rem 0 1rem;
+    }
+    pre.code .cm { color: #6c7086; font-style: italic; }
+    pre.code .kw { color: #cba6f7; }
+    pre.code .str { color: #a6e3a1; }
+    pre.code .num { color: #fab387; }
+    pre.code .attr { color: #f9e2af; }
+
+    .arch {
+      background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 0.8rem;
+      line-height: 1.55; margin: 0.5rem 0 1rem; white-space: pre; overflow-x: auto;
+    }
+    .arch .layer { color: #f9e2af; font-weight: 700; }
+    .arch .cm { color: #6c7086; font-style: italic; }
+    .arch .arrow { color: #89dceb; }
+
+    .callout { border-radius: 6px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.92rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-new  { background: #ecfdf5; border-color: #10b981; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff; border-left: 5px solid #0284c7; border-radius: 6px;
+      padding: 0.85rem 1.1rem; margin: 0.7rem 0 1rem; font-size: 0.93rem;
+      font-style: italic; color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track"; display: block; font-size: 0.65rem; font-weight: 800;
+      letter-spacing: 0.1em; color: #0284c7; margin-bottom: 0.4rem; font-style: normal;
+    }
+
+    .todo {
+      background: #1e1e2e; color: #cdd6f4; border: 2px dashed #f9e2af; border-radius: 6px;
+      padding: 0.9rem 1rem; font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.82rem; line-height: 1.55; white-space: pre; overflow-x: auto; margin: 0.6rem 0 1rem;
+    }
+    .todo .cm { color: #f9e2af; font-style: italic; }
+
+    .steps {
+      background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px;
+      padding: 0.8rem 1rem; margin: 0.5rem 0 1rem;
+    }
+    .steps ol { margin: 0.3rem 0 0 1.3rem; }
+
+    .quiz { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
+    .quiz h3 { margin-top: 0; color: #14532d; }
+    .quiz ol { margin-left: 1.3rem; }
+    .quiz details { margin-top: 0.4rem; }
+    .quiz summary { cursor: pointer; color: #16a34a; font-weight: 600; font-size: 0.88rem; }
+    .quiz .ans { background: #fff; border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.83rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">Lesson 47 · Agent interoperability · A2A</p>
+    <h1>Build an A2A agent — discovery and the task lifecycle</h1>
+    <p class="tagline">L45–46 were the <em>agent → tools</em> half (MCP). This is the <em>agent → agent</em> half: you'll publish an agent that advertises itself with an <strong>Agent Card</strong>, then a client that <strong>discovers</strong> it and <strong>delegates a task</strong> — and watch that task move through its lifecycle, streamed back live.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">TL;DR</div>
+    An A2A agent is an HTTP service that (1) publishes a JSON <strong>Agent Card</strong> at <code>/.well-known/agent-card.json</code> so others can discover it, and (2) accepts a delegated <strong>Task</strong> and drives it through states: <code>submitted → working → completed</code>, streaming each change plus the result <strong>Artifact</strong> back. You'll finish a working <code>a2a-sdk</code> agent + client, two terminals, and see all five lifecycle events print.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Version honesty — read this before you Google</div>
+    This lesson targets <strong>a2a-sdk 1.1.2</strong> (what's installed in your venv, verified end-to-end). The A2A SDK changed a lot across versions — most tutorials online use the older API (a single <code>url</code> field, <code>A2AStarletteApplication</code>, pydantic models). The 1.1.2 code here uses <strong>proto-based types</strong>, <code>supported_interfaces</code>, a <code>Role</code> enum, and route-builder functions instead. If a snippet online doesn't match this lesson, it's almost certainly a version gap — trust the running code.
+  </div>
+
+  <!-- ───────────────────── PART 1 — MCP vs A2A recap ───────────────────── -->
+  <h2>Part 1 · Where A2A sits vs MCP</h2>
+  <p>You've now seen both open protocols. They're complementary, not competing:</p>
+  <table>
+    <thead>
+      <tr><th>&nbsp;</th><th>MCP (L45–46)</th><th>A2A (this lesson)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Connects an agent to…</td><td><strong>tools &amp; data</strong></td><td><strong>other agents</strong></td></tr>
+      <tr><td>The unit of work</td><td>a tool <em>call</em> (request → response)</td><td>a <em>Task</em> (has a lifecycle, can be long-running)</td></tr>
+      <tr><td>Discovery</td><td><code>list_tools()</code> after connecting</td><td>fetch the <strong>Agent Card</strong> by URL</td></tr>
+      <tr><td>Mental model</td><td>"here's a function you can run"</td><td>"here's a colleague you can delegate to"</td></tr>
+    </tbody>
+  </table>
+
+  <div class="arch"><span class="cm"># A2A: discover by card, delegate a task, stream the lifecycle back</span>
+<span class="layer">CLIENT</span>  ──① GET /.well-known/agent-card.json ─▶  <span class="layer">AGENT (fx-agent)</span>
+        ──② send task: "100 USD to SGD"  ─▶
+        ◀─③ submitted → working → <span class="arrow">artifact</span> → completed ──</div>
+
+  <!-- ───────────────────── PART 2 — the Agent Card ───────────────────── -->
+  <h2>Part 2 · The Agent Card (how discovery works)</h2>
+  <p>
+    An agent's first job is to be <em>findable</em>. The <strong>Agent Card</strong> is a small JSON document served at a well-known path — the agent's public "business card": its name, what it can do (<strong>skills</strong>), and how to reach it (<strong>interfaces</strong>). A client fetches it and now knows how to talk to the agent, with zero prior wiring.
+  </p>
+  <pre class="code"><span class="kw">from</span> a2a.types <span class="kw">import</span> AgentCard, AgentSkill, AgentCapabilities, AgentInterface
+
+CARD = AgentCard(
+    name=<span class="str">"fx-agent"</span>,
+    description=<span class="str">"Converts currency amounts between currencies."</span>,
+    version=<span class="str">"1.0.0"</span>,
+    <span class="cm"># supported_interfaces = how to reach me (URL + which protocol to speak)</span>
+    supported_interfaces=[AgentInterface(url=<span class="str">"http://127.0.0.1:9100/"</span>,
+                                         protocol_binding=<span class="str">"JSONRPC"</span>)],
+    capabilities=AgentCapabilities(streaming=<span class="kw">True</span>),
+    default_input_modes=[<span class="str">"text/plain"</span>], default_output_modes=[<span class="str">"text/plain"</span>],
+    skills=[AgentSkill(id=<span class="str">"fx"</span>, name=<span class="str">"Currency convert"</span>,
+                       description=<span class="str">"Convert an amount between currencies."</span>, tags=[<span class="str">"finance"</span>])],
+)</pre>
+
+  <div class="callout callout-new">
+    <div class="callout-label">See it for real</div>
+    Once the server is running (Part 4), open <code>http://127.0.0.1:9100/.well-known/agent-card.json</code> in a browser. That JSON <em>is</em> the discovery mechanism — any A2A client anywhere can read it and know how to delegate work to your agent.
+  </div>
+
+  <!-- ───────────────────── PART 3 — the task lifecycle ───────────────────── -->
+  <h2>Part 3 · The task lifecycle (your main task)</h2>
+  <p>
+    When a client delegates work, the agent doesn't just return a value — it creates a <strong>Task</strong> and moves it through <strong>states</strong>. This is the heart of A2A: tasks can be quick or long-running, and the caller watches progress the whole way. In <code>a2a_server.py</code>, the <code>FxExecutor.execute()</code> method is where you drive it, using a <code>TaskUpdater</code> helper:
+  </p>
+  <div class="todo"><span class="cm"># In FxExecutor.execute() — <<< YOUR TASK >>> uncomment + complete all five:</span>
+
+await updater.submit()       <span class="cm"># -> TASK_STATE_SUBMITTED  ("got it")</span>
+await updater.start_work()   <span class="cm"># -> TASK_STATE_WORKING    ("on it")</span>
+
+result = f<span class="str">"{user_text} -> 135.20 SGD (mock rate)"</span>
+<span class="cm"># add_artifact publishes the actual RESULT of the task</span>
+await updater.add_artifact([new_text_part(result)], name=<span class="str">"conversion"</span>)
+
+await updater.complete()     <span class="cm"># -> TASK_STATE_COMPLETED  ("done")</span></div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">One rule the SDK enforces</div>
+    The <strong>Task object must be enqueued before any status update</strong> — otherwise you get <code>InvalidAgentResponseError: Agent should enqueue Task before TaskStatusUpdateEvent</code>. The scaffold already does this for you (it calls <code>new_task_from_user_message(...)</code> and enqueues it right before creating the <code>TaskUpdater</code>). Your job is just the five lifecycle lines above.
+  </div>
+
+  <!-- ───────────────────── PART 4 — the client + run ───────────────────── -->
+  <h2>Part 4 · The client, and the one bug to fix</h2>
+  <p>
+    The client (<code>a2a_client.py</code>) does discovery + delegation in three lines, then streams the lifecycle back. It has <strong>one deliberate bug</strong>:
+  </p>
+  <div class="todo"><span class="cm"># <<< YOUR TASK (the bug) >>> messages default to the AGENT role, but WE are</span>
+<span class="cm"># the user delegating a task. The server rejects a task whose first message</span>
+<span class="cm"># isn't from a user:  "InternalError: Message must be from a user".</span>
+<span class="cm">#</span>
+<span class="cm"># TODO: change  new_text_message("100 USD to SGD")</span>
+<span class="cm">#       to      new_text_message("100 USD to SGD", role=Role.ROLE_USER)</span>
+msg = new_text_message(<span class="str">"100 USD to SGD"</span>)</div>
+
+  <div class="callout callout-new">
+    <div class="callout-label">How discovery + streaming look in code</div>
+    <pre class="code">factory = ClientFactory(ClientConfig(httpx_client=http, streaming=<span class="kw">True</span>))
+client = <span class="kw">await</span> factory.create_from_url(BASE)   <span class="cm"># fetches the Agent Card for you</span>
+
+<span class="kw">async for</span> resp <span class="kw">in</span> client.send_message(req):     <span class="cm"># streams each lifecycle event</span>
+    kind = resp.WhichOneof(<span class="str">"payload"</span>)        <span class="cm"># task | status_update | artifact_update</span>
+    ...</pre>
+    <code>create_from_url()</code> is the discovery step — you give it a base URL, it reads the card, and hands back a client that already knows the right protocol. Same "just point it at a URL" idea as the MCP HTTP client in L46.
+  </div>
+
+  <div class="steps">
+    <strong>Terminal 1 — start the agent (leave it running):</strong>
+    <ol>
+      <li><code>source ~/ai/claude/projects/python/.venv/bin/activate</code></li>
+      <li><code>cd ~/ai/claude/projects/python/lessons/examples/l47</code></li>
+      <li><code>python a2a_server.py</code> — serves on <code>http://127.0.0.1:9100</code>.</li>
+    </ol>
+    <strong>Terminal 2 — run the client:</strong>
+    <ol>
+      <li><code>source ~/ai/claude/projects/python/.venv/bin/activate</code></li>
+      <li><code>cd ~/ai/claude/projects/python/lessons/examples/l47</code></li>
+      <li><code>python a2a_client.py</code></li>
+    </ol>
+    <span style="font-size:0.85em;color:#555;">Restart the server (Ctrl-C, rerun) after any server edit — a running process holds the old code.</span>
+  </div>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">Success looks like</div>
+    <pre class="code">Delegating task to fx-agent...
+  &lt;- task
+  &lt;- status: TASK_STATE_SUBMITTED
+  &lt;- status: TASK_STATE_WORKING
+  &lt;- result: 100 USD to SGD -&gt; 135.20 SGD (mock rate)
+  &lt;- status: TASK_STATE_COMPLETED</pre>
+    Those five lines <em>are</em> the task lifecycle, streamed live. If the client <strong>hangs</strong>, the task never reached a terminal state — you're missing <code>updater.complete()</code>. If you see <code>Message must be from a user</code>, that's the client bug above.
+  </div>
+
+  <!-- ───────────────────── BRIDGE ───────────────────── -->
+  <h2>Part 5 · The whole mini-series, connected</h2>
+  <div class="callout callout-mule">
+    <div class="callout-label">MCP + A2A together — the real architecture</div>
+    You've now built both halves. In production they compose: an <strong>A2A agent</strong> (like this one) receives a delegated task, and to fulfil it, calls <strong>MCP tools/servers</strong> (like L46's) for data and actions. So <code>fx-agent</code> could, inside <code>execute()</code>, call an MCP server for a live exchange rate — A2A on the outside (agent-to-agent), MCP on the inside (agent-to-tools). That's the shape of a multi-agent system: A2A for delegation between agents, MCP for each agent's capabilities.
+  </div>
+
+  <blockquote class="talk">
+    "Your customer won't build one giant agent — they'll build several, owned by different teams, maybe on different stacks. A2A is how those agents delegate to each other without bespoke point-to-point integration: publish an Agent Card, and any other agent can discover and call it. MuleSoft's role is the same story as always — govern, secure, and expose these agent endpoints on the platform, so the mesh of agents is managed, not a free-for-all. MCP exposes your APIs as tools; A2A lets agents cooperate. Same reuse pitch, one layer up."
+  </blockquote>
+
+  <div class="quiz">
+    <h3>Check yourself</h3>
+    <ol>
+      <li>What's the one-line difference in <em>purpose</em> between MCP and A2A?
+        <details><summary>Show answer</summary><div class="ans">MCP connects an agent to <strong>tools &amp; data</strong> (a function call); A2A connects an agent to <strong>other agents</strong> (delegate a task with a lifecycle). Tools vs teammates.</div></details>
+      </li>
+      <li>Your client runs but the run just hangs after <code>TASK_STATE_WORKING</code>. What did you forget in the server?
+        <details><summary>Show answer</summary><div class="ans"><code>await updater.complete()</code>. Without a terminal state (completed/failed/canceled), the streaming client keeps waiting for the task to finish.</div></details>
+      </li>
+      <li>How does the client know how to talk to the agent without any hardcoded config beyond a URL?
+        <details><summary>Show answer</summary><div class="ans">It fetches the <strong>Agent Card</strong> from <code>&lt;url&gt;/.well-known/agent-card.json</code> (via <code>create_from_url</code>). The card's <code>supported_interfaces</code> tell the client which protocol to speak. That's A2A discovery.</div></details>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────── WHERE TO GO ───────────────────── -->
+  <h2>Where to go from here</h2>
+  <ul>
+    <li><strong>Compose the two (next natural step):</strong> make <code>fx-agent</code>'s <code>execute()</code> call an MCP server (like L46's) to fetch the "rate" instead of hardcoding it — A2A outside, MCP inside.</li>
+    <li>Add a second skill to the Agent Card and a second branch in <code>execute()</code>, then re-fetch the card to see it advertised.</li>
+    <li>Read the A2A spec's task lifecycle and Agent Card sections (mind the version): <a href="https://a2a-protocol.org">a2a-protocol.org</a>. SDK source (matches this lesson): <a href="https://github.com/a2aproject/a2a-python">github.com/a2aproject/a2a-python</a>.</li>
+  </ul>
+
+  <div class="footer">
+    <a href="0046-mcp-over-http.html">← L46 MCP over HTTP</a>
+    <a href="0045-mcp-and-a2a-protocols.html">L45 MCP &amp; A2A concepts</a>
+    <a href="https://a2a-protocol.org">A2A spec</a>
+    <p style="margin-top:0.7rem">Hit an error the lesson didn't predict, or want to try the MCP-inside-A2A version? Paste it — we'll work through it together.</p>
+  </div>
+
+</div>
+</body>
+</html>
