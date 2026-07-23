@@ -119,7 +119,7 @@
 
   <div class="callout callout-warn">
     <div class="callout-label">Source honesty — read before customer call</div>
-    MuleSoft's MCP story is shipping in pieces (MCP Connector for Mule, MCP capabilities on Flex Gateway, MCP in Anypoint Code Builder) and product names keep evolving. AgentCore Gateway is AWS-managed and GA'd late 2025 but the docs churn. Verify current product names and features before quoting anything specific. The <em>architectural framings</em> in this doc are stable.
+    MuleSoft's MCP story has two named products: <strong>MCP Bridge</strong> (API-Manager-guided, config-only, GA 6 Mar 2026) and the <strong>MCP Connector</strong> (build-into-a-flow). AgentCore Gateway is AWS-managed and GA'd late 2025 but the docs churn. Product names still evolve — verify current features before quoting anything specific. The <em>architectural framings</em> in this doc are stable.
   </div>
 
   <!-- ───────────────────────────── -->
@@ -192,6 +192,26 @@
   </table>
 
   <p><strong>The critical insight:</strong> AgentCore Gateway is a lightweight MCP wrapper. MuleSoft MCP is a full integration platform that happens to speak MCP. That framing determines the choice — is MCP a protocol translation problem (Gateway) or the new API contract on top of your existing estate (MuleSoft)?</p>
+
+  <!-- ───────────────────────────── -->
+  <h3>"MuleSoft MCP" is two products — know which one</h3>
+  <p>When you say "MuleSoft MCP" in a call, be specific — there are two distinct ways to expose APIs as MCP tools, and the choice is config-vs-code:</p>
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>MCP Bridge</th><th>MCP Connector</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>What it is</td><td>Guided experience in <strong>Anypoint API Manager</strong> — turns existing APIs into MCP servers</td><td>An <strong>Anypoint Connector</strong> you build into a Mule flow</td></tr>
+      <tr><td>Approach</td><td>Config-only — map API operations → MCP tools in the UI</td><td>Code — a flow with Tool/Resource/Prompt Listeners</td></tr>
+      <tr><td>Code changes to the API</td><td><strong>None</strong> — no app edits, no redeploy of the API</td><td>You author the Mule flow</td></tr>
+      <tr><td>Runs on</td><td><strong>Omni Gateway</strong> (Managed or Self-Managed / Connected)</td><td>Any Mule runtime (CloudHub2, RTF, Flex, self-hosted)</td></tr>
+      <tr><td>Best for</td><td><strong>Consistency, governance, scale</strong> across many APIs</td><td><strong>Max flexibility/control</strong> in one integration (DataWeave, orchestration)</td></tr>
+      <tr><td>Governance</td><td>Existing API Manager policies (auth, rate limit, observability) apply automatically</td><td>Whatever you wire into the flow + Anypoint governance</td></tr>
+      <tr><td>Mutability</td><td>Instances are <strong>immutable</strong> — change tools = new instance</td><td>Edit the flow and redeploy</td></tr>
+      <tr><td>Availability</td><td><strong>GA 6 Mar 2026</strong></td><td>Available (transport: Streamable HTTP; SSE deprecated)</td></tr>
+    </tbody>
+  </table>
+  <p>They coexist: <strong>Bridge</strong> to govern many APIs uniformly with no code; <strong>Connector</strong> when a single integration needs custom flow logic (reshape with DataWeave, orchestrate across systems). Both put MuleSoft on the MCP path — Bridge is the "meet agents where they are, no dev project" option.</p>
 
   <blockquote class="talk">
     "AgentCore Gateway is great when you're wrapping already-clean AWS-hosted endpoints — think of it as 'API Gateway for MCP.' Where MuleSoft's MCP pulls ahead is on everything an integration platform gives you that a proxy can't: connectors to SAP and mainframe, DataWeave to reshape ugly responses into what an LLM can actually use, orchestration when one agent call needs to touch three systems, and Anypoint governance so MCP tools live in the same catalog as your REST APIs — same versioning, same SLAs, same monetization. If your customer is 100% AWS and their backends are already Lambda-clean, Gateway is fine. Everyone with an SAP, a mainframe, or a central IT function ends up needing MuleSoft on the path — regardless of which cloud hosts the agent."
