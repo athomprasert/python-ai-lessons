@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — Discovery &amp; Positioning Kit: MuleSoft in the Agentic Enterprise</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 880px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.25rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    .callout { border-radius: 6px; padding: 0.7rem 0.9rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.9rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.92rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "Say it like this";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.76rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer  { color: #f9e2af; font-weight: 700; }
+    .arch .cm     { color: #6c7086; font-style: italic; }
+    .arch .arrow  { color: #89dceb; }
+    .arch .sys    { color: #a6e3a1; }
+    .arch .num    { color: #f38ba8; font-weight: 700; }
+    .arch .gap    { color: #f38ba8; font-weight: 700; }
+
+    /* Timed agenda */
+    .agenda { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+    .agenda .slot { display: flex; gap: 0.7rem; padding: 0.3rem 0; border-bottom: 1px dashed #dbe3ee; }
+    .agenda .slot:last-child { border-bottom: none; }
+    .agenda .mins { font-family: "JetBrains Mono", monospace; color: #dc2626; font-weight: 700; min-width: 4.5rem; flex-shrink: 0; }
+
+    /* As-is capture zones */
+    .capture-zone { background: #fff7ed; border: 1.5px solid #fdba74; border-left: 5px solid #f97316; border-radius: 6px; padding: 0.7rem 0.95rem; margin: 0.6rem 0; font-size: 0.9rem; }
+    .capture-zone .zone { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #ea580c; margin-bottom: 0.2rem; }
+
+    /* To-be draw steps */
+    .draw { background: #fff; border: 1.5px solid #a855f7; border-left: 5px solid #a855f7; border-radius: 6px; padding: 0.7rem 0.95rem; margin: 0.6rem 0; font-size: 0.9rem; }
+    .draw .step { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #a855f7; margin-bottom: 0.2rem; }
+
+    .check { list-style: none; padding-left: 0; }
+    .check li { padding: 0.2rem 0 0.2rem 1.6rem; position: relative; }
+    .check li::before { content: "☐"; position: absolute; left: 0.2rem; color: #64748b; font-size: 1rem; }
+
+    .qgroup { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.7rem 1rem; margin: 0.5rem 0; }
+    .qgroup h3 { margin-top: 0.2rem; color: #14532d; }
+
+    /* Technical-win band */
+    .win { background: #eef2ff; border: 1.5px solid #a5b4fc; border-left: 5px solid #4f46e5; border-radius: 6px; padding: 0.7rem 1rem; margin: 0.6rem 0; font-size: 0.9rem; }
+    .win .win-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #4f46e5; margin-bottom: 0.2rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · SE Field Kit · Discovery &amp; Positioning</p>
+    <h1>Discovery &amp; positioning kit — MuleSoft in the Agentic Enterprise</h1>
+    <p class="tagline">A working session structured around one objective: <strong>capture the customer's as-is IT landscape, co-define a to-be architecture, position MuleSoft into it, and leave with the artifacts that earn the technical win.</strong> Two canvases (as-is, to-be), a gap in the middle, and a win checklist at the end.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">The objective, stated plainly</div>
+    You are not here to pitch a diagram. You are here to <strong>(1) capture what they have</strong>, <strong>(2) agree what "good" looks like</strong>, <strong>(3) show MuleSoft as the shortest credible path from one to the other</strong>, and <strong>(4) walk out with proof the technical evaluator is convinced.</strong> The architecture draw is the middle third — the as-is capture and the win criteria are what actually move the deal.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Before you quote product specifics</div>
+    Agent Fabric, Omni Gateway, MCP Bridge, and the MCP/A2A connectors are new and fast-moving (several GA'd in 2026). Component <em>roles</em> and the <em>architecture shape</em> are stable and safe to whiteboard. Exact feature lists, GA dates, and dialog details drift — <strong>verify current specifics before making commitments.</strong> If asked something you're unsure of, capture it as a follow-up rather than guessing; following up is a trust-builder in a technical evaluation. See the <a href="mulesoft-agentic-reference-architecture.html">agentic reference architecture</a> doc for the verified detail behind each box.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The session arc (60 min)</h2>
+  <p>Keep the order: <strong>as-is before to-be, gap before pitch.</strong> You can't position MuleSoft credibly until their current landscape is on the wall.</p>
+  <div class="agenda">
+    <div class="slot"><span class="mins">0–5</span><span><strong>Frame &amp; permission.</strong> "I want to map your current landscape, then sketch where it's heading — together, on the wall. Sound good?" Get the pen.</span></div>
+    <div class="slot"><span class="mins">5–25</span><span><strong>Capture the as-is.</strong> Draw <em>their</em> current landscape — systems, integration, API estate, existing AI/agent work, ownership, pains. This is the biggest block for a reason.</span></div>
+    <div class="slot"><span class="mins">25–40</span><span><strong>Co-define the to-be.</strong> Overlay the agentic fabric onto the as-is boxes — box by box, each answering a pain they named.</span></div>
+    <div class="slot"><span class="mins">40–50</span><span><strong>Name the gap &amp; the path.</strong> As-is vs to-be side by side; the incremental transition (smallest first win).</span></div>
+    <div class="slot"><span class="mins">50–58</span><span><strong>Test for the win.</strong> Surface decision criteria, who signs off, what proof they need. Listen for red flags.</span></div>
+    <div class="slot"><span class="mins">58–60</span><span><strong>Capture &amp; commit.</strong> Photo both canvases, agree the next artifact (PoC scope, deep-dive, or a gap to verify).</span></div>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Pre-session prep checklist</h2>
+  <div class="callout callout-mule" style="background:#fff;border-color:#cbd5e1;">
+    <ul class="check">
+      <li>Do they already own Anypoint or a competitor's integration platform? (Shapes whether this is "extend" or "displace".)</li>
+      <li>What agent work is already happening — Agentforce? A data-science team with LangGraph? A copilot pilot?</li>
+      <li>Who's in the room — and crucially, <strong>who is the technical decision-maker / evaluator</strong> you need to win?</li>
+      <li>Their messiest backends (SAP, mainframe, legacy SOAP)? Strongest "why integration matters" anchors.</li>
+      <li>Any stated AI mandate from leadership (cost, risk, "agentic transformation")? Tie the to-be to it.</li>
+      <li>What would a competitor say here, and where does MuleSoft genuinely win vs merely tie?</li>
+      <li>Re-skim the <a href="mulesoft-agentic-reference-architecture.html">reference architecture</a> + <a href="mcp-integration-positioning.html">MCP positioning</a> docs.</li>
+      <li>Markers. Photo permission. Two canvases planned (as-is on the left, to-be on the right).</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════ CANVAS 1 ═══════════════ -->
+  <h2>Canvas 1 — capture the as-is (draw this first)</h2>
+  <p>Draw <em>their</em> world before you draw yours. Use six zones. Fill each from their answers — write their words, not your labels. The goal is a shared, accurate picture of what exists today, warts included.</p>
+
+  <div class="capture-zone">
+    <div class="zone">Zone A · Systems of record</div>
+    What runs the business — Salesforce, SAP, ServiceNow, core banking, mainframe, key databases. These are fixed points; everything else connects to them.
+  </div>
+  <div class="capture-zone">
+    <div class="zone">Zone B · Integration &amp; middleware today</div>
+    How systems talk now — Anypoint? A competitor ESB? Point-to-point? iPaaS? Custom code? Batch files? Capture the mess honestly; it's your baseline.
+  </div>
+  <div class="capture-zone">
+    <div class="zone">Zone C · API estate &amp; maturity</div>
+    Do they have managed APIs, a catalog, a gateway? Is reuse happening or is everything bespoke? How discoverable are existing services? (This predicts how fast agents can be wired to real systems.)
+  </div>
+  <div class="capture-zone">
+    <div class="zone">Zone D · AI / agent initiatives in flight</div>
+    Every agent, copilot, LLM app, or PoC already underway — team, stack, and whether it touches systems of record yet. Mark which are siloed.
+  </div>
+  <div class="capture-zone">
+    <div class="zone">Zone E · Ownership &amp; governance</div>
+    Who owns integration? Who owns APIs? Who owns "AI"? Is agent governance anyone's job yet? Draw the org lines — gaps here are pains later.
+  </div>
+  <div class="capture-zone">
+    <div class="zone">Zone F · Pains &amp; constraints</div>
+    Where it hurts today: fragile integrations, no discovery, security/compliance limits, cloud mandates, cost pressure, skills gaps. <strong>Circle the pains — you'll attach to-be boxes directly to them.</strong>
+  </div>
+
+  <p>A filled as-is canvas roughly looks like this — messy on purpose:</p>
+  <div class="arch"><span class="cm"># CANVAS 1 — the customer's world today (their words on the wall)</span>
+
+  <span class="layer">AI / AGENTS (D)</span>   Agentforce pilot · a LangChain PoC · siloed, no governance <span class="gap">(pain)</span>
+        <span class="arrow">│  ??? how do these reach real systems ???</span> <span class="gap">(pain)</span>
+  <span class="layer">APIs (C)</span>          some managed on Anypoint · many bespoke · weak catalog <span class="gap">(pain)</span>
+        <span class="arrow">│</span>
+  <span class="layer">INTEGRATION (B)</span>   Anypoint + legacy ESB + point-to-point + nightly batch
+        <span class="arrow">▼</span>
+  <span class="sys">SYSTEMS OF RECORD (A)   Salesforce · SAP · mainframe · Oracle DB</span>
+
+  <span class="cm">OWNERSHIP (E): platform team owns APIs · LOB owns the AI pilots · agent gov = nobody</span>
+</div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Discovery questions (to fill Canvas 1)</h2>
+  <p>Ask, listen, write onto the zones. Each group feeds a zone. Don't move to the to-be until the as-is feels honest and complete.</p>
+
+  <div class="qgroup">
+    <h3>Systems &amp; integration (Zones A, B)</h3>
+    <ul>
+      <li>What are your core systems of record, and what connects them today?</li>
+      <li>What's your integration platform — Anypoint, something else, hand-rolled?</li>
+      <li>Where is integration most fragile or most expensive to change right now?</li>
+    </ul>
+  </div>
+  <div class="qgroup">
+    <h3>API estate (Zone C)</h3>
+    <ul>
+      <li>Do you have managed APIs and a catalog, or is most access bespoke?</li>
+      <li>If a new project needs customer data, do they find an API or build one?</li>
+      <li>Who governs API security, versioning, and access today?</li>
+    </ul>
+  </div>
+  <div class="qgroup">
+    <h3>AI / agent landscape (Zone D)</h3>
+    <ul>
+      <li>Where are you with agents — pilots, production, planning? On what stacks?</li>
+      <li>Are any agents calling systems of record yet? How was that wired?</li>
+      <li>Do different teams' agents need to cooperate, or are they siloed?</li>
+    </ul>
+  </div>
+  <div class="qgroup">
+    <h3>Ownership, governance &amp; pain (Zones E, F)</h3>
+    <ul>
+      <li>Who owns integration, APIs, and "AI" — same team or three teams?</li>
+      <li>When an agent calls an API, who controls auth, rate limits, and scope?</li>
+      <li>If five teams build three agents each next year, how do you find and govern them all?</li>
+      <li>What has to be true for leadership to trust agents in production?</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════ CANVAS 2 ═══════════════ -->
+  <h2>Canvas 2 — co-define the to-be (overlay onto the as-is)</h2>
+  <p>Now draw the target — but <strong>anchor every box to a pain circled on Canvas 1</strong>. Draw on a second sheet beside the first so the overlay is visible: their systems stay; the fabric goes on top. Say the pain, then draw the box.</p>
+
+  <div class="draw">
+    <div class="step">Draw 1 · Consuming agents (top)</div>
+    <em>Answers Zone D sprawl.</em> "Your Agentforce and custom agents become governed consumers — different stacks, one fabric."
+  </div>
+  <div class="draw">
+    <div class="step">Draw 2 · Agent Broker</div>
+    <em>Answers "who decides which agent handles what".</em> "Routes and delegates by intent, policy, identity — not hardcoded into every agent."
+  </div>
+  <div class="draw">
+    <div class="step">Draw 3 · Omni Gateway (wide bar)</div>
+    <em>Answers Zone E/F governance gap.</em> "One control plane for every A2A and MCP hop — auth, rate-limit, observability. This is API Manager, for agents."
+  </div>
+  <div class="draw">
+    <div class="step">Draw 4 · MCP servers + specialist agents</div>
+    <em>Answers "how do agents reach our systems".</em> "MCP Bridge turns an existing API into an agent tool with no code; the connectors do it in a Mule flow when you need logic."
+  </div>
+  <div class="draw">
+    <div class="step">Draw 5 · Anypoint APIs → their systems (reuse Canvas 1)</div>
+    <em>Answers Zone C.</em> "This layer you may already own — draw the arrow down into the Canvas 1 systems. Agents ride on what you have; they don't replace it."
+  </div>
+  <div class="draw">
+    <div class="step">Draw 6 · Registry + Visualizer (down the side)</div>
+    <em>Answers discovery + visibility pains.</em> "Agent Registry in Exchange for reuse; Visualizer + Monitoring so you can see who calls whom."
+  </div>
+
+  <p>The assembled to-be — your reference, don't reveal up front:</p>
+  <div class="arch"><span class="cm"># CANVAS 2 — the target, built box-by-box onto their systems</span>
+
+<span class="num">1</span> <span class="layer">CONSUMING AGENTS</span>   Agentforce · custom · 3rd-party        ┐
+        <span class="arrow">│ A2A</span>                                              │
+<span class="num">2</span> <span class="layer">AGENT BROKER</span>   route/delegate by intent, policy, identity  │ <span class="num">6</span> <span class="layer">REGISTRY</span>
+        <span class="arrow">│</span>                                                   │   (Exchange)
+<span class="num">3</span> ═══ <span class="layer">OMNI GATEWAY</span> ═══  auth · rate-limit · observ. ═══  │   + <span class="layer">VISUALIZER</span>
+        <span class="arrow">│ MCP</span>                    <span class="arrow">│ A2A</span>                        │   + MONITORING
+<span class="num">4</span> <span class="layer">MCP SERVERS</span>            <span class="layer">SPECIALIST AGENTS</span>              │
+   (Bridge / Connector)                                     │
+        <span class="arrow">│ REST</span>                                              │
+<span class="num">5</span> <span class="layer">ANYPOINT APIs</span>   ← reuse Canvas-1 API estate            ┘
+        <span class="arrow">▼</span>
+   <span class="sys">Salesforce · SAP · ServiceNow · DB · Mainframe  ← Canvas 1</span>
+</div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Name the gap &amp; the path</h2>
+  <p>Put both canvases side by side and make the delta explicit. This is where positioning becomes concrete — MuleSoft is the bridge across the gap, not a rip-and-replace.</p>
+  <table>
+    <thead><tr><th>Dimension</th><th>As-is (Canvas 1)</th><th>To-be (Canvas 2)</th><th>MuleSoft's role in the gap</th></tr></thead>
+    <tbody>
+      <tr><td>Agents reach systems</td><td>Bespoke, per-agent wiring</td><td>Governed MCP tools over reusable APIs</td><td>MCP Bridge / Connector on existing APIs</td></tr>
+      <tr><td>Agent-to-agent</td><td>Direct or none, ungoverned</td><td>A2A through one gateway</td><td>Omni Gateway + A2A connector</td></tr>
+      <tr><td>Discovery / reuse</td><td>Teams rebuild; no catalog</td><td>Registry in Exchange</td><td>Agent Registry extends existing Exchange</td></tr>
+      <tr><td>Governance</td><td>Nobody owns it</td><td>Central control plane + monitoring</td><td>Omni Gateway policies + Visualizer</td></tr>
+    </tbody>
+  </table>
+  <blockquote class="talk">
+    "Notice what's <em>not</em> changing: your systems of record and most of your APIs stay exactly where they are. What we're adding is the governed layer on top so agents can use what you already built — safely, and without every team reinventing it. The smallest first step is one existing API, exposed as an MCP tool with MCP Bridge — no code — so you can prove the pattern in days, not a quarter."
+  </blockquote>
+
+  <!-- ═══════════════ THE WIN ═══════════════ -->
+  <h2>Test for the technical win (50–58 min)</h2>
+  <p>A whiteboard that ends "great session!" but doesn't surface the decision mechanics is a nice chat, not a win. Actively probe these before you leave.</p>
+
+  <div class="win">
+    <div class="win-label">Surface the decision criteria</div>
+    <ul>
+      <li>"What will your team measure to decide this is the right foundation?"</li>
+      <li>"Who else has to be convinced — security, architecture review, platform ownership?"</li>
+      <li>"Are you comparing approaches? What would the alternative look like on this same board?"</li>
+    </ul>
+  </div>
+  <div class="win">
+    <div class="win-label">Know where MuleSoft genuinely wins (lead with these)</div>
+    <ul>
+      <li><strong>Reuse of existing estate</strong> — agents ride on APIs they already own; competitors often mean rebuild.</li>
+      <li><strong>Ugly-backend reach</strong> — SAP, mainframe, SOAP: integration depth, not just an LLM gateway.</li>
+      <li><strong>One governance plane for MCP <em>and</em> A2A</strong> — not a bolt-on per protocol.</li>
+      <li><strong>Open protocols</strong> — bet on interoperability, not a single vendor's agent stack.</li>
+    </ul>
+  </div>
+  <div class="win">
+    <div class="win-label">Red flags you do NOT have the win yet</div>
+    <ul>
+      <li>They love the vision but can't name a system or use case to start with.</li>
+      <li>The technical evaluator stayed quiet — you sold the room, not the decider.</li>
+      <li>No agreed proof point or success metric — "let's keep talking" is not a criterion.</li>
+      <li>A competitor's platform is drawn in Zone B and nobody said how you displace or coexist.</li>
+    </ul>
+  </div>
+  <div class="win">
+    <div class="win-label">What actually closes the technical win</div>
+    A scoped, time-boxed proof against <em>their</em> as-is: take one real API from Canvas 1, expose it via MCP Bridge, call it from an agent through the gateway, show it governed in Monitoring. Small, real, on their systems. Agree the scope on the board before you leave.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Objections — quick responses</h2>
+  <table>
+    <thead><tr><th>They say</th><th>You say</th></tr></thead>
+    <tbody>
+      <tr><td>"Our agents are just a pilot — this is overkill."</td><td>"For one agent, skip it. Draw the picture now so at fifteen agents across five teams you're not retrofitting governance onto a mess. Cheap to plan, expensive to retrofit."</td></tr>
+      <tr><td>"Agentforce already does agents — why MuleSoft?"</td><td>"Agentforce is a consumer at the top of Canvas 2. The question is what it reaches and how it's governed. MuleSoft connects it to your SAP/mainframe and governs the traffic — different job, same picture."</td></tr>
+      <tr><td>"We already have an integration platform."</td><td>"Then keep it in Zone B — the question is whether it governs agent-to-agent and agent-to-tool traffic and reaches your backends. Let's draw where it stops and where the gap is."</td></tr>
+      <tr><td>"We'll just let each team build and call directly."</td><td>"That's the point-to-point API mess reborn one level up. Draw ten agents calling each other directly — that spaghetti is exactly what the fabric prevents."</td></tr>
+      <tr><td>"Isn't MCP/A2A too new to bet on?"</td><td>"Open protocols with fast-growing adoption — you're betting on interoperability, not a vendor. And the governance layer pays off regardless of which protocol wins."</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>Session outputs — artifacts that advance the win</h2>
+  <ul>
+    <li><strong>Photo of Canvas 1 (as-is)</strong> — the shared, accurate picture of their world. This alone earns credibility.</li>
+    <li><strong>Photo of Canvas 2 (to-be)</strong> — the target they co-authored, overlaid on their systems.</li>
+    <li><strong>The gap table</strong> — as-is → to-be → MuleSoft's role, in their language.</li>
+    <li><strong>An agreed proof scope</strong> — one real API, exposed and governed, as the technical-win close.</li>
+    <li><strong>Named decision criteria + the evaluator</strong> — who signs off and what they measure.</li>
+    <li><strong>A gap list</strong> — anything you flagged "let me verify"; follow-up builds trust in a technical eval.</li>
+    <li><strong>Leave-behind:</strong> the <a href="mulesoft-agentic-reference-architecture.html">reference architecture</a> doc as the clean version of Canvas 2.</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The habit that wins technical evals</div>
+    Spend more time on Canvas 1 than feels comfortable. A to-be picture only positions MuleSoft if it's visibly built on <em>their</em> real landscape. The as-is capture is the credibility; the gap table is the argument; the proof scope is the close. The pretty diagram is the least important part.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Related in this workspace</h2>
+  <ul>
+    <li><a href="agentic-whiteboarding-kit.html">REF — Agentic whiteboarding kit</a> — the vision-first companion (draw-it-live, single canvas)</li>
+    <li><a href="mulesoft-agentic-reference-architecture.html">REF — Agentic reference architecture</a> — verified detail behind every to-be box</li>
+    <li><a href="mcp-integration-positioning.html">REF — MCP integration positioning</a> — Bridge vs Connector, MuleSoft vs AgentCore Gateway</li>
+    <li><a href="mcp-a2a-interop.html">REF — MCP + A2A interop</a> · <a href="mulesoft-agent-stack-positioning.html">REF — MuleSoft agent stack positioning</a> · <a href="agentforce-positioning.html">REF — Agentforce positioning</a></li>
+  </ul>
+
+  <div class="footer">
+    <a href="mulesoft-agentic-reference-architecture.html">← Reference architecture</a>
+    <p style="margin-top:0.7rem">A field kit, not a datasheet. The architecture shape is durable; verify product specifics before commitments. Refine after each real session — which as-is zones were hardest to fill, which win criteria you missed.</p>
+  </div>
+
+</div>
+</body>
+</html>
