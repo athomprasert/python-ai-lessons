@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — MCP + A2A: the two agent-interop protocols, composed</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 880px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    .callout { border-radius: 6px; padding: 0.7rem 0.9rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.9rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.92rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer  { color: #f9e2af; font-weight: 700; }
+    .arch .cm     { color: #6c7086; font-style: italic; }
+    .arch .arrow  { color: #89dceb; }
+    .arch .sys    { color: #a6e3a1; }
+
+    .decision { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+    .decision strong { color: #0f172a; }
+    .decision ul { margin-top: 0.3rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Agent Interoperability · MCP + A2A</p>
+    <h1>MCP + A2A: the two agent-interop protocols, composed</h1>
+    <p class="tagline">The wrap-up for the L45–47 mini-series. One architecture diagram, the primitives side-by-side, a "tool or agent?" decision guide, and the SE talk track — designed to re-read after the hands-on lessons have faded.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">One-line summary</div>
+    <strong>MCP</strong> connects an agent to <strong>tools &amp; data</strong> (a function call). <strong>A2A</strong> connects an agent to <strong>other agents</strong> (delegate a task with a lifecycle). They are not competitors — they stack: A2A on the <em>outside</em> (agents delegating to agents), MCP on the <em>inside</em> (each agent reaching its tools). Almost every real multi-agent system uses both.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — read before quoting anything</div>
+    Both protocols and their SDKs are moving fast. The <code>a2a-sdk</code> API changed sharply across versions — the L47 code targets <strong>1.1.2</strong> specifically (proto types, <code>supported_interfaces</code>, route-builder functions); older tutorials won't match. On the MuleSoft side: <strong>Agent Fabric</strong> / <strong>Omni Gateway</strong> does govern A2A and MCP endpoints (confirmed on docs.mulesoft.com/agent-fabric), but a specific supported A2A <em>spec version number</em> is not stated in the public docs. Verify current product names, SDK versions, and spec revisions before a customer call — the <em>architectural framings</em> below are the durable part.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The one diagram to memorize</h2>
+  <p>L47's Part 5 gestured at this — here it is drawn properly. This is the shape of a real multi-agent system: A2A for delegation <em>between</em> agents, MCP for each agent's <em>own</em> capabilities, an integration platform underneath doing the actual system work.</p>
+
+  <div class="arch"><span class="cm"># A2A on the outside, MCP on the inside, integration underneath</span>
+
+<span class="layer">Orchestrator agent</span>
+   <span class="arrow">↓  A2A: discover Agent Card, delegate a Task (submitted→working→completed)</span>
+<span class="layer">Specialist agent (e.g. fx-agent from L47)</span>
+   <span class="arrow">↓  MCP: call a tool to fulfil the task (L46's HTTP MCP server)</span>
+<span class="layer">MCP server / tool layer</span>
+   <span class="arrow">↓  REST call</span>
+<span class="layer">Anypoint System / Process APIs</span>       <span class="cm"># DataWeave, orchestration, connectors</span>
+   <span class="arrow">↓  connector protocols</span>
+<span class="sys">Salesforce · SAP · ServiceNow · DB · Mainframe · Files</span>
+</div>
+
+  <p>Read it top-down: an orchestrator <em>delegates</em> to a specialist agent over <strong>A2A</strong>; that agent, inside its own <code>execute()</code>, <em>calls tools</em> over <strong>MCP</strong> to get the data it needs; those tools front real systems of record. Delete the A2A layer and agents can't cooperate without bespoke point-to-point wiring. Delete the MCP layer and each agent hardcodes its integrations. Same "delete a layer, rebuild what it gave you" logic as the rest of the stack.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The primitives, side-by-side (L45–47 in one table)</h2>
+  <p>Each protocol has three core primitives. Learn the mapping once and both stop feeling foreign.</p>
+
+  <table>
+    <thead>
+      <tr><th>Role</th><th>MCP (L45–46)</th><th>A2A (L47)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Connects to…</td><td><strong>Tools &amp; data</strong></td><td><strong>Other agents</strong></td></tr>
+      <tr><td>Discovery</td><td><code>list_tools()</code> after connecting</td><td>Fetch the <strong>Agent Card</strong> at <code>/.well-known/agent-card.json</code></td></tr>
+      <tr><td>Unit of work</td><td>A tool <em>call</em> — request → response</td><td>A <strong>Task</strong> — has a lifecycle, can be long-running</td></tr>
+      <tr><td>Progress model</td><td>Synchronous return (or stream of chunks)</td><td>State machine: <code>submitted → working → completed / failed / canceled</code></td></tr>
+      <tr><td>The result</td><td>Tool return value</td><td>An <strong>Artifact</strong> attached to the task</td></tr>
+      <tr><td>Mental model</td><td>"Here's a function you can run"</td><td>"Here's a colleague you can delegate to"</td></tr>
+      <tr><td>Transport (in these lessons)</td><td>stdio (L45) / Streamable HTTP (L46)</td><td>JSON-RPC over HTTP (L47)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>Decision guide — should a capability be an MCP tool or an A2A agent?</h2>
+  <p>The most common design question once you have both in your toolbox. The rule of thumb: <strong>expose a tool when the work is a stateless function; expose an agent when the work reasons, decides, or runs long.</strong></p>
+
+  <div class="decision">
+    <strong>Make it an MCP tool when:</strong>
+    <ul>
+      <li>The work is a single, well-defined operation — "get the exchange rate", "create the ticket", "run this query"</li>
+      <li>It returns quickly and doesn't need to report progress</li>
+      <li>There's no independent decision-making — the caller decides, the tool executes</li>
+      <li>You'd describe it as <em>a function</em>, not <em>a worker</em></li>
+    </ul>
+  </div>
+
+  <div class="decision">
+    <strong>Make it an A2A agent when:</strong>
+    <ul>
+      <li>The work involves reasoning or multiple steps the caller shouldn't have to orchestrate</li>
+      <li>It can be long-running and the caller wants to watch progress (the task lifecycle earns its keep here)</li>
+      <li>It's owned by a different team, or built on a different stack, and you want a clean contract between them</li>
+      <li>You'd describe it as <em>a teammate</em> you hand a job to, not a function you call</li>
+    </ul>
+  </div>
+
+  <div class="decision">
+    <strong>Often it's both, nested:</strong>
+    <ul>
+      <li>A specialist A2A agent internally calls several MCP tools to do its job (the diagram above)</li>
+      <li>A capability starts life as an MCP tool, then grows reasoning and becomes an agent — the tool it used becomes one of the agent's tools</li>
+      <li>Rule of thumb: if you keep adding "and then decide…" logic on the <em>caller</em> side of a tool, that logic wants to live inside an agent instead</li>
+    </ul>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where MuleSoft sits</h2>
+  <p>The positioning is the same one layer up from the MCP story (see the <a href="mcp-integration-positioning.html">MCP integration positioning</a> doc). MCP exposes your APIs as <em>tools</em>; A2A lets <em>agents</em> cooperate. MuleSoft's job in both is governance: expose, secure, version, and monitor these endpoints so the mesh of agents is managed rather than a free-for-all.</p>
+
+  <blockquote class="talk">
+    "Your customer won't build one giant agent — they'll build several, owned by different teams, maybe on different stacks. A2A is how those agents delegate to each other without bespoke point-to-point integration: publish an Agent Card, and any other agent can discover and call it. MCP is how each of those agents reaches your actual systems — Salesforce, SAP, the mainframe. MuleSoft's role is the constant across both: Agent Fabric and Omni Gateway govern the A2A and MCP endpoints so the whole mesh lives under the same policies, auth, and catalog as your REST APIs. Same reuse-and-govern pitch you've always made — now covering agent-to-agent and agent-to-tool, not just app-to-app."
+  </blockquote>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The strategic frame</div>
+    Every team standing up an A2A agent or an MCP server is creating a new endpoint that needs auth, versioning, observability, and a catalog entry. That's the integration-governance conversation MuleSoft has always owned — the protocols are new, the problem isn't. Lead with "these are open, complementary protocols" (true, and it builds trust), then the governance follow-up writes itself.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mini-series, in order</h2>
+  <ul>
+    <li><a href="../lessons/0045-mcp-and-a2a-protocols.html">L45 — MCP &amp; A2A protocols</a> — what each protocol is; a tiny stdio MCP server + client</li>
+    <li><a href="../lessons/0046-mcp-over-http.html">L46 — MCP over HTTP</a> — Streamable HTTP transport, two-terminal workflow</li>
+    <li><a href="../lessons/0047-a2a-agent-lifecycle.html">L47 — Build an A2A agent</a> — Agent Card discovery + the task lifecycle</li>
+    <li><a href="mcp-integration-positioning.html">REF — MCP integration positioning</a> — the layer below: where MuleSoft MCP vs AgentCore Gateway sit</li>
+    <li><a href="mulesoft-agent-stack-positioning.html">REF — MuleSoft agent stack positioning</a> — Omni Gateway + Agent Fabric in the full five-layer stack</li>
+  </ul>
+
+  <div class="footer">
+    <a href="../lessons/0047-a2a-agent-lifecycle.html">← L47</a>
+    <a href="https://a2a-protocol.org">A2A spec</a>
+    <a href="https://modelcontextprotocol.io">MCP spec</a>
+    <p style="margin-top:0.7rem">This ties off the interop mini-series. Product names, SDK versions, and spec revisions drift; the framings on this page are the durable part.</p>
+  </div>
+
+</div>
+</body>
+</html>
