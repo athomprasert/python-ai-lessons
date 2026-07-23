@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — MuleSoft in the Agentic Enterprise Reference Architecture</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 880px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    .callout { border-radius: 6px; padding: 0.7rem 0.9rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.9rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.92rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.76rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer  { color: #f9e2af; font-weight: 700; }
+    .arch .cm     { color: #6c7086; font-style: italic; }
+    .arch .arrow  { color: #89dceb; }
+    .arch .sys    { color: #a6e3a1; }
+    .arch .plane  { color: #f38ba8; font-weight: 700; }
+
+    .decision { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+    .decision strong { color: #0f172a; }
+    .decision ul { margin-top: 0.3rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Architecture · MuleSoft Agent Fabric</p>
+    <h1>MuleSoft in the Agentic Enterprise Reference Architecture</h1>
+    <p class="tagline">Where Agent Fabric, Omni Gateway, and MuleSoft's MCP server pieces sit when an enterprise runs many agents. One layered diagram, a component-by-component table, a worked request trace, and the SE talk track — grounded in the L45–47 protocol lessons.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">One-line summary</div>
+    <strong>Agent Fabric</strong> is MuleSoft's umbrella for governing and orchestrating an enterprise's agents. Inside it: the <strong>Agent Broker</strong> plans and routes work, <strong>Omni Gateway</strong> is the policy/control plane for MCP and A2A traffic, the <strong>Agent Registry</strong> (in Anypoint Exchange) is discovery/reuse, and <strong>MCP Bridge / MCP Connector</strong> turn your APIs into agent-callable tools. It's API-led architecture applied one layer up: instead of governing app-to-app APIs, you govern agent-to-agent (A2A) and agent-to-tool (MCP) traffic.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — read before customer use</div>
+    Agent Fabric and Omni Gateway are <strong>new and fast-moving</strong> (Agent Fabric announced 2025, components rolling out through 2026 — largely after this author's knowledge cutoff, so details were verified against mulesoft.com / docs.mulesoft.com and may still have shifted). Component <em>names and roles</em> below are drawn from those sources; exact deployment modes, policy lists, and GA dates per component change quickly. <strong>Verify current specifics before quoting them in a customer meeting.</strong> The <em>architectural shape</em> — governance plane over MCP + A2A, broker for orchestration, registry for discovery — is the durable part. The one hard date confirmed elsewhere in this workspace: <strong>MCP Bridge GA 6 Mar 2026</strong>.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The problem it solves — "agent sprawl"</h2>
+  <p>Once every team can spin up an agent, you get the same mess APIs created a decade ago: dozens of agents and MCP servers, built on different stacks, with no shared discovery, no consistent auth, and no visibility into who's calling whom. Agent Fabric is MuleSoft's answer — a <strong>governed, coordinated network</strong> of agents rather than a free-for-all. If you lived through "API sprawl → API-led connectivity," this is the exact same story, one abstraction level higher.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The one diagram to memorize</h2>
+  <p>Read it top-down. Consuming agents delegate work; the broker decides who does it; the gateway governs every hop; the registry makes things findable; MCP turns your existing API estate into tools. Observability wraps the whole thing.</p>
+
+  <div class="arch"><span class="cm"># MuleSoft Agentic Enterprise Reference Architecture</span>
+
+<span class="layer">CONSUMING AGENTS / APPS</span>              <span class="cm"># Agentforce, custom agents, 3rd-party agents, copilots</span>
+       <span class="arrow">│  A2A: delegate a task (Agent Card discovery + task lifecycle)</span>
+       <span class="arrow">▼</span>
+<span class="layer">AGENT BROKER</span>  <span class="cm"># orchestration: plan & route by intent, policy, identity, runtime state</span>
+       <span class="arrow">│</span>
+┌──────────────────────────────────────────────────────────────┐
+│  <span class="layer">OMNI GATEWAY</span>   <span class="cm"># governance plane for MCP + A2A: auth, rate-limit,</span>  │
+│                <span class="cm"># routing, observability — managed ingress/egress</span>       │
+└──────────────────────────────────────────────────────────────┘
+       <span class="arrow">│  MCP: call a tool</span>                             │  A2A: call another agent
+       <span class="arrow">▼</span>                                        <span class="arrow">▼</span>
+<span class="layer">MCP SERVERS</span>  <span class="cm"># from your APIs, via…</span>            <span class="layer">SPECIALIST AGENTS</span>  <span class="cm"># internal / external</span>
+   ├─ <span class="sys">MCP Bridge</span>   <span class="cm"># API Manager, no code (GA 6 Mar 2026)</span>
+   └─ <span class="sys">MCP Connector</span> <span class="cm"># built into a Mule flow, custom logic</span>
+       <span class="arrow">│  REST / SOAP / events</span>
+       <span class="arrow">▼</span>
+<span class="layer">ANYPOINT SYSTEM / PROCESS APIs</span>          <span class="cm"># DataWeave, orchestration, 300+ connectors</span>
+       <span class="arrow">▼</span>
+<span class="sys">Salesforce · SAP · ServiceNow · DB · Mainframe · Files</span>
+
+<span class="cm"># ── cross-cutting, spanning every layer above ──────────────────</span>
+<span class="plane">AGENT REGISTRY (Anypoint Exchange)</span>  <span class="cm"># discover & reuse agents, MCP servers, LLMs</span>
+<span class="plane">AGENT SCANNERS</span>                       <span class="cm"># auto-discover & catalog external agents</span>
+<span class="plane">AGENT VISUALIZER + ANYPOINT MONITORING</span> <span class="cm"># map the network; metrics, logs, traces</span>
+</div>
+
+  <p>Delete a layer and you rebuild what it gave you — the same logic as the classic API-led stack. No broker → every agent hardcodes who to call. No Omni Gateway → auth and rate-limiting get reinvented per agent. No registry → nobody can find what already exists, so it's rebuilt. No MCP layer → agents can't reach your systems of record without bespoke integration.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The components, one job each</h2>
+  <p>Everything below lives under the <strong>Agent Fabric</strong> umbrella. The rightmost column ties each piece back to the API-led world you already know.</p>
+
+  <table>
+    <thead>
+      <tr><th>Component</th><th>Its one job</th><th>Speaks</th><th>API-led analogy</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Agent Broker</strong></td><td>Orchestration — plan and delegate work based on request intent, policies, identity, and runtime state</td><td>A2A</td><td>Process API / orchestration layer</td></tr>
+      <tr><td><strong>Omni Gateway</strong></td><td>Governance plane — apply auth, rate-limiting, routing, and observability to MCP and A2A traffic; managed ingress/egress</td><td>MCP + A2A</td><td>API Manager + Flex Gateway (for agents)</td></tr>
+      <tr><td><strong>Agent Registry</strong> (Anypoint Exchange)</td><td>Discovery &amp; reuse — a catalog of agents, MCP servers, and LLMs the whole org can find and consume</td><td>—</td><td>Exchange / API catalog</td></tr>
+      <tr><td><strong>Agent Scanners</strong></td><td>Auto-discover and catalog external agents from various providers into the registry</td><td>—</td><td>API auto-discovery / crawlers</td></tr>
+      <tr><td><strong>MCP Bridge</strong></td><td>Turn existing APIs into MCP servers with no code, from API Manager (GA 6 Mar 2026)</td><td>MCP</td><td>Proxy/policy layer over an existing API</td></tr>
+      <tr><td><strong>MCP Connector</strong></td><td>Build an MCP server (or client) into a Mule flow when custom logic is needed</td><td>MCP</td><td>A connector inside an integration flow</td></tr>
+      <tr><td><strong>Agent Visualizer</strong></td><td>Visual map of the agent network — who calls whom</td><td>—</td><td>Anypoint Visualizer (for APIs)</td></tr>
+      <tr><td><strong>Anypoint Monitoring</strong></td><td>Metrics, logs, and traces across agent interactions</td><td>—</td><td>Anypoint Monitoring (same product, agent-aware)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>How one request flows</h2>
+  <p>A worked trace makes the layering concrete. Say an Agentforce agent needs "the latest order status for customer 12345, then draft a follow-up":</p>
+  <ol>
+    <li><strong>Delegation (A2A).</strong> The consuming agent doesn't know the internals — it delegates the task to the fabric. Discovery happens via the <strong>Agent Registry</strong> (Agent Cards live here, same mechanism as L47's <code>/.well-known/agent-card.json</code>).</li>
+    <li><strong>Routing (Agent Broker).</strong> The broker reads intent + identity + policy and decides which agent or tool handles each part — order lookup vs. drafting.</li>
+    <li><strong>Governance (Omni Gateway).</strong> Every hop — agent-to-agent or agent-to-tool — passes the gateway, which enforces auth, rate limits, and emits telemetry. Nothing bypasses it.</li>
+    <li><strong>Tool call (MCP).</strong> The order-lookup step calls an <strong>MCP server</strong> that <strong>MCP Bridge</strong> generated from your existing "Orders" API — no new code, existing API Manager policies apply.</li>
+    <li><strong>Integration (Anypoint).</strong> That API fronts the real system of record (SAP, Salesforce, a DB) through Anypoint connectors and DataWeave.</li>
+    <li><strong>Observability (Visualizer + Monitoring).</strong> The whole path shows up as a traced, visualized flow — you can see the agent-to-agent-to-tool chain end to end.</li>
+  </ol>
+
+  <!-- ───────────────────────────── -->
+  <h2>How it maps to what you built (L45–47)</h2>
+  <p>Every hands-on piece from the interop mini-series is a hand-rolled version of one fabric component. That's the fastest way to make this architecture click:</p>
+  <table>
+    <thead>
+      <tr><th>You built (by hand)</th><th>Fabric component</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>L45</strong> — a tool exposed over MCP (stdio)</td><td>What MCP Bridge/Connector generate at scale</td></tr>
+      <tr><td><strong>L46</strong> — an MCP server over Streamable HTTP</td><td>An MCP server governed by Omni Gateway</td></tr>
+      <tr><td><strong>L47</strong> — an A2A agent: Agent Card + task lifecycle</td><td>A specialist agent registered in the Agent Registry, routed by the Agent Broker</td></tr>
+      <tr><td>The <code>create_from_url</code> discovery step in L47</td><td>Discovery via the Agent Registry / Exchange</td></tr>
+    </tbody>
+  </table>
+  <p>You wrote the primitives yourself, so you know exactly what the platform is automating: auth, discovery, routing, observability, and no-code exposure of existing APIs.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The SE talk track</h2>
+  <blockquote class="talk">
+    "Your agents are about to sprawl the same way your APIs did. Every team will build one, on a different stack, calling each other point-to-point — no discovery, no shared auth, no idea who's calling whom. Agent Fabric is the same play we ran for API sprawl, one level up: a registry so agents are discoverable and reusable, a broker so work is routed by policy and intent instead of hardcoded, and Omni Gateway as the single control plane so every agent-to-agent and agent-to-tool call is authenticated, rate-limited, and observable. And because it speaks the open protocols — A2A between agents, MCP to tools — you're not locked in: your Agentforce agents, your custom LangGraph agents, and third-party agents all live in the same governed fabric. MCP Bridge means you expose your existing Anypoint APIs as agent tools with no new code. The pitch hasn't changed in fifteen years — reuse and govern — the endpoints just got smarter."
+  </blockquote>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The strategic frame</div>
+    Don't sell this as a brand-new product category — sell it as <em>API-led connectivity for agents</em>. Every customer who bought the "govern your API sprawl" story already understands the "govern your agent sprawl" story; you're extending an architecture they've already committed to, not asking them to learn a new one. Omni Gateway is API Manager for agents; the Agent Registry is Exchange for agents; the Agent Broker is the orchestration layer for agents. Familiar shapes, new traffic.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Related in this workspace</h2>
+  <ul>
+    <li><a href="mcp-a2a-interop.html">REF — MCP + A2A interop</a> — the two protocols this whole fabric runs on, composed</li>
+    <li><a href="mcp-integration-positioning.html">REF — MCP integration positioning</a> — Omni Gateway/MuleSoft MCP vs AgentCore Gateway; Bridge-vs-Connector</li>
+    <li><a href="mulesoft-agent-stack-positioning.html">REF — MuleSoft agent stack positioning</a> — the five-layer stack vs frameworks &amp; Agentforce</li>
+    <li><a href="agentforce-positioning.html">REF — Agentforce positioning</a> — where Agentforce agents sit as consumers of the fabric</li>
+    <li><a href="../lessons/0047-a2a-agent-lifecycle.html">L47 — Build an A2A agent</a> · <a href="../lessons/0046-mcp-over-http.html">L46 — MCP over HTTP</a> · <a href="../lessons/0045-mcp-and-a2a-protocols.html">L45 — MCP &amp; A2A protocols</a></li>
+  </ul>
+
+  <div class="footer">
+    <a href="mcp-a2a-interop.html">← MCP + A2A interop</a>
+    <a href="https://www.mulesoft.com/platform/api/agent-fabric">Agent Fabric</a>
+    <a href="https://docs.mulesoft.com/agent-fabric/">Agent Fabric docs</a>
+    <p style="margin-top:0.7rem">Product names, component boundaries, and GA dates for Agent Fabric are moving fast — verify before quoting. The layered architecture is the durable part.</p>
+  </div>
+
+</div>
+</body>
+</html>
