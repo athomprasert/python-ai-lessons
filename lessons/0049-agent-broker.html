@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L49 — The Agent Broker &amp; Agent Script orchestration (MuleSoft)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff; color: #1a1a1a; line-height: 1.6; padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 840px; margin: 0 auto; }
+
+    header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .eyebrow { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.35rem; font-size: 0.95rem; }
+
+    h2 {
+      font-weight: 800; margin: 1.7rem 0 0.5rem; padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a; letter-spacing: 0.03em;
+      text-transform: uppercase; font-size: 0.85rem;
+    }
+    h3 { font-size: 1.02rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.25rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.87rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code {
+      background: #f1f1f1; border-radius: 3px; padding: 0.05em 0.35em;
+      font-size: 0.88em; color: #c7254e; font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    .arch {
+      background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 0.8rem;
+      line-height: 1.55; margin: 0.5rem 0 1rem; white-space: pre; overflow-x: auto;
+    }
+    .arch .layer { color: #f9e2af; font-weight: 700; }
+    .arch .cm { color: #6c7086; font-style: italic; }
+    .arch .arrow { color: #89dceb; }
+    .arch .plane { color: #f38ba8; font-weight: 700; }
+
+    .callout { border-radius: 6px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.92rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-new  { background: #ecfdf5; border-color: #10b981; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff; border-left: 5px solid #0284c7; border-radius: 6px;
+      padding: 0.85rem 1.1rem; margin: 0.7rem 0 1rem; font-size: 0.93rem;
+      font-style: italic; color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track"; display: block; font-size: 0.65rem; font-weight: 800;
+      letter-spacing: 0.1em; color: #0284c7; margin-bottom: 0.4rem; font-style: normal;
+    }
+
+    .quiz { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
+    .quiz h3 { margin-top: 0; color: #14532d; }
+    .quiz ol { margin-left: 1.3rem; }
+    .quiz details { margin-top: 0.4rem; }
+    .quiz summary { cursor: pointer; color: #16a34a; font-weight: 600; font-size: 0.88rem; }
+    .quiz .ans { background: #fff; border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.83rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">Lesson 49 · Agent Fabric · MuleSoft</p>
+    <h1>The Agent Broker &amp; Agent Script orchestration</h1>
+    <p class="tagline">What the Agent Broker is, why it exists when a consuming agent can already route to peers over A2A, and how <strong>Agent Script</strong> turns broker orchestration into an explicit graph of nodes, edges, and triggers. Grounded entirely in MuleSoft's public docs and release notes.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">TL;DR</div>
+    The Agent Broker is a <strong>context-aware routing service</strong> that "plans and delegates work based on context" — request intent, identity, policies, and runtime state. It isn't a capability a consumer lacks (a consumer <em>can</em> route via A2A); it <strong>centralizes routing so the logic lives in one governed place</strong> instead of hardcoded in every agent. As of the July 2026 release, you author that orchestration in <strong>Agent Script</strong> — "a graph-based language that gives you explicit control over how brokers coordinate agents, tools, and LLMs."
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source &amp; version honesty</div>
+    Agent Fabric is new and moving fast. Everything here is drawn from public MuleSoft sources — the <a href="https://docs.mulesoft.com/agent-fabric/">Agent Fabric docs</a>, the <a href="https://docs.mulesoft.com/general/agent-fabric-release-notes">Agent Fabric release notes</a> (broker: 3 Oct 2025; Agent Script: 14 Jul 2026), and the <a href="https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html">Agent Script guide</a>. Exact syntax and capabilities shift between releases — <strong>verify against those docs before a customer commitment</strong>, and don't quote a field name from memory.
+  </div>
+
+  <!-- ───────────────────── THE OBJECTION ───────────────────── -->
+  <h2>Start with the honest objection</h2>
+  <p>A fair challenge: in A2A, a consuming agent can already discover peers (via Agent Cards) and route to them directly. So a broker is <strong>not</strong> a capability the consumer lacks. If that's true, why introduce one?</p>
+  <p>The answer is about <strong>where routing logic lives</strong>, not whether routing is possible. Without a broker, every consumer embeds its own routing:</p>
+  <ul>
+    <li>Each agent hardcodes "refunds → billing-agent" — duplicated across N consumers.</li>
+    <li>Change a downstream agent and every consumer that knew about it must be updated.</li>
+    <li>Routing <em>policy</em> (identity, "prod agents only", fallbacks) is reimplemented per agent, inconsistently.</li>
+    <li>It's the point-to-point API mesh again — one level up, between agents.</li>
+  </ul>
+  <p>A broker makes routing a <strong>decision made once, in one governed place</strong>. The honest analogy: it's an <em>orchestration layer for agents</em>, the way a Process API is an orchestration layer for services. You don't need one for three agents wired directly — you need it when direct wiring stops scaling. So <strong>the broker is genuinely optional for small, static topologies</strong>; it earns its place with many agents, dynamic routing, and a team that wants routing rules centralized rather than scattered.</p>
+
+  <!-- ───────────────────── ROUTING INPUTS ───────────────────── -->
+  <h2>What the broker routes on</h2>
+  <p>The docs describe the broker as an "intelligent routing agent that plans and delegates work based on context." That context has four public inputs — everything else about routing hangs off these:</p>
+  <table>
+    <thead><tr><th>Routing input</th><th>Meaning</th><th>Could a consumer do it alone?</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Request intent</strong></td><td>Match the task to an agent's advertised skills (from its Agent Card)</td><td>Yes — the broker just centralizes it</td></tr>
+      <tr><td><strong>Identity</strong></td><td>Route based on <em>who</em> is calling and their scopes</td><td>Painful &amp; inconsistent per-consumer — the broker's real value</td></tr>
+      <tr><td><strong>Policies</strong></td><td>Governance rules applied to the routing decision</td><td>Hard to keep consistent across consumers</td></tr>
+      <tr><td><strong>Runtime state</strong></td><td>Delegate based on current conditions and track task state</td><td>A hardcoded consumer just fails when a target is down</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────── BROKER vs GATEWAY ───────────────────── -->
+  <h2>Broker decides · Omni Gateway enforces</h2>
+  <p>Keep these two boxes distinct: the <strong>broker makes the routing/orchestration decision</strong>; the <strong>Omni Gateway governs the traffic</strong>. The gateway applies policies and controls across agents, brokers, LLM proxies, and MCP servers, with support for both MCP and A2A. So the broker decides <em>which agent</em>; the gateway enforces <em>auth, rate limits, and policy</em> on the calls.</p>
+  <div class="arch"><span class="cm"># Two distinct responsibilities</span>
+
+  consuming agent
+        <span class="arrow">│</span>
+  ═══ <span class="plane">OMNI GATEWAY</span> ═══   <span class="cm"># governance: auth, rate-limit, policy (MCP + A2A)</span>
+        <span class="arrow">│</span>
+  <span class="layer">AGENT BROKER</span>          <span class="cm"># decision: which agent handles this? plan &amp; delegate</span>
+        <span class="arrow">│</span>
+  target agent / MCP tool / LLM
+</div>
+  <p>Watch the common mistake: don't attribute rate-limiting and auth to the broker. Those are <strong>gateway</strong> functions. The broker's job is the routing decision and task delegation.</p>
+
+  <!-- ───────────────────── EVOLUTION ───────────────────── -->
+  <h2>How broker orchestration evolved (per public release notes)</h2>
+  <p>The public release notes show the broker maturing in two visible steps:</p>
+  <table>
+    <thead><tr><th>Release note</th><th>What shipped</th></tr></thead>
+    <tbody>
+      <tr><td><strong>3 Oct 2025</strong></td><td>"Orchestrate agents across ecosystems with agent brokers, a context-aware routing service for agents and assets." — the broker as a routing service.</td></tr>
+      <tr><td><strong>14 Jul 2026</strong></td><td>"Build agent networks with predictable, governed orchestration using <strong>Agent Script</strong> — a graph-based language that gives you explicit control over how brokers coordinate agents, tools, and LLMs." — orchestration becomes an authored graph.</td></tr>
+    </tbody>
+  </table>
+  <p>The shift worth understanding: from "a routing service that plans for you" toward "orchestration you define explicitly as a graph." Which brings us to Agent Script.</p>
+
+  <!-- ───────────────────── AGENT SCRIPT ───────────────────── -->
+  <h2>Agent Script — orchestration as a graph</h2>
+  <p>Per the July 2026 release note, you define broker orchestration as a graph of <strong>nodes, edges, and triggers</strong> in Agent Script (<code>.agent</code>) files. The key design idea is mixing two kinds of node:</p>
+  <ul>
+    <li>"Use <strong>probabilistic nodes</strong> for complex, open-ended decisions" — where an LLM should reason.</li>
+    <li>"Use <strong>deterministic nodes</strong> to enforce fixed execution paths" — where the flow must be predictable.</li>
+  </ul>
+  <p>That combination is the point: a graph lets you pin the order where the business needs guarantees, and let an LLM reason only where judgement is genuinely required. The Agent Script guide frames the language as combining the flexibility of natural-language instructions with the reliability of programmatic expressions for handling business rules, including conditional expressions that determine the agent's execution path.</p>
+
+  <div class="arch"><span class="cm"># The mental model — a broker graph in Agent Script</span>
+
+  trigger ─▶ [<span class="layer">deterministic node</span>] ─▶ [<span class="layer">probabilistic node</span>] ─▶ [<span class="layer">deterministic node</span>] ─▶ result
+                (fixed path)          (LLM reasoning)         (fixed path)
+       <span class="arrow">edges connect nodes and guarantee the order you declared</span>
+</div>
+
+  <div class="callout callout-new">
+    <div class="callout-label">Why graph &gt; free-form loop</div>
+    A purely LLM-driven orchestrator is flexible but hard to make <em>predictable</em> — the same request can be handled differently run to run, which is a problem for enterprise workflows that must be auditable and repeatable. An explicit graph gives "predictable, governed orchestration": determinism where you need it, reasoning where you don't.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">I'm deliberately not inventing syntax</div>
+    The public release note confirms the <em>concepts</em> (nodes, edges, triggers, probabilistic/deterministic, <code>.agent</code> files), but a full syntax reference wasn't in the pages cited here. Rather than fabricate an example, see the authoritative <a href="https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html">Agent Script guide</a> for real syntax — and treat the version you read there as the source of truth.
+  </div>
+
+  <!-- ───────────────────── WHERE IT FITS ───────────────────── -->
+  <h2>Where the broker sits in Agent Fabric</h2>
+  <p>The broker is one box in the wider fabric. Around it:</p>
+  <ul>
+    <li><strong>Omni Gateway</strong> — governs MCP + A2A traffic (auth, rate-limit, policy) for agents, brokers, LLM proxies, and MCP servers.</li>
+    <li><strong>Agent Registry</strong> (Anypoint Exchange) — a centralized catalog for AI assets; how agents are discovered and reused.</li>
+    <li><strong>Agent Visualizer</strong> + <strong>Anypoint Monitoring</strong> — see the network and its metrics/traces.</li>
+  </ul>
+
+  <blockquote class="talk">
+    "Don't sell the broker as 'you can't route without it' — a sharp customer will call that out, because in A2A a consumer can route to peers directly. Sell it as <em>where your routing rules live</em>. With twenty agents across five teams, do you want routing logic hardcoded and duplicated in every agent, or declared once as a governed graph? That's the broker: context-aware routing on intent, identity, policy and runtime state, authored explicitly in Agent Script — while the Omni Gateway enforces auth and rate limits around it. Predictable where it must be, intelligent where it should be."
+  </blockquote>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Where this sits in the series</div>
+    The broker is the routing/orchestration layer above the MCP and A2A endpoints you built in <a href="0048-mcp-and-a2a-in-mulesoft.html">L48</a>. For the full stack — Broker, Omni Gateway, Registry, MCP Bridge/Connector — see the <a href="../reference/mulesoft-agentic-reference-architecture.html">MuleSoft agentic reference architecture</a> reference doc, and the two SE field kits for customer sessions.
+  </div>
+
+  <div class="quiz">
+    <h3>Check yourself</h3>
+    <ol>
+      <li>A customer says "our consuming agents can already route to each other — why add a broker?" What's the honest answer?
+        <details><summary>Show answer</summary><div class="ans">They're right that routing is <em>possible</em> without one. The broker's value is <strong>centralizing where routing logic lives</strong> — declared once instead of hardcoded and duplicated across every consumer — plus consistent identity/policy handling. It's optional for small/static topologies; it pays off at scale.</div></details>
+      </li>
+      <li>What does the Broker decide, and what does the Omni Gateway enforce?
+        <details><summary>Show answer</summary><div class="ans">Broker = which agent handles the task, plus planning and delegation. Gateway = governance on the traffic (auth, rate limits, policy) across agents, brokers, LLM proxies, and MCP servers. Don't attribute rate-limiting/auth to the broker.</div></details>
+      </li>
+      <li>In Agent Script, what's the difference between a probabilistic and a deterministic node?
+        <details><summary>Show answer</summary><div class="ans">Probabilistic nodes are "for complex, open-ended decisions" (LLM reasoning); deterministic nodes "enforce fixed execution paths." Mixing them in one graph gives predictable orchestration with reasoning only where needed.</div></details>
+      </li>
+    </ol>
+  </div>
+
+  <h2>Where to go from here</h2>
+  <ul>
+    <li>Read the real <a href="https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html">Agent Script guide</a> and try defining a tiny broker graph — one deterministic node, one probabilistic node.</li>
+    <li>Connect it back to L48: the agents a broker routes to can be the MCP tool / A2A agent flows you built there.</li>
+    <li>Watch the <a href="https://docs.mulesoft.com/general/agent-fabric-release-notes">Agent Fabric release notes</a> — this area ships fast; re-verify before customer work.</li>
+  </ul>
+
+  <div class="footer">
+    <a href="0048-mcp-and-a2a-in-mulesoft.html">← L48 MCP &amp; A2A in MuleSoft</a>
+    <a href="../reference/mulesoft-agentic-reference-architecture.html">Agentic reference architecture</a>
+    <p style="margin-top:0.7rem">Grounded in public MuleSoft docs &amp; release notes. Agent Fabric moves fast — if a detail here doesn't match current docs, trust the docs and we'll correct the lesson.</p>
+  </div>
+
+</div>
+</body>
+</html>
