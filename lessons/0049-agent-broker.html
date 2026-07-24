@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>L49 — The Agent Broker &amp; Agent Script orchestration (MuleSoft)</title>
+  <title>L49 — Build an Agent Broker (MuleSoft Agent Fabric)</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; }
@@ -40,6 +40,17 @@
       font-size: 0.88em; color: #c7254e; font-family: "JetBrains Mono", "Fira Code", monospace;
     }
 
+    pre.code {
+      background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 0.9rem 1.1rem;
+      overflow-x: auto; margin: 0.5rem 0 1rem; font-size: 0.82rem; line-height: 1.5;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+    pre.code .cm { color: #6c7086; font-style: italic; }
+    pre.code .kw { color: #cba6f7; }
+    pre.code .str { color: #a6e3a1; }
+    pre.code .attr { color: #89dceb; }
+    pre.code .todo { color: #f9e2af; font-weight: 700; }
+
     .arch {
       background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 0.9rem 1rem;
       font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 0.8rem;
@@ -56,6 +67,16 @@
     .callout-new  { background: #ecfdf5; border-color: #10b981; }
     .callout-mule { background: #faf5ff; border-color: #a855f7; }
     .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    .steps { counter-reset: step; list-style: none; padding-left: 0; }
+    .steps > li {
+      counter-increment: step; position: relative; padding-left: 2.4rem; margin-bottom: 0.9rem;
+    }
+    .steps > li::before {
+      content: counter(step); position: absolute; left: 0; top: 0;
+      width: 1.7rem; height: 1.7rem; background: #1a1a1a; color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;
+    }
 
     blockquote.talk {
       background: #f0f9ff; border-left: 5px solid #0284c7; border-radius: 6px;
@@ -83,142 +104,174 @@
 
   <header>
     <p class="eyebrow">Lesson 49 · Agent Fabric · MuleSoft</p>
-    <h1>The Agent Broker &amp; Agent Script orchestration</h1>
-    <p class="tagline">What the Agent Broker is, why it exists when a consuming agent can already route to peers over A2A, and how <strong>Agent Script</strong> turns broker orchestration into an explicit graph of nodes, edges, and triggers. Grounded entirely in MuleSoft's public docs and release notes.</p>
+    <h1>Build an Agent Broker</h1>
+    <p class="tagline">A hands-on build. <strong>Part A</strong> — author the broker's routing logic as an Agent Script graph. <strong>Part B</strong> — deploy it to CloudHub&nbsp;2.0 and govern it with the Omni Gateway in Anypoint. You'll scaffold both yourself from TODOs; I won't hand you a finished file. Grounded entirely in public MuleSoft &amp; Agentforce docs.</p>
   </header>
 
   <div class="callout callout-tldr">
-    <div class="callout-label">TL;DR</div>
-    The Agent Broker is a <strong>context-aware routing service</strong> that "plans and delegates work based on context" — request intent, identity, policies, and runtime state. It isn't a capability a consumer lacks (a consumer <em>can</em> route via A2A); it <strong>centralizes routing so the logic lives in one governed place</strong> instead of hardcoded in every agent. As of the July 2026 release, you author that orchestration in <strong>Agent Script</strong> — "a graph-based language that gives you explicit control over how brokers coordinate agents, tools, and LLMs."
+    <div class="callout-label">TL;DR — the two layers are complementary, not two versions</div>
+    A working broker needs <strong>both</strong> halves: you <em>author</em> the orchestration as a graph in <strong>Agent Script</strong> (<code>.agent</code> files, edited in Anypoint Code Builder), and you <em>deploy &amp; govern</em> it in <strong>Anypoint</strong> (publish to Exchange → CloudHub&nbsp;2.0 → Omni Gateway policies). Part A is the "what it does"; Part B is the "where it lives and how it's controlled." Forget "v1/v2" — that was never a real product choice.
   </div>
 
   <div class="callout callout-warn">
-    <div class="callout-label">Source &amp; version honesty</div>
-    Agent Fabric is new and moving fast. Everything here is drawn from public MuleSoft sources — the <a href="https://docs.mulesoft.com/agent-fabric/">Agent Fabric docs</a>, the <a href="https://docs.mulesoft.com/general/agent-fabric-release-notes">Agent Fabric release notes</a> (broker: 3 Oct 2025; Agent Script: 14 Jul 2026), and the <a href="https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html">Agent Script guide</a>. Exact syntax and capabilities shift between releases — <strong>verify against those docs before a customer commitment</strong>, and don't quote a field name from memory.
+    <div class="callout-label">Source &amp; version honesty — read this first</div>
+    Agent Fabric ships fast and some reference sub-pages weren't loadable when this lesson was written. Everything concrete below is quoted from pages I <em>could</em> verify — the <a href="https://docs.mulesoft.com/general/agent-fabric-release-notes">Agent Fabric release notes</a>, <a href="https://docs.mulesoft.com/agent-network/latest/af-agent-networks">Building Agent Networks</a>, and the <a href="https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html">Agent Script guide</a>. Where I couldn't load the exact YAML/field names, I say so and link the reference instead of inventing syntax. <strong>Before you build for real, open those docs — the field names are the source of truth, not this page.</strong>
   </div>
 
-  <!-- ───────────────────── THE OBJECTION ───────────────────── -->
-  <h2>Start with the honest objection</h2>
-  <p>A fair challenge: in A2A, a consuming agent can already discover peers (via Agent Cards) and route to them directly. So a broker is <strong>not</strong> a capability the consumer lacks. If that's true, why introduce one?</p>
-  <p>The answer is about <strong>where routing logic lives</strong>, not whether routing is possible. Without a broker, every consumer embeds its own routing:</p>
-  <ul>
-    <li>Each agent hardcodes "refunds → billing-agent" — duplicated across N consumers.</li>
-    <li>Change a downstream agent and every consumer that knew about it must be updated.</li>
-    <li>Routing <em>policy</em> (identity, "prod agents only", fallbacks) is reimplemented per agent, inconsistently.</li>
-    <li>It's the point-to-point API mesh again — one level up, between agents.</li>
-  </ul>
-  <p>A broker makes routing a <strong>decision made once, in one governed place</strong>. The honest analogy: it's an <em>orchestration layer for agents</em>, the way a Process API is an orchestration layer for services. You don't need one for three agents wired directly — you need it when direct wiring stops scaling. So <strong>the broker is genuinely optional for small, static topologies</strong>; it earns its place with many agents, dynamic routing, and a team that wants routing rules centralized rather than scattered.</p>
+  <!-- ───────────────────── WHAT YOU'RE BUILDING ───────────────────── -->
+  <h2>What you're building</h2>
+  <p>A broker is "an intelligent routing service that coordinates task delegation across A2A-compliant agents." You'll build one that sits in front of the A2A agents you already made in <a href="0048-mcp-and-a2a-in-mulesoft.html">L48</a> / <a href="0047-a2a-agent-lifecycle.html">L47</a> and routes an incoming request to the right one.</p>
+  <div class="arch"><span class="cm"># The target: a broker routing to your existing agents</span>
 
-  <!-- ───────────────────── ROUTING INPUTS ───────────────────── -->
-  <h2>What the broker routes on</h2>
-  <p>The docs describe the broker as an "intelligent routing agent that plans and delegates work based on context." That context has four public inputs — everything else about routing hangs off these:</p>
+  caller (A2A request)
+        <span class="arrow">│</span>
+  ═══ <span class="plane">OMNI GATEWAY</span> ═══        <span class="cm"># Part B: auth, rate-limit, policy, telemetry</span>
+        <span class="arrow">│</span>
+  <span class="layer">AGENT BROKER</span>  ◀── your .agent graph   <span class="cm"># Part A: which agent handles this?</span>
+     <span class="arrow">├──▶</span> order-agent   <span class="cm"># (your L47/L48 A2A agents)</span>
+     <span class="arrow">└──▶</span> billing-agent
+</div>
+
+  <h3>Prerequisites</h3>
+  <ul>
+    <li><strong>Anypoint Code Builder</strong> — the authoring tool for broker projects (VS Code-based, desktop or web).</li>
+    <li>At least one <strong>A2A-compliant agent</strong> to route to. Your L47/L48 agents qualify — the broker delegates over A2A.</li>
+    <li>An <strong>Anypoint Platform</strong> org with CloudHub&nbsp;2.0 (or Runtime Fabric) for Part B.</li>
+  </ul>
+
+  <!-- ───────────────────── PART A ───────────────────── -->
+  <h2>Part A · Author the broker in Agent Script</h2>
+
+  <h3>A1 — Create the project skeleton</h3>
+  <p>A broker project has a fixed shape (quoted from the Building Agent Networks guide). Create this yourself in Code Builder — MuleSoft ships "a YAML template and Agent Script file to give you a head start," so start from that template rather than a blank folder:</p>
+  <pre class="code"><span class="cm"># Verified project layout — Building Agent Networks guide</span>
+my-agent-network-project/
+├── exchange.json          <span class="cm"># asset metadata for publishing to Exchange</span>
+├── agent-network.yaml     <span class="cm"># the registry (which agents/MCP) + context (connections/policies)</span>
+└── brokers/
+    └── broker1.agent      <span class="cm"># the broker graph: trigger, nodes, edges</span>
+</pre>
+  <div class="callout callout-new">
+    <div class="callout-label">Two authoring paths — pick one</div>
+    The release notes confirm two ways to author in Code Builder: <strong>(1) write the YAML/Agent Script by hand</strong>, or <strong>(2) use MuleSoft Vibes</strong> — "create and configure agent networks using natural-language prompts… including broker graph design, node configuration, and Exchange asset integration." Learn path 1 first (below) so you understand what Vibes generates; reach for Vibes to move fast once you do.
+  </div>
+
+  <h3>A2 — Register the downstream agents (<code>agent-network.yaml</code>)</h3>
+  <p>Before the broker can route <em>to</em> an agent, the network has to know it exists. The <code>agent-network.yaml</code> has a <strong>registry</strong> section (the agents/MCP servers, defined locally or referenced from Exchange — "agent assets must be A2A-compliant") and a <strong>context</strong> section (connections and policies).</p>
+  <p><strong>Your turn.</strong> Fill in the TODOs. I'm deliberately not giving you the exact field names — open the <a href="https://docs.mulesoft.com/agent-network/latest/af-agent-networks">Building Agent Networks</a> reference and use the shipped template to get them right:</p>
+  <pre class="code"><span class="cm"># agent-network.yaml — sketch, NOT verified field names. Confirm against the guide + template.</span>
+registry:
+  <span class="todo"># TODO(A2a): list your first A2A agent (e.g. the L47 order-agent).</span>
+  <span class="todo">#   local definition OR a reference to an Exchange asset — the guide shows both.</span>
+  <span class="todo"># TODO(A2b): list a second A2A agent (billing-agent) so the broker has a real routing choice.</span>
+
+context:
+  <span class="todo"># TODO(A2c): leave a placeholder for connections/policies — you'll wire real Omni</span>
+  <span class="todo">#   policies here in Part B. For now a comment is fine.</span>
+</pre>
+  <p><strong>Verify:</strong> the file parses as YAML and each agent you listed is genuinely A2A-compliant (it serves an Agent Card — that's the L47 check). If an agent isn't A2A-compliant, the broker can't delegate to it.</p>
+
+  <h3>A3 — Write the broker graph (<code>brokers/broker1.agent</code>)</h3>
+  <p>This is the heart of it. Verified rules from the guide:</p>
+  <ul>
+    <li>"Define broker orchestration as a graph of <strong>nodes, edges, and triggers</strong>."</li>
+    <li>"All graphs must start on an <strong>A2A trigger</strong>" — that's your entry point.</li>
+    <li>Each node is either a <strong>probabilistic</strong> node ("complex, open-ended decisions that require nuanced judgment" — the LLM classifies intent) or a <strong>deterministic</strong> node ("enforce fixed execution paths once a key decision has been made" — the actual route).</li>
+    <li><strong>Edges</strong> are the transitions between nodes, carrying input/output data.</li>
+  </ul>
+  <p>So the smallest useful broker is: <em>trigger → classify (probabilistic) → route (deterministic) → delegate</em>. <strong>Your turn</strong> — build that graph from the scaffold:</p>
+  <pre class="code"><span class="cm"># brokers/broker1.agent — STRUCTURE sketch, not verified syntax.</span>
+<span class="cm"># The concrete keywords live in the reference — see the note below. Fill the TODOs.</span>
+
+<span class="todo"># TODO(A3a): declare the A2A trigger — the required entry point of every broker graph.</span>
+
+<span class="todo"># TODO(A3b): add a PROBABILISTIC node "classify_intent".</span>
+<span class="todo">#   Job: read the incoming task and decide which agent should handle it.</span>
+<span class="todo">#   This is the "nuanced judgment" the LLM is allowed to make.</span>
+
+<span class="todo"># TODO(A3c): add a DETERMINISTIC node "route".</span>
+<span class="todo">#   Job: given the classified intent, delegate to order-agent OR billing-agent.</span>
+<span class="todo">#   No LLM freedom here — a fixed mapping. This is "guided determinism".</span>
+
+<span class="todo"># TODO(A3d): add EDGES: trigger -> classify_intent -> route -> (delegate to chosen agent).</span>
+</pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Why I'm not printing a "real" .agent file</div>
+    The MuleSoft broker reference sub-pages that hold the exact <code>.agent</code> keywords returned 404 when I wrote this. The Agentforce Agent Script guide <em>does</em> show verified syntax elements — but for <em>conversational</em> agents (<code>subagent</code>, <code>transition to</code>), which share the language and the deterministic/probabilistic idea but aren't the same as the broker <em>graph</em> keywords. Rather than blur the two into invented syntax, the scaffold above is structural. Get the real keywords from the shipped template and the <a href="https://docs.mulesoft.com/agent-network/latest/af-agent-networks">Building Agent Networks</a> reference.
+  </div>
+
+  <h3>Agent Script syntax you CAN rely on (verified)</h3>
+  <p>These elements are quoted from the <a href="https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html">Agent Script guide</a>. They're from the conversational-agent flavor, but they show you the shape of the language — how variables, conditionals, actions, and transitions read:</p>
   <table>
-    <thead><tr><th>Routing input</th><th>Meaning</th><th>Could a consumer do it alone?</th></tr></thead>
+    <thead><tr><th>Element</th><th>Verified syntax</th><th>What it does</th></tr></thead>
     <tbody>
-      <tr><td><strong>Request intent</strong></td><td>Match the task to an agent's advertised skills (from its Agent Card)</td><td>Yes — the broker just centralizes it</td></tr>
-      <tr><td><strong>Identity</strong></td><td>Route based on <em>who</em> is calling and their scopes</td><td>Painful &amp; inconsistent per-consumer — the broker's real value</td></tr>
-      <tr><td><strong>Policies</strong></td><td>Governance rules applied to the routing decision</td><td>Hard to keep consistent across consumers</td></tr>
-      <tr><td><strong>Runtime state</strong></td><td>Delegate based on current conditions and track task state</td><td>A hardcoded consumer just fails when a target is down</td></tr>
+      <tr><td>Subagent</td><td><code>subagent Order_Management:</code></td><td>Declares a subagent (formerly "topic"; renamed Apr 2026)</td></tr>
+      <tr><td>Variable</td><td><code>order_id: mutable string = ""</code></td><td>State the agent can read/update during a run</td></tr>
+      <tr><td>Action</td><td><code>run @actions.get_order</code></td><td>Executes an action <em>deterministically</em></td></tr>
+      <tr><td>Conditional</td><td><code>if @variables.verified == True:</code></td><td>Branches the execution path on state</td></tr>
+      <tr><td>Transition</td><td><code>transition to @subagent.wrap_up</code></td><td>Hands control to another subagent</td></tr>
     </tbody>
   </table>
+  <div class="callout callout-mule">
+    <div class="callout-label">Java-dev bridge</div>
+    Read the graph like a <code>switch</code> with one AI-powered <code>case</code> selector: the probabilistic node is the part that decides <em>which branch</em> (like an LLM computing the switch key), and the deterministic nodes are the fixed branches that run once the key is set. The <code>if @variables.x == True:</code> conditional is your ordinary guard clause; <code>transition to</code> is a labelled jump.
+  </div>
 
-  <!-- ───────────────────── BROKER vs GATEWAY ───────────────────── -->
-  <h2>Broker decides · Omni Gateway enforces</h2>
-  <p>Keep these two boxes distinct: the <strong>broker makes the routing/orchestration decision</strong>; the <strong>Omni Gateway governs the traffic</strong>. The gateway applies policies and controls across agents, brokers, LLM proxies, and MCP servers, with support for both MCP and A2A. So the broker decides <em>which agent</em>; the gateway enforces <em>auth, rate limits, and policy</em> on the calls.</p>
-  <div class="arch"><span class="cm"># Two distinct responsibilities</span>
-
-  consuming agent
-        <span class="arrow">│</span>
-  ═══ <span class="plane">OMNI GATEWAY</span> ═══   <span class="cm"># governance: auth, rate-limit, policy (MCP + A2A)</span>
-        <span class="arrow">│</span>
-  <span class="layer">AGENT BROKER</span>          <span class="cm"># decision: which agent handles this? plan &amp; delegate</span>
-        <span class="arrow">│</span>
-  target agent / MCP tool / LLM
-</div>
-  <p>Watch the common mistake: don't attribute rate-limiting and auth to the broker. Those are <strong>gateway</strong> functions. The broker's job is the routing decision and task delegation.</p>
-
-  <!-- ───────────────────── EVOLUTION ───────────────────── -->
-  <h2>How broker orchestration evolved (per public release notes)</h2>
-  <p>The public release notes show the broker maturing in two visible steps:</p>
-  <table>
-    <thead><tr><th>Release note</th><th>What shipped</th></tr></thead>
-    <tbody>
-      <tr><td><strong>3 Oct 2025</strong></td><td>"Orchestrate agents across ecosystems with agent brokers, a context-aware routing service for agents and assets." — the broker as a routing service.</td></tr>
-      <tr><td><strong>14 Jul 2026</strong></td><td>"Build agent networks with predictable, governed orchestration using <strong>Agent Script</strong> — a graph-based language that gives you explicit control over how brokers coordinate agents, tools, and LLMs." — orchestration becomes an authored graph.</td></tr>
-    </tbody>
-  </table>
-  <p>The shift worth understanding: from "a routing service that plans for you" toward "orchestration you define explicitly as a graph." Which brings us to Agent Script.</p>
-
-  <!-- ───────────────────── AGENT SCRIPT ───────────────────── -->
-  <h2>Agent Script — orchestration as a graph</h2>
-  <p>Per the July 2026 release note, you define broker orchestration as a graph of <strong>nodes, edges, and triggers</strong> in Agent Script (<code>.agent</code>) files. The key design idea is mixing two kinds of node:</p>
-  <ul>
-    <li>"Use <strong>probabilistic nodes</strong> for complex, open-ended decisions" — where an LLM should reason.</li>
-    <li>"Use <strong>deterministic nodes</strong> to enforce fixed execution paths" — where the flow must be predictable.</li>
-  </ul>
-  <p>That combination is the point: a graph lets you pin the order where the business needs guarantees, and let an LLM reason only where judgement is genuinely required. The Agent Script guide frames the language as combining the flexibility of natural-language instructions with the reliability of programmatic expressions for handling business rules, including conditional expressions that determine the agent's execution path.</p>
-
-  <div class="arch"><span class="cm"># The mental model — a broker graph in Agent Script</span>
-
-  trigger ─▶ [<span class="layer">deterministic node</span>] ─▶ [<span class="layer">probabilistic node</span>] ─▶ [<span class="layer">deterministic node</span>] ─▶ result
-                (fixed path)          (LLM reasoning)         (fixed path)
-       <span class="arrow">edges connect nodes and guarantee the order you declared</span>
-</div>
+  <!-- ───────────────────── PART B ───────────────────── -->
+  <h2>Part B · Deploy &amp; govern in Anypoint</h2>
+  <p>Authoring gives you a graph; Part B makes it a running, governed service. Verified deployment flow from the guide:</p>
+  <ol class="steps">
+    <li><strong>Publish assets to Exchange.</strong> Use MuleSoft Vibes to "publish the assets to Anypoint Exchange." A broker published to Exchange "become[s] reusable by other brokers" — that's the reuse story, same as any Exchange asset.</li>
+    <li><strong>Deploy to CloudHub&nbsp;2.0.</strong> Push the agentic assets to CloudHub&nbsp;2.0, "managed through Runtime Manager." (Runtime Fabric is the alternative target if you self-host.)</li>
+    <li><strong>Front it with a single Omni Gateway.</strong> The reference architecture shows "a single Omni Gateway for ingress and egress" — ingress to your broker, egress to external agents.</li>
+    <li><strong>Attach governance policies.</strong> Register your Agent, MCP, and LLM instances in <strong>API Management</strong>, then apply the applicable <strong>A2A, MCP, and LLM Omni policies</strong>. This is where auth and rate-limiting live — <em>not</em> in the broker graph.</li>
+    <li><strong>Observe.</strong> The Omni Gateway emits "logs, metrics, and traces" into <strong>Anypoint Monitoring</strong> — how you confirm routing actually happened.</li>
+  </ol>
 
   <div class="callout callout-new">
-    <div class="callout-label">Why graph &gt; free-form loop</div>
-    A purely LLM-driven orchestrator is flexible but hard to make <em>predictable</em> — the same request can be handled differently run to run, which is a problem for enterprise workflows that must be auditable and repeatable. An explicit graph gives "predictable, governed orchestration": determinism where you need it, reasoning where you don't.
+    <div class="callout-label">The one distinction to keep straight</div>
+    <strong>Part A (broker graph) decides which agent handles the task. Part B (Omni Gateway) enforces auth, rate limits, and policy around it.</strong> If you catch yourself putting rate-limit logic into a <code>.agent</code> node, stop — that belongs in an Omni policy in API Management.
   </div>
 
-  <div class="callout callout-warn">
-    <div class="callout-label">I'm deliberately not inventing syntax</div>
-    The public release note confirms the <em>concepts</em> (nodes, edges, triggers, probabilistic/deterministic, <code>.agent</code> files), but a full syntax reference wasn't in the pages cited here. Rather than fabricate an example, see the authoritative <a href="https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html">Agent Script guide</a> for real syntax — and treat the version you read there as the source of truth.
-  </div>
-
-  <!-- ───────────────────── WHERE IT FITS ───────────────────── -->
-  <h2>Where the broker sits in Agent Fabric</h2>
-  <p>The broker is one box in the wider fabric. Around it:</p>
-  <ul>
-    <li><strong>Omni Gateway</strong> — governs MCP + A2A traffic (auth, rate-limit, policy) for agents, brokers, LLM proxies, and MCP servers.</li>
-    <li><strong>Agent Registry</strong> (Anypoint Exchange) — a centralized catalog for AI assets; how agents are discovered and reused.</li>
-    <li><strong>Agent Visualizer</strong> + <strong>Anypoint Monitoring</strong> — see the network and its metrics/traces.</li>
-  </ul>
+  <h3>Verify the whole thing end-to-end</h3>
+  <ol>
+    <li>Send an A2A request that should go to <code>order-agent</code>; confirm in Anypoint Monitoring it was delegated there.</li>
+    <li>Send one that should go to <code>billing-agent</code>; confirm the route changed.</li>
+    <li>Hit it fast enough to trip your rate-limit policy; confirm the <em>gateway</em> (not the broker) rejected it.</li>
+  </ol>
 
   <blockquote class="talk">
-    "Don't sell the broker as 'you can't route without it' — a sharp customer will call that out, because in A2A a consumer can route to peers directly. Sell it as <em>where your routing rules live</em>. With twenty agents across five teams, do you want routing logic hardcoded and duplicated in every agent, or declared once as a governed graph? That's the broker: context-aware routing on intent, identity, policy and runtime state, authored explicitly in Agent Script — while the Omni Gateway enforces auth and rate limits around it. Predictable where it must be, intelligent where it should be."
+    "Building a broker is two moves, not one. First you author the routing as a graph — an A2A trigger, an LLM node that reads intent, deterministic nodes that lock the path once the decision's made. That's Agent Script in Code Builder, and you can even generate the first draft with natural language via Vibes. Second, you publish it to Exchange, deploy to CloudHub 2.0, and wrap it in a single Omni Gateway that handles auth, rate limits and telemetry. The graph decides <em>who</em>; the gateway governs <em>the traffic</em>. Same split as API-led: the logic and the governance are separate layers, and that separation is exactly what makes it enterprise-grade."
   </blockquote>
-
-  <div class="callout callout-mule">
-    <div class="callout-label">Where this sits in the series</div>
-    The broker is the routing/orchestration layer above the MCP and A2A endpoints you built in <a href="0048-mcp-and-a2a-in-mulesoft.html">L48</a>. For the full stack — Broker, Omni Gateway, Registry, MCP Bridge/Connector — see the <a href="../reference/mulesoft-agentic-reference-architecture.html">MuleSoft agentic reference architecture</a> reference doc, and the two SE field kits for customer sessions.
-  </div>
 
   <div class="quiz">
     <h3>Check yourself</h3>
     <ol>
-      <li>A customer says "our consuming agents can already route to each other — why add a broker?" What's the honest answer?
-        <details><summary>Show answer</summary><div class="ans">They're right that routing is <em>possible</em> without one. The broker's value is <strong>centralizing where routing logic lives</strong> — declared once instead of hardcoded and duplicated across every consumer — plus consistent identity/policy handling. It's optional for small/static topologies; it pays off at scale.</div></details>
+      <li>Where does the broker graph's execution have to start, and why?
+        <details><summary>Show answer</summary><div class="ans">On an <strong>A2A trigger</strong> — "all graphs must start on an A2A trigger." It's the entry point that receives the incoming A2A task the broker will route.</div></details>
       </li>
-      <li>What does the Broker decide, and what does the Omni Gateway enforce?
-        <details><summary>Show answer</summary><div class="ans">Broker = which agent handles the task, plus planning and delegation. Gateway = governance on the traffic (auth, rate limits, policy) across agents, brokers, LLM proxies, and MCP servers. Don't attribute rate-limiting/auth to the broker.</div></details>
+      <li>You need the broker to pick between three agents based on the meaning of the request, then always run a fixed audit step. Which nodes?
+        <details><summary>Show answer</summary><div class="ans">A <strong>probabilistic</strong> node for the pick ("complex, open-ended decision… nuanced judgment"), then a <strong>deterministic</strong> node for the audit step ("enforce fixed execution paths once a key decision has been made"). That's guided determinism.</div></details>
       </li>
-      <li>In Agent Script, what's the difference between a probabilistic and a deterministic node?
-        <details><summary>Show answer</summary><div class="ans">Probabilistic nodes are "for complex, open-ended decisions" (LLM reasoning); deterministic nodes "enforce fixed execution paths." Mixing them in one graph gives predictable orchestration with reasoning only where needed.</div></details>
+      <li>Rate-limiting the broker: which layer, and where do you configure it?
+        <details><summary>Show answer</summary><div class="ans">The <strong>Omni Gateway</strong>, via an Omni policy in <strong>API Management</strong> — Part B. Never inside a <code>.agent</code> node. The graph decides routing; the gateway enforces traffic policy.</div></details>
       </li>
     </ol>
   </div>
 
   <h2>Where to go from here</h2>
   <ul>
-    <li>Read the real <a href="https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html">Agent Script guide</a> and try defining a tiny broker graph — one deterministic node, one probabilistic node.</li>
-    <li>Connect it back to L48: the agents a broker routes to can be the MCP tool / A2A agent flows you built there.</li>
-    <li>Watch the <a href="https://docs.mulesoft.com/general/agent-fabric-release-notes">Agent Fabric release notes</a> — this area ships fast; re-verify before customer work.</li>
+    <li>Open the shipped Code Builder template and the <a href="https://docs.mulesoft.com/agent-network/latest/af-agent-networks">Building Agent Networks</a> reference, and replace every TODO above with the real field names.</li>
+    <li>Study the <a href="https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html">Agent Script guide</a> examples (Customer Support; the variable-sequencing interview agent) to see conditionals and variables in context.</li>
+    <li>Point the broker at the actual L47/L48 agents and watch a real request route through in Anypoint Monitoring.</li>
+    <li>Re-verify before customer work — the <a href="https://docs.mulesoft.com/general/agent-fabric-release-notes">release notes</a> move fast.</li>
   </ul>
 
   <div class="footer">
     <a href="0048-mcp-and-a2a-in-mulesoft.html">← L48 MCP &amp; A2A in MuleSoft</a>
     <a href="../reference/mulesoft-agentic-reference-architecture.html">Agentic reference architecture</a>
-    <p style="margin-top:0.7rem">Grounded in public MuleSoft docs &amp; release notes. Agent Fabric moves fast — if a detail here doesn't match current docs, trust the docs and we'll correct the lesson.</p>
+    <p style="margin-top:0.7rem">Grounded in public MuleSoft &amp; Agentforce docs. Some broker-syntax reference pages were unreachable at authoring time — TODO scaffolds link the real references rather than guess. If a field name here doesn't match current docs, trust the docs.</p>
   </div>
 
 </div>
