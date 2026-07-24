@@ -118,6 +118,33 @@
     Agent Fabric ships fast and some reference sub-pages weren't loadable when this lesson was written. Everything concrete below is quoted from pages I <em>could</em> verify — the <a href="https://docs.mulesoft.com/general/agent-fabric-release-notes">Agent Fabric release notes</a>, <a href="https://docs.mulesoft.com/agent-network/latest/af-agent-networks">Building Agent Networks</a>, and the <a href="https://developer.salesforce.com/docs/ai/agentforce/guide/agent-script.html">Agent Script guide</a>. Where I couldn't load the exact YAML/field names, I say so and link the reference instead of inventing syntax. <strong>Before you build for real, open those docs — the field names are the source of truth, not this page.</strong>
   </div>
 
+  <!-- ───────────────────── UNDERSTAND FIRST ───────────────────── -->
+  <h2>Understand the broker first</h2>
+
+  <h3>What it is</h3>
+  <p>An Agent Broker is "an intelligent routing service that coordinates task delegation across A2A-compliant agents." The key word is <em>routing</em> — the broker doesn't do the work itself; it decides <strong>which</strong> agent should, and hands the task off. Think of it as the <strong>conductor</strong> of an orchestra: it plays no instrument, but it decides who plays when.</p>
+  <div class="callout callout-mule">
+    <div class="callout-label">MuleSoft-dev bridge</div>
+    It's the <strong>Process API layer, but for agents</strong> instead of services. A Process API composes and routes across System APIs so callers don't hardcode backend wiring; a broker composes and routes across agents so callers don't hardcode which agent handles what.
+  </div>
+
+  <h3>What it's for</h3>
+  <p>The problem it solves is <strong>agent sprawl</strong> — the API-sprawl story, one level up. Without a broker, every calling agent hardcodes its own routing ("refund questions → billing-agent"). That logic gets duplicated across every consumer and breaks whenever a downstream agent changes. A broker makes routing <strong>one decision, declared once, in a governed place.</strong></p>
+  <p>Be honest about when you need it: for two or three static agents wired directly, you don't. A broker earns its place when you have <strong>many agents, dynamic routing, and teams that want routing rules centralized</strong> rather than scattered across every agent's code.</p>
+
+  <h3>How it works</h3>
+  <p>The broker routes based on four inputs (verbatim from the docs): <strong>request intent, policies, identity, and runtime state.</strong> Mechanically, a request flows through the broker's graph like this:</p>
+  <ol class="steps">
+    <li><strong>An A2A trigger receives the task.</strong> This is the required entry point — "all graphs must start on an A2A trigger."</li>
+    <li><strong>A probabilistic node reads the request and decides which agent fits.</strong> This is the LLM-powered "nuanced judgment" step — classifying intent.</li>
+    <li><strong>A deterministic node locks the path once decided.</strong> A fixed route, no LLM freedom. Separating these two is called <em>guided determinism</em>.</li>
+    <li><strong>The broker delegates over A2A</strong> to the chosen agent, which does the actual work and returns the result.</li>
+  </ol>
+  <div class="callout callout-new">
+    <div class="callout-label">The boundary that matters</div>
+    <strong>The broker decides <em>who</em> handles the task. The Omni Gateway enforces auth, rate-limits, and policy on the traffic.</strong> Two separate layers — hold onto this, it's the thing people most often blur, and it maps exactly onto the two build parts below (Part A = the deciding graph, Part B = the governing gateway).
+  </div>
+
   <!-- ───────────────────── WHAT YOU'RE BUILDING ───────────────────── -->
   <h2>What you're building</h2>
   <p>A broker is "an intelligent routing service that coordinates task delegation across A2A-compliant agents." You'll build one that sits in front of the A2A agents you already made in <a href="0048-mcp-and-a2a-in-mulesoft.html">L48</a> / <a href="0047-a2a-agent-lifecycle.html">L47</a> and routes an incoming request to the right one.</p>
