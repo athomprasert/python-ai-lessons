@@ -473,6 +473,95 @@ output application/json
     <div class="capture"><strong>Capture instructions:</strong> Screenshot the <em>[MCP] Tooling</em> operation selected on the canvas with its MCP client config reference visible (and, if you can fit it, the <code>mcp:tool-listener</code> in the server flow). Save as <code>lessons/img/l44/09-mcp-tooling.png</code>.</div>
   </div>
 
+  <!-- ───────────────────────── PART 5c — A2A ───────────────────────── -->
+  <h2>Part 5c · Level 3 — make it callable by <em>other agents</em> with A2A</h2>
+
+  <p>Parts 4-5b were about the agent reaching <em>tools</em>. This part flips the direction: how does <strong>another agent</strong> reach <em>this</em> one? An order-status agent, a supervisor, Agentforce — how do they delegate a task to your Mule agent without you hand-building a bespoke REST contract for each caller? That's the problem <strong>A2A</strong> solves.</p>
+
+  <div class="callout callout-new">
+    <div class="callout-label">New concept · A2A (Agent2Agent protocol)</div>
+    <strong>A2A</strong> is an open standard for <em>agents talking to agents</em>. Where MCP is "USB-C for tools," A2A is the protocol for <em>delegating a task</em> to another agent and getting streamed progress back. Every A2A agent publishes an <strong>Agent Card</strong> (a JSON "business card" at <code>/.well-known/agent-card.json</code> — who it is, what skills it has, how to reach it), then accepts a <strong>task</strong> and drives it through a lifecycle: <code>submitted → working → artifact → completed</code>, streaming each state change to the caller over SSE. If you did L47, you built exactly this in Python — this is the MuleSoft way to do the same thing.</p>
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">MCP vs A2A — they are complementary, not competing</div>
+    <strong>MCP</strong> = how your agent reaches <em>tools</em> (inbound to a tool). <strong>A2A</strong> = how other <em>agents</em> reach <em>your agent</em> (inbound to an agent). The real-world shape is both at once: A2A on the front door, MCP on the tool side. One app can be an A2A <em>server</em> (accepts tasks) and an MCP <em>client</em> (calls tools) at the same time.
+  </div>
+
+  <h3>The connector involved</h3>
+  <ul>
+    <li><strong>A2A Connector</strong> (<code>com.mulesoft.connectors:mule4-a2a-connector</code>, v1.1+, namespace <code>a2a</code>) — turns a Mule flow into an <strong>A2A agent</strong> (server) and/or lets it <strong>call</strong> other A2A agents (client). Requires <strong>Mule 4.9.8+ and Java 17</strong>. On the server side it serves your Agent Card automatically, receives tasks via a <code>a2a:task-stream-listener</code> source, and streams lifecycle events via the <code>a2a:update-task-status</code> and <code>a2a:update-task-artifact</code> operations.</li>
+  </ul>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The upgrade in one line</div>
+    You <em>don't</em> hand-build an HTTP contract, parse JSON-RPC, or write SSE yourself. The connector does the protocol plumbing; you supply the Agent Card (config) and <em>drive the lifecycle</em> (a few operations). The reasoning pipeline from Part 4 or 5b becomes the task's "work."
+  </div>
+
+  <h3>Shape of the flow</h3>
+  <p>First, declare the A2A <strong>server</strong> — it rides on a normal HTTP listener, and the Agent Card is just config (no card flow to write):</p>
+
+<pre class="code"><span class="cm">&lt;!-- A2A server: rides on a normal HTTP listener; serves the card for you --&gt;</span>
+<span class="tag">&lt;a2a:server-config</span> <span class="attr">name</span>=<span class="str">"A2A_Server_config"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;a2a:connection</span> <span class="attr">listenerConfig</span>=<span class="str">"HTTP_Listener_config"</span> <span class="attr">agentPath</span>=<span class="str">"/"</span><span class="tag">/&gt;</span>
+  <span class="cm">&lt;!-- inline card = "Card Json"; or use file="..." to load "Card Path" --&gt;</span>
+  <span class="tag">&lt;a2a:agent-card&gt;</span>
+    <span class="tag">&lt;a2a:json&gt;</span><span class="str">{ "name":"mac-agent", "capabilities":{"streaming":true},
+      "skills":[{"id":"ask","name":"Ask the assistant"}] }</span><span class="tag">&lt;/a2a:json&gt;</span>
+  <span class="tag">&lt;/a2a:agent-card&gt;</span>
+<span class="tag">&lt;/a2a:server-config&gt;</span></pre>
+
+  <p>Then the agent flow: the <code>task-stream-listener</code> source receives a delegated task, you do the work (reuse Part 4/5b), and you report the lifecycle back. The three lifecycle calls are the A2A skill:</p>
+
+<pre class="code"><span class="cm">&lt;!-- A2A agent flow: receive task → work → report lifecycle over SSE --&gt;</span>
+<span class="tag">&lt;flow</span> <span class="attr">name</span>=<span class="str">"a2a-mac-agent"</span><span class="tag">&gt;</span>
+  <span class="cm">&lt;!-- SOURCE: receive a streaming task. IDs on attributes, text in payload --&gt;</span>
+  <span class="tag">&lt;a2a:task-stream-listener</span> <span class="attr">config-ref</span>=<span class="str">"A2A_Server_config"</span><span class="tag">/&gt;</span>
+  <span class="cm">&lt;!-- read: attributes.taskId, attributes.contextId, payload.message.parts[0].text --&gt;</span>
+
+  <span class="cm">&lt;!-- 1) tell the caller we started --&gt;</span>
+  <span class="tag">&lt;a2a:update-task-status</span> <span class="attr">config-ref</span>=<span class="str">"A2A_Server_config"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;a2a:status-content&gt;</span><span class="str">#[{ id: vars.taskId, contextId: vars.contextId,
+      kind: "status-update", status: { state: "working" }, final: false }]</span><span class="tag">&lt;/a2a:status-content&gt;</span>
+  <span class="tag">&lt;/a2a:update-task-status&gt;</span>
+
+  <span class="cm">&lt;!-- ... the SAME reason → run → compose pipeline from Part 4 or 5b ... --&gt;</span>
+
+  <span class="cm">&lt;!-- 2) publish the answer as an artifact --&gt;</span>
+  <span class="tag">&lt;a2a:update-task-artifact</span> <span class="attr">config-ref</span>=<span class="str">"A2A_Server_config"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;a2a:artifact-content&gt;</span><span class="str">#[{ id: vars.taskId, contextId: vars.contextId, kind: "artifact-update",
+      artifact: { artifactId: "artifact-" ++ vars.taskId, name: "answer",
+                  parts: [{ kind: "text", text: vars.answer }] } }]</span><span class="tag">&lt;/a2a:artifact-content&gt;</span>
+  <span class="tag">&lt;/a2a:update-task-artifact&gt;</span>
+
+  <span class="cm">&lt;!-- 3) close the task. final:true CLOSES the SSE stream — forget it and the caller hangs --&gt;</span>
+  <span class="tag">&lt;a2a:update-task-status</span> <span class="attr">config-ref</span>=<span class="str">"A2A_Server_config"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;a2a:status-content&gt;</span><span class="str">#[{ id: vars.taskId, contextId: vars.contextId,
+      kind: "status-update", status: { state: "completed" }, final: true }]</span><span class="tag">&lt;/a2a:status-content&gt;</span>
+  <span class="tag">&lt;/a2a:update-task-status&gt;</span>
+<span class="tag">&lt;/flow&gt;</span></pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Element names &amp; versions — verify in Studio</div>
+    Namespaces and elements above match the <strong>A2A Connector v1.1</strong> docs. This connector shipped <em>after</em> most L44 tooling, so treat the XML as docs-accurate rather than machine-verified. Two child-element names are inconsistent in the published docs: <code>a2a:status-content</code> (also shown as <code>a2a:status-update-content</code>) and <code>a2a:artifact-content</code>. If Studio underlines them, trust its autocomplete / the XSD over the snippet. Two copy-paste files are in the repo: <code>examples/l44/agent-flow-a2a.xml</code> (A2A only — the lifecycle left as TODOs for you to practice) and <code>examples/l44/agent-flow-a2a-mcp.xml</code> (the full stack: A2A front door + MCP-discovered tools, lifecycle filled in).</p>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Same-app streaming caveat</div>
+    The combined <code>agent-flow-a2a-mcp.xml</code> stacks <em>two</em> long-lived SSE streams in one process (the inbound A2A stream and the MCP client↔server stream), so it inherits the same "one request per deploy" limitation as the MCP demo. In production these are separate apps — A2A agent, MCP server, tool backends — each with its own connection lifecycle, and it doesn't happen.
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Why this matters for your day job</div>
+    Agentforce, a partner's supervisor agent, or another team's Mule agent can now delegate work to <em>your</em> agent through one open protocol — no bespoke integration per caller. Front it with Omni Gateway (see the positioning reference) and that A2A endpoint is discoverable, governed, and secured like any other API on Anypoint. This is the "agent as a managed, reusable asset" story.
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 10 · A2A server config + task-stream-listener on the canvas</div>
+    <img src="img/l44/10-a2a-server.png" alt="Screenshot placeholder — A2A server config and task-stream-listener" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the <code>a2a:task-stream-listener</code> selected at the start of the flow, with the A2A Server config (listener ref + agent card) visible in the config panel. If you can fit it, include one <code>a2a:update-task-status</code> operation. Save as <code>lessons/img/l44/10-a2a-server.png</code>.</div>
+  </div>
+
   <!-- ───────────────────────── PART 6 — RUN IT ───────────────────────── -->
   <h2>Part 6 · Run and test</h2>
 
@@ -582,6 +671,7 @@ output application/json
     <li>Deploy the flow to CloudHub 2.0 — <em>Right-click → Anypoint Platform → Deploy to CloudHub</em>. Now you have a managed, monitored, autoscaled agent.</li>
     <li>Take the MCP server from Part 5b further — front it with Omni Gateway (see the positioning reference) so the same tools are governed and available to external MCP clients (Claude Desktop, Agentforce) as well as this Mule agent.</li>
     <li>Compare deployment paths: L31 Vertex Agent Engine, L37 AgentCore Runtime, L43 Azure Foundry, and now CloudHub. Same agent, four managed platforms.</li>
+    <li>Wire the A2A agent from Part 5c to a real caller — the Python A2A client from L47 can discover this Mule agent's card and delegate a task to it. That's a cross-runtime handoff: Python agent → MuleSoft agent, over one open protocol.</li>
   </ul>
 
   <div class="footer">
