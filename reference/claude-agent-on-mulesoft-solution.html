@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — Claude Agent on MuleSoft: The Finalised Solution</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 880px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    .callout { border-radius: 6px; padding: 0.7rem 0.9rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.9rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-do   { background: #ecfdf5; border-color: #10b981; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.92rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.76rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer  { color: #f9e2af; font-weight: 700; }
+    .arch .cm     { color: #6c7086; font-style: italic; }
+    .arch .arrow  { color: #89dceb; }
+    .arch .sys    { color: #a6e3a1; }
+    .arch .plane  { color: #f38ba8; font-weight: 700; }
+    .arch .mine   { color: #f9e2af; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Solution · Claude agents on MuleSoft</p>
+    <h1>Claude Agent on MuleSoft — The Finalised Solution</h1>
+    <p class="tagline">The whiteboard picture for a customer building on Claude who needs to reach backends <em>and</em> be reached by other agents — safely. One diagram covering both directions, the component map, the credential story (Vaults + WIF), the one honest caveat, and the SE talk track. This is the "big picture" that <a href="../lessons/0051-claude-agent-on-agent-fabric.html">L51</a> (consumer) and <a href="../lessons/0052-make-your-claude-agent-discoverable.html">L52</a> (provider) each zoom into.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">The solution in one sentence</div>
+    The customer keeps building on Claude exactly as they do today. MuleSoft becomes the <strong>governed connective tissue</strong> on both sides of the agent — the tools it calls <em>out</em> to (MCP), and the door others call <em>in</em> through (A2A) — with credentials held and refreshed by the platform, never carried by hand.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — read before customer use</div>
+    Two fast-moving surfaces meet here. <strong>Claude side</strong>: the MCP connector, Managed Agents, Vaults, and Workload Identity Federation (WIF) are current as of 2026 and verified against the Anthropic Claude API docs in this workspace — some are beta, so check the beta-header/endpoint before quoting. <strong>MuleSoft side</strong>: Agent Fabric / Omni Gateway / MCP Bridge / A2A Connector are post-knowledge-cutoff (MCP Bridge GA <strong>6 Mar 2026</strong>; A2A Connector v2.0.0 published <strong>2026-08-03</strong>) — names and roles verified, exact GA dates and dialogs shift. The <em>shape</em> — MuleSoft governs both the outbound tool calls and the inbound agent calls — is the durable part. See the <strong>one honest caveat</strong> section on WIF + CloudHub 2.0 below.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The picture — both directions, one fabric</h2>
+  <p>A Claude agent has two protocol faces pointing opposite ways. It <em>calls out</em> to tools over MCP (L51), and other agents <em>call in</em> to it over A2A (L52). MuleSoft governs both hops. Read the diagram as one loop around the agent.</p>
+
+  <div class="arch"><span class="cm"># The finalised solution — MuleSoft governs BOTH sides of the Claude agent</span>
+
+                    ┌──────────────── <span class="layer">MuleSoft Agent Fabric</span> ────────────────┐
+                    │                                                        │
+  <span class="sys">Other agents</span> ──►  │  <span class="plane">Omni Gateway</span> ──►  <span class="mine">A2A wrapper</span> ──►  Anthropic REST ──► │ ► <span class="sys">Claude agent</span>
+  <span class="cm">(A2A, inbound)</span>    │  <span class="cm">(govern in)</span>       <span class="cm">(Mule app +</span>      <span class="cm">(session / Messages)</span>│   <span class="cm">"the brain"</span>
+                    │                     <span class="cm">Agent Card)</span>                        │      │
+                    │                         <span class="arrow">▲</span>                              │      │ <span class="cm">needs a tool</span>
+                    │                  <span class="plane">Agent Registry</span>                        │      <span class="arrow">▼</span>
+                    │                  <span class="cm">(discoverable)</span>                        │  <span class="cm">MCP (outbound)</span>
+                    │                                                        │      │
+  <span class="sys">Backends</span>  ◄────── │  <span class="layer">Anypoint APIs</span> ◄── <span class="sys">MCP Bridge</span> ◄── <span class="plane">Omni Gateway</span> ◄───────┼──────┘
+  <span class="cm">(SAP, SFDC, DB)</span>   │  <span class="cm">(existing APIs)</span>   <span class="cm">(API→MCP,</span>       <span class="cm">(govern out)</span>        │
+                    │                     <span class="cm">no-code)</span>                           │
+                    └────────────────────────────────────────────────────────┘
+</div>
+  <p><strong>Two seams, one platform.</strong> The left half is L52 (inbound / A2A / provider); the right half is L51 (outbound / MCP / consumer). Neither asks the customer to change how they build on Claude.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>Component map — "API-led connectivity for agents"</h2>
+  <p>Every piece maps to something the customer already understands from the API-led world. That familiarity is what makes the positioning seamless — you're extending an architecture they bought, not selling a new category.</p>
+
+  <table>
+    <thead>
+      <tr><th>Concern</th><th>MuleSoft piece</th><th>Familiar analogy</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Claude calls a backend tool</td><td><strong>MCP Bridge</strong> — existing API → MCP server, no code</td><td>Exchange asset → endpoint</td></tr>
+      <tr><td>Governing those tool calls (egress)</td><td><strong>Omni Gateway</strong> — auth, rate-limit, observability</td><td>API Manager</td></tr>
+      <tr><td>Making the Claude agent discoverable</td><td><strong>A2A wrapper + Agent Card</strong> in <strong>Agent Registry</strong></td><td>Exchange catalog</td></tr>
+      <tr><td>Governing who invokes the agent (ingress)</td><td><strong>Omni Gateway</strong> on the inbound A2A door</td><td>API Manager</td></tr>
+      <tr><td>Routing across many agents</td><td><strong>Agent Broker</strong></td><td>Process / orchestration API</td></tr>
+      <tr><td>Seeing the whole chain</td><td><strong>Agent Visualizer + Anypoint Monitoring</strong></td><td>Visualizer + Monitoring (agent-aware)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>The credential story — why it's seamless, not bolted-on</h2>
+  <p>The part that makes this "seamless" is that <strong>nobody hand-carries a key</strong>. There are three trust boundaries, and a platform owns each one — issuing and refreshing the credential automatically.</p>
+
+  <table>
+    <thead>
+      <tr><th>Hop</th><th>Who authenticates whom</th><th>Held &amp; refreshed by</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Consumer → MuleSoft</strong></td><td>The caller proves who it is</td><td><strong>Omni Gateway</strong> — the customer's existing policy plane (per-consumer auth, rate-limit, audit)</td></tr>
+      <tr><td><strong>MuleSoft → Anthropic</strong></td><td>The wrapper proves it's your Anthropic account</td><td><strong>WIF</strong> — the Mule workload exchanges an IdP JWT for a short-lived <code>sk-ant-oat01</code> token. No static <code>sk-ant-api…</code> to rotate.</td></tr>
+      <tr><td><strong>Claude → MuleSoft's backend tools</strong></td><td>The agent presents the backend credential</td><td><strong>Anthropic Vaults</strong> — injected at egress, never enters the sandbox; OAuth auto-refresh</td></tr>
+    </tbody>
+  </table>
+  <p>Every credential is issued and rotated by a platform — the Gateway, Anthropic's WIF exchange, or the Vault. <em>That</em> is the seamless part: no shared secret sits in an env file waiting to be manually rotated.</p>
+
+  <div class="callout callout-do">
+    <div class="callout-label">How WIF works, in four steps</div>
+    <ol>
+      <li>The Mule workload holds an <strong>OIDC JWT</strong> from an identity provider (IdP).</li>
+      <li>It <code>POST</code>s that JWT to Anthropic's <code>/v1/oauth/token</code> (<code>grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer</code>) with your <code>federation_rule_id</code>, <code>organization_id</code>, and <code>service_account_id</code>.</li>
+      <li>Anthropic returns a short-lived <strong><code>sk-ant-oat01-…</code></strong> bearer token (default 1h), sent as <code>Authorization: Bearer</code>.</li>
+      <li>Re-exchange near expiry. <strong>No <code>sk-ant-api…</code> key to mint or hand-rotate.</strong> One-time Console setup: a <em>service account</em>, a <em>federation issuer</em> (points at your IdP's JWKS), and a <em>federation rule</em> (a <code>match</code> block on the JWT's <code>sub</code>/<code>aud</code>/claims).</li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The one honest caveat to carry into the room</h2>
+  <p>WIF's hard requirement: the Mule workload must present an IdP-issued OIDC JWT whose issuer exposes a public JWKS Anthropic can reach (or you register keys <code>inline</code>). Whether that's clean <strong>depends on where you deploy</strong> — and Mule has <strong>no Anthropic SDK</strong>, so in a pure HTTP-Request flow <em>you</em> own the token exchange + caching (do it once, cache the <code>sk-ant-oat01</code> token in an Object Store with TTL from <code>expires_in</code>; or run the exchange in a small <code>anthropic-java</code> module, which does WIF natively).</p>
+
+  <table>
+    <thead>
+      <tr><th>Deploy target</th><th>Federatable identity for WIF?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Runtime Fabric</strong> (your own EKS/GKE/AKS)</td><td>✅ Yes — pod's K8s service-account token, or cloud workload identity (IRSA / GKE WI / Azure WI). Best fit.</td></tr>
+      <tr><td><strong>Self-managed / on-prem</strong></td><td>✅ Via SPIFFE/SPIRE, or an Okta/Entra OIDC token the app fetches.</td></tr>
+      <tr><td><strong>CloudHub 2.0</strong> (MuleSoft-managed)</td><td>⚠️ <strong>Uncertain / likely not directly.</strong> CH2 doesn't expose a customer-controllable OIDC workload identity Anthropic can trust. Have the app authenticate to <em>your own IdP</em> (Okta/Entra) for a JWT and present that — or fall back to a static key in <strong>Anypoint Secrets Manager</strong>. No doc confirms a natively-federatable CH2 identity; <strong>verify before promising it.</strong></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>The SE talk track</h2>
+  <blockquote class="talk">
+    "Claude is the brain. MuleSoft is the governed nervous system around it — the tools it reaches, the door others reach it through, and the identity layer so no one emails an API key. On one side, your existing Anypoint APIs become agent-callable tools with no new code, and every call runs through Omni Gateway. On the other, a thin front door makes your Claude agent discoverable in the Registry and gated at ingress. Credentials are held by the platform end to end — the Gateway authenticates your consumers, Workload Identity Federation mints short-lived tokens to Anthropic so there's no static key to rotate, and Vaults keep backend secrets out of the model's sandbox entirely. You don't rebuild your agent; you drop it into a fabric you already know how to run."
+  </blockquote>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The strategic frame</div>
+    Don't sell this as a new product category — sell it as <em>API-led connectivity for agents</em>. Omni Gateway is API Manager for agents; the Agent Registry is Exchange for agents; the Agent Broker is orchestration for agents. The customer who bought "govern your API sprawl" already understands "govern your agent sprawl." Familiar shapes, new traffic — and the credential story means it's governed <em>without</em> anyone hand-carrying secrets.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Related in this workspace</h2>
+  <ul>
+    <li><a href="../lessons/0051-claude-agent-on-agent-fabric.html">L51 — Claude agent as MCP consumer</a> — the outbound half of this picture, with the one-line connect config</li>
+    <li><a href="../lessons/0052-make-your-claude-agent-discoverable.html">L52 — Make your Claude agent discoverable</a> — the inbound half: A2A wrapper, card → registry → gateway</li>
+    <li><a href="mulesoft-agentic-reference-architecture.html">REF — Agentic reference architecture</a> — the full fabric these two lessons live inside</li>
+    <li><a href="../lessons/0048-mcp-and-a2a-in-mulesoft.html">L48 — MCP &amp; A2A in MuleSoft</a> · <a href="../lessons/0047-a2a-agent-lifecycle.html">L47 — Build an A2A agent</a></li>
+  </ul>
+
+  <div class="footer">
+    <a href="mulesoft-agentic-reference-architecture.html">← Reference architecture</a>
+    <a href="../lessons/0051-claude-agent-on-agent-fabric.html">L51</a>
+    <a href="../lessons/0052-make-your-claude-agent-discoverable.html">L52</a>
+    <a href="https://docs.mulesoft.com/agent-fabric/">Agent Fabric docs</a>
+    <p style="margin-top:0.7rem">Claude-side details (MCP connector, Managed Agents, Vaults, WIF: <code>/v1/oauth/token</code>, <code>sk-ant-oat01</code>) verified against the Anthropic Claude API docs (2026). MuleSoft Agent Fabric names/roles verified against mulesoft.com — GA dates, dialogs, and CloudHub 2.0 federation support move fast; verify before quoting. The both-sides-governed shape is the durable part.</p>
+  </div>
+
+</div>
+</body>
+</html>

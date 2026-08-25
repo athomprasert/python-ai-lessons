@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L50 — Agent memory in Anypoint Studio: short-term (Object Store) + semantic (Vectors)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 840px; margin: 0 auto; }
+
+    header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .eyebrow { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.35rem; font-size: 0.95rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.7rem 0 0.5rem;
+      padding-left: 0.7rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+    }
+    h3 { font-size: 1.02rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    li { margin-bottom: 0.25rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.87rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.88em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    pre.code {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      margin: 0.6rem 0 1rem;
+    }
+    pre.code .cm { color: #6c7086; font-style: italic; }
+    pre.code .kw { color: #cba6f7; }
+    pre.code .str { color: #a6e3a1; }
+    pre.code .tag { color: #89dceb; }
+    pre.code .attr { color: #f9e2af; }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      margin: 0.5rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer { color: #f9e2af; font-weight: 700; }
+    .arch .cm { color: #6c7086; font-style: italic; }
+    .arch .arrow { color: #89dceb; }
+
+    .callout { border-radius: 6px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.92rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-new  { background: #ecfdf5; border-color: #10b981; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.93rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    /* Screenshot placeholder styling */
+    .screenshot {
+      margin: 0.8rem 0 1.2rem;
+      border: 3px dashed #dc2626;
+      border-radius: 8px;
+      background: #fef2f2;
+      padding: 0.6rem;
+    }
+    .screenshot .ss-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #dc2626;
+      margin-bottom: 0.4rem;
+    }
+    .screenshot img {
+      max-width: 100%;
+      display: block;
+      border-radius: 4px;
+      background: #fff;
+    }
+    .screenshot .capture {
+      background: #fff;
+      border-left: 3px solid #dc2626;
+      padding: 0.5rem 0.7rem;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: #7f1d1d;
+    }
+    .screenshot .capture strong { color: #7f1d1d; }
+
+    .steps {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .steps ol { margin: 0.3rem 0 0 1.3rem; }
+
+    .quiz { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
+    .quiz h3 { margin-top: 0; color: #14532d; }
+    .quiz ol { margin-left: 1.3rem; }
+    .quiz details { margin-top: 0.4rem; }
+    .quiz summary { cursor: pointer; color: #16a34a; font-weight: 600; font-size: 0.88rem; }
+    .quiz .ans { background: #fff; border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.83rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">Lesson 50 · Anypoint Studio · Object Store v2 + MuleSoft Vectors</p>
+    <h1>Give your Mule agent memory: short-term with Object Store, semantic with Vectors</h1>
+    <p class="tagline">Take the tool-using agent from L44 and make it remember. You'll build two kinds of memory as visible Mule flow steps — a conversation buffer keyed by session, and a semantic recall store — so you see every read/write hop the Python frameworks hid from you.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">What you'll build</div>
+    A running Mule application that (1) remembers the last few turns of a conversation per <code>sessionId</code> using <strong>Object Store v2</strong>, and (2) recalls relevant facts from earlier — even across restarts — using the <strong>MuleSoft Vectors</strong> connector for semantic search. Same memory concepts every agent framework has (LangGraph checkpointer, CrewAI memory, ADK sessions) — but here each memory operation is an explicit, governable flow step, not a hidden framework feature.
+  </div>
+
+  <!-- ───────────────────────── SOURCE HONESTY ───────────────────────── -->
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — read before you install</div>
+    Two connectors here are versioned and evolving. <strong>Object Store</strong> is a long-stable core connector (operations: <code>store</code>, <code>retrieve</code>, <code>contains</code>, <code>remove</code>) — safe to rely on. The <strong>MuleSoft Vectors</strong> connector is part of the actively-evolving MuleSoft AI Chain (MAC) project; operation names, the embedding config, and store backends shift between releases. This lesson describes the <em>shape</em> of the flow — <strong>verify the exact operation names and config fields on Anypoint Exchange for the version you install</strong>. Screenshots you capture will be authoritative for your version.
+  </div>
+
+  <!-- ───────────────────────── PREREQS ───────────────────────── -->
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>You've done <strong>L44</strong> — the tool-using agent in Studio with the Inference connector. This lesson extends that project.</li>
+    <li><strong>Anypoint Studio</strong> installed, and an <strong>Anypoint Platform account</strong> (needed to pull connectors from Exchange and to use Object Store v2 in the cloud).</li>
+    <li>An <strong>OpenAI API key</strong> (reused from L44) — the Inference connector uses it for both chat and embeddings.</li>
+    <li>A <strong>vector store</strong> for Part C. Easiest local option is a running <strong>PostgreSQL with the pgvector extension</strong> (Docker one-liner below). The Vectors connector also supports other backends — pick whatever your version lists.</li>
+  </ul>
+
+  <!-- ───────────────────────── PART 1 — CONCEPT ───────────────────────── -->
+  <h2>Part 1 · The four kinds of agent memory</h2>
+  <p>Before touching Studio, get the mental model. Every agent framework juggles some mix of these four. The names differ; the roles don't.</p>
+
+  <table>
+    <thead><tr><th>Type</th><th>What it holds</th><th>Lifespan</th><th>We build it with…</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Short-term / working</strong></td><td>The current conversation turns + scratchpad</td><td>One session</td><td>Object Store v2 (Part B)</td></tr>
+      <tr><td><strong>Long-term / episodic</strong></td><td>Past conversations — "what happened last time"</td><td>Across sessions</td><td>a Database, or persisted Object Store</td></tr>
+      <tr><td><strong>Semantic / knowledge</strong></td><td>Facts &amp; docs, retrieved by meaning</td><td>Persistent, shared</td><td>MuleSoft Vectors (Part C)</td></tr>
+      <tr><td><strong>Procedural</strong></td><td>Learned rules — "always do X"</td><td>Persistent</td><td>system prompt / config</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-new">
+    <div class="callout-label">The one principle behind all of them</div>
+    <strong>The agent stays stateless; state lives in an external store, keyed by a session or user ID.</strong> LangGraph does exactly this (a <em>checkpointer</em> saves graph state to Postgres/Redis by <code>thread_id</code>). CrewAI does it (SQLite + RAG). ADK does it (a managed Session/Memory service). MuleSoft's twist: the store is a system Anypoint already integrates with, and each read/write is a governed flow step — so you can log, secure, and monitor memory access like any other API call.
+  </div>
+
+  <blockquote class="talk">
+    Frameworks give you memory <em>primitives</em>. Anypoint lets you turn any enterprise system — Redis, Postgres, Salesforce, a vector DB — into governed, reusable memory, and expose read/write as APIs your agents call safely. That's the positioning: not "MuleSoft is a better memory store," but "MuleSoft governs the memory you already have."
+  </blockquote>
+
+  <!-- ───────────────────────── PART 2 — THE SHAPE ───────────────────────── -->
+  <h2>Part 2 · The shape of a memory-aware turn</h2>
+  <p>Here's what one request looks like once both memories are wired. Read the flow of hops — you'll build each as a Mule component.</p>
+
+  <div class="arch"><span class="cm"># One /ask turn with memory</span>
+
+<span class="layer">User</span>  <span class="cm"># POST /ask  { sessionId: "u-123", question: "..." }</span>
+   <span class="arrow">↓</span>
+<span class="layer">Object Store: retrieve(sessionId)   </span>  <span class="cm"># short-term: last N turns (or empty)</span>
+   <span class="arrow">↓</span>
+<span class="layer">Vectors: query(question)            </span>  <span class="cm"># semantic: top-k relevant past facts</span>
+   <span class="arrow">↓</span>
+<span class="layer">Build prompt: history + recalled + question </span>
+   <span class="arrow">↓</span>
+<span class="layer">Inference [Chat]: Answer Prompt     </span>  <span class="cm"># the LLM, now with context</span>
+   <span class="arrow">├─ Object Store: store(sessionId, history+turn)  </span>  <span class="cm"># write short-term back</span>
+   <span class="arrow">└─ Vectors: add(question + answer)               </span>  <span class="cm"># write semantic memory</span>
+   <span class="arrow">↓</span>
+<span class="layer">Response  { answer, sessionId }     </span></div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Why this is the whole point of doing it in Mule</div>
+    In L41 (Foundry threads) and L35 (AgentCore memory) the retrieve→augment→store cycle happened <em>inside</em> the platform — you passed a thread ID and trusted it. Here every arrow is a component you can click, log, and put a policy on. More steps, zero magic. That transparency is what an integration team wants when memory contains customer data.
+  </div>
+
+  <!-- ───────────────────────── PART B — SHORT-TERM ───────────────────────── -->
+  <h2>Part B · Short-term memory with Object Store v2</h2>
+
+  <div class="callout callout-new">
+    <div class="callout-label">New concept · Object Store</div>
+    <strong>Object Store</strong> is Mule's built-in key/value store. You <code>store</code> a value under a key, <code>retrieve</code> it later, <code>contains</code> checks existence, <code>remove</code> deletes. Locally it's in-memory; on CloudHub, <strong>Object Store v2</strong> is a managed, persistent, shared store — so your memory survives restarts and is shared across workers. We'll key each conversation by its <code>sessionId</code>, storing an array of turns. This is the Mule equivalent of LangGraph's checkpointer keyed by <code>thread_id</code>.
+  </div>
+
+  <div class="steps">
+    <strong>Steps:</strong>
+    <ol>
+      <li>Open your <code>mac-agent-demo</code> project from L44. In the Mule Palette, click <em>Search in Exchange</em> and add <strong>Object Store Connector</strong> (asset <code>objectstore</code>). It's in the palette now.</li>
+      <li>At the <em>start</em> of your <code>/ask</code> flow, right after the HTTP Listener, add a <em>Transform Message</em> that reads the incoming <code>sessionId</code> and <code>question</code> into variables:
+        <ul>
+          <li><code>vars.sessionId = payload.sessionId default "anon"</code></li>
+          <li><code>vars.question = payload.question</code></li>
+        </ul>
+      </li>
+      <li>Drag <em>Object Store → Retrieve</em> onto the flow. Set <strong>Key</strong> to <code>#[vars.sessionId]</code> and <strong>Default value</strong> to <code>#[[]]</code> (an empty array, so a brand-new session doesn't error). Set <strong>Target</strong> to <code>history</code> — the result lands in <code>vars.history</code> instead of overwriting the payload.</li>
+      <li>Create a <em>Persistent Object Store</em> global config: in <em>Global Elements → Create → Object Store</em>, name it <code>Conversation_Store</code>, tick <strong>Persistent</strong>, and (optional) set an <strong>Entry TTL</strong> like 30 minutes so idle sessions expire. Point the Retrieve operation's <em>Object store</em> field at it.</li>
+      <li>Now build the prompt <em>with</em> history. In the Transform that feeds the Inference <em>[Chat] Answer Prompt</em> operation, prepend <code>vars.history</code> to the messages before the new user question. (See the DataWeave in Part D.)</li>
+      <li>After the LLM answers, add a second <em>Transform</em> that appends the new turn: <code>vars.history ++ [{ role: "user", content: vars.question }, { role: "assistant", content: payload.response }]</code> → into <code>vars.updatedHistory</code>. Optionally trim to the last 10 entries so the buffer stays small.</li>
+      <li>Drag <em>Object Store → Store</em>. <strong>Key</strong> = <code>#[vars.sessionId]</code>, <strong>Value</strong> = <code>#[vars.updatedHistory]</code>, same <code>Conversation_Store</code> config. This writes the updated buffer back.</li>
+      <li>Save. Read the XML tab to see the two operations Studio generated.</li>
+    </ol>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 01 · Object Store global config (Persistent + TTL)</div>
+    <img src="img/l50/01-object-store-config.png" alt="Screenshot placeholder — Object Store global configuration dialog" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the Object Store global config dialog named <code>Conversation_Store</code> with <em>Persistent</em> ticked and an Entry TTL set. Save as <code>lessons/img/l50/01-object-store-config.png</code>.</div>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 02 · Flow with Retrieve … Chat … Store</div>
+    <img src="img/l50/02-shortterm-flow.png" alt="Screenshot placeholder — flow canvas showing retrieve, chat, store" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the canvas showing HTTP Listener → Transform (read session) → Object Store Retrieve → Transform (build prompt) → Inference [Chat] → Transform (append turn) → Object Store Store → Transform (response). Save as <code>lessons/img/l50/02-shortterm-flow.png</code>.</div>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Local vs. CloudHub</div>
+    Running locally, a "persistent" Object Store persists to disk under your Mule instance — fine for testing. The <em>managed, shared, durable</em> Object Store v2 only exists when you deploy to CloudHub. Don't promise a customer "memory survives across workers" until it's on CloudHub v2 — locally there's just one worker.
+  </div>
+
+  <!-- ───────────────────────── PART C — SEMANTIC ───────────────────────── -->
+  <h2>Part C · Semantic memory with the MuleSoft Vectors connector</h2>
+
+  <div class="callout callout-new">
+    <div class="callout-label">New concept · Semantic memory = embeddings + a vector store</div>
+    Short-term memory recalls turns by <em>recency</em> (the last N). Semantic memory recalls by <em>meaning</em>: you turn text into an embedding (a vector of numbers), store it, and later find the most similar stored vectors to a new query. That's exactly RAG from L07–L10 — reused here as long-lived agent memory. The <strong>MuleSoft Vectors</strong> connector wraps embed + store + similarity-search as flow operations, so you don't hand-code the vector math.
+  </div>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">Spin up a local pgvector store</div>
+    One Docker command gives you a Postgres with pgvector, so Part C runs locally:
+    <pre class="code"><span class="cm"># Local vector store for testing</span>
+docker run -d --name pgvector -p 5432:5432 \
+  -e POSTGRES_PASSWORD=mule \
+  -e POSTGRES_DB=agentmemory \
+  pgvector/pgvector:pg16</pre>
+    Then, in psql: <code>CREATE EXTENSION IF NOT EXISTS vector;</code>. The connector creates its own table/collection.
+  </div>
+
+  <div class="steps">
+    <strong>Steps:</strong>
+    <ol>
+      <li>In the palette, <em>Search in Exchange</em> → add <strong>MuleSoft Vectors Connector</strong> (part of the MAC family). Confirm the exact asset name/version on Exchange.</li>
+      <li>Create the connector's config. It typically needs two things:
+        <ul>
+          <li>an <strong>embedding model</strong> — point it at OpenAI with model <code>text-embedding-3-small</code> and your <code>${openai.api.key}</code> property (same key file from L44);</li>
+          <li>a <strong>vector store</strong> — PGVector: host <code>localhost</code>, port <code>5432</code>, database <code>agentmemory</code>, user <code>postgres</code>, password from a property. Set a <strong>store/collection name</strong> like <code>agent_memory</code>.</li>
+        </ul>
+        <em>Field names vary by version — match what your dialog shows.</em>
+      </li>
+      <li><strong>Write path.</strong> After the LLM answers (near your Object Store <em>Store</em>), add the Vectors <em>add / ingest</em> operation. Feed it the text to remember — e.g. <code>vars.question ++ " → " ++ payload.response</code> — plus metadata like <code>{ sessionId: vars.sessionId }</code>. This embeds and stores the turn as durable semantic memory.</li>
+      <li><strong>Read path.</strong> Back near the <em>start</em> of the flow (after Object Store Retrieve), add the Vectors <em>query / similarity-search</em> operation. Input = <code>#[vars.question]</code>, <strong>top-k</strong> = <code>3</code>. Send the result to <code>vars.recalled</code>.</li>
+      <li>In the prompt-building Transform, add a section using <code>vars.recalled</code> — e.g. a "Relevant things you remember:" block before the question. Now the LLM sees both recent turns <em>and</em> semantically-related older ones.</li>
+      <li>Save and re-read the XML tab.</li>
+    </ol>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 03 · Vectors connector config (embedding + store)</div>
+    <img src="img/l50/03-vectors-config.png" alt="Screenshot placeholder — Vectors connector configuration" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the MuleSoft Vectors config dialog showing the embedding model (OpenAI <code>text-embedding-3-small</code>) and the PGVector store settings. Blur the password. Save as <code>lessons/img/l50/03-vectors-config.png</code>.</div>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 04 · Full memory-aware flow</div>
+    <img src="img/l50/04-full-memory-flow.png" alt="Screenshot placeholder — full flow with both memory types" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot the complete canvas: Object Store Retrieve + Vectors Query on the read side, Inference [Chat] in the middle, Object Store Store + Vectors Add on the write side. Save as <code>lessons/img/l50/04-full-memory-flow.png</code>.</div>
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">Short-term vs. semantic — when each earns its keep</div>
+    <strong>Object Store (short-term)</strong> is cheap, exact, and recency-ordered — perfect for "what did we just say." <strong>Vectors (semantic)</strong> costs an embedding call per read and write, but recalls by meaning across sessions — "the user mentioned they're allergic to penicillin three weeks ago." Real agents use both: the buffer for the live conversation, the vector store for durable knowledge. Don't reach for vectors when a keyed lookup will do.
+  </div>
+
+  <!-- ───────────────────────── PART D — DATAWEAVE / XML ───────────────────────── -->
+  <h2>Part D · The DataWeave &amp; XML (for reference)</h2>
+  <p>The one piece worth seeing in full is the prompt-building Transform — it stitches all three memory sources into the messages array:</p>
+
+<pre class="code"><span class="cm">%dw 2.0</span>
+<span class="cm">// Build the chat messages from: history (short-term) + recalled (semantic) + new question</span>
+<span class="kw">output</span> application/json
+---
+{
+  messages: (
+    <span class="cm">// 1. system prompt (procedural memory — the standing rules)</span>
+    [{ role: <span class="str">"system"</span>, content: <span class="str">"You are a helpful assistant. Use remembered context when relevant."</span> }]
+
+    <span class="cm">// 2. semantic recall, injected as context</span>
+    ++ (if (!isEmpty(vars.recalled))
+          [{ role: <span class="str">"system"</span>,
+             content: <span class="str">"Relevant things you remember:\n"</span> ++ (vars.recalled map $.text joinBy <span class="str">"\n"</span> ) }]
+        else [])
+
+    <span class="cm">// 3. short-term buffer — the last N turns verbatim</span>
+    ++ vars.history
+
+    <span class="cm">// 4. the new user question</span>
+    ++ [{ role: <span class="str">"user"</span>, content: vars.question }]
+  )
+}</pre>
+
+  <p>And the two Object Store operations Studio generates:</p>
+
+<pre class="code"><span class="cm">&lt;!-- read at the start of the turn --&gt;</span>
+<span class="tag">&lt;os:retrieve</span> <span class="attr">key</span>=<span class="str">"#[vars.sessionId]"</span> <span class="attr">objectStore</span>=<span class="str">"Conversation_Store"</span> <span class="attr">target</span>=<span class="str">"history"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;os:default-value&gt;</span><span class="attr">#[[]]</span><span class="tag">&lt;/os:default-value&gt;</span>
+<span class="tag">&lt;/os:retrieve&gt;</span>
+
+<span class="cm">&lt;!-- write at the end of the turn --&gt;</span>
+<span class="tag">&lt;os:store</span> <span class="attr">key</span>=<span class="str">"#[vars.sessionId]"</span> <span class="attr">objectStore</span>=<span class="str">"Conversation_Store"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;os:value&gt;</span><span class="attr">#[vars.updatedHistory]</span><span class="tag">&lt;/os:value&gt;</span>
+<span class="tag">&lt;/os:store&gt;</span></pre>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Verify before quoting</div>
+    The <code>os:*</code> operations above are stable. The Vectors <code>add</code>/<code>query</code> element names and attributes are <strong>not</strong> shown here on purpose — they change between MAC releases. Copy them from the XML tab of <em>your</em> Studio after you drop the operations, and paste them into the lesson if you want a permanent record.
+  </div>
+
+  <!-- ───────────────────────── PART E — RUN ───────────────────────── -->
+  <h2>Part E · Run and test the memory</h2>
+  <p>The proof of memory is a two-request test — the second call should use what the first taught it.</p>
+
+  <div class="steps">
+    <strong>Steps:</strong>
+    <ol>
+      <li>Make sure your pgvector container is running and the OpenAI key is in <code>config.yaml</code>. Right-click the project → <em>Run project</em>. Wait for <code>DEPLOYED</code> in the console.</li>
+      <li><strong>Turn 1 — teach it:</strong>
+        <pre class="code">curl -X POST http://localhost:8081/ask \
+  -H "Content-Type: application/json" \
+  -d '{ "sessionId": "u-123", "question": "My name is Attapol and I manage the SE team." }'</pre>
+      </li>
+      <li><strong>Turn 2 — same session, test short-term:</strong>
+        <pre class="code">curl -X POST http://localhost:8081/ask \
+  -H "Content-Type: application/json" \
+  -d '{ "sessionId": "u-123", "question": "What is my name?" }'</pre>
+        It should answer "Attapol" — pulled from the Object Store buffer, not the model's training.
+      </li>
+      <li><strong>Restart the app, then test semantic memory</strong> with a <em>fresh</em> session id:
+        <pre class="code">curl -X POST http://localhost:8081/ask \
+  -H "Content-Type: application/json" \
+  -d '{ "sessionId": "u-999", "question": "Who leads the SE team?" }'</pre>
+        The short-term buffer for <code>u-999</code> is empty — but the Vectors query can still surface the earlier "manage the SE team" fact by meaning. That's semantic recall surviving a restart <em>and</em> crossing sessions.
+      </li>
+      <li>Watch the Studio console: you'll see the Retrieve, the Vectors query, the LLM call, then the Store and Vectors add — every memory hop logged in order.</li>
+    </ol>
+  </div>
+
+  <div class="screenshot">
+    <div class="ss-label">Screenshot 05 · Two-turn test proving recall</div>
+    <img src="img/l50/05-memory-test.png" alt="Screenshot placeholder — terminal showing the two curl calls and answers" />
+    <div class="capture"><strong>Capture instructions:</strong> Screenshot your terminal with both curl calls and their JSON responses — turn 2 correctly answering "Attapol". Save as <code>lessons/img/l50/05-memory-test.png</code>.</div>
+  </div>
+
+  <!-- ───────────────────────── QUIZ ───────────────────────── -->
+  <h2>Quiz</h2>
+
+  <div class="quiz">
+    <h3>Test your understanding</h3>
+    <ol>
+      <li>Why do we key the Object Store on <code>sessionId</code> instead of just storing one global history?
+        <details><summary>Show answer</summary><div class="ans">So conversations don't bleed into each other. Every user (or chat) gets its own isolated buffer — the same reason LangGraph keys its checkpointer on <code>thread_id</code>. One global history would mix everyone's turns together.</div></details>
+      </li>
+      <li>Turn 2 answered "Attapol" correctly. Did the LLM <em>learn</em> that?
+        <details><summary>Show answer</summary><div class="ans">No — the model is stateless. We retrieved the stored history and put it back into the prompt before calling the LLM. The "memory" is the retrieve→augment→store cycle in the flow, not anything inside the model.</div></details>
+      </li>
+      <li>When would short-term (Object Store) fail but semantic (Vectors) succeed?
+        <details><summary>Show answer</summary><div class="ans">When the relevant fact is from a <em>different</em> session or was pushed out of the last-N buffer. Object Store recalls by key + recency; Vectors recalls by meaning across all stored turns, regardless of session or age.</div></details>
+      </li>
+      <li>Why is "persistent" Object Store locally not the same as Object Store v2 on CloudHub?
+        <details><summary>Show answer</summary><div class="ans">Locally it persists to one instance's disk — one worker, no sharing. Object Store v2 is a managed, durable, <em>shared</em> store across all CloudHub workers. Only the cloud version gives you memory that survives scaling and is consistent across replicas.</div></details>
+      </li>
+      <li>Where does "procedural memory" live in this build?
+        <details><summary>Show answer</summary><div class="ans">In the system prompt (and connector config) — the standing rules like "use remembered context when relevant." It's not stored per-session; it's the agent's fixed behavior. We didn't need a datastore for it.</div></details>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────── WHERE TO GO ───────────────────────── -->
+  <h2>Where to go from here</h2>
+  <ul>
+    <li>Deploy to <strong>CloudHub 2.0</strong> and switch the Object Store to <strong>v2</strong> — now memory is durable and shared across workers, monitored in Anypoint. That's the jump from "demo memory" to "production memory."</li>
+    <li>Add a <strong>summarization step</strong>: when the history buffer exceeds N turns, call the LLM to compress older turns into a summary before storing. This is exactly what LangGraph's summarizing checkpointers do (L22) — rebuild it as a Mule flow.</li>
+    <li>Put an <strong>API policy</strong> on the memory operations via API Manager — rate-limit writes, or require a scope to read another user's session. This is the governance angle no code-first framework gives you for free.</li>
+    <li>Expose <em>read-memory</em> and <em>write-memory</em> as <strong>MCP tools</strong> (see L46/L48) so other agents — Agentforce, Claude Desktop, the Python A2A agent from L47 — can share this governed memory store.</li>
+    <li>Compare memory models across the series: L28 ADK sessions, L35 AgentCore memory, L41 Foundry threads, and now Anypoint. Same four memory types, four platforms.</li>
+  </ul>
+
+  <div class="footer">
+    <a href="0049-agent-broker.html">← L49 Agent Broker</a>
+    <a href="0044-anypoint-mac-agent.html">L44 MAC agent (base project)</a>
+    <a href="../reference/mcp-integration-positioning.html">MCP integration positioning</a>
+    <p style="margin-top:0.7rem">Ask me anything unclear — that's how you learn. If a Vectors connector operation name has drifted from what's shown here, tell me and we'll update the lesson.</p>
+  </div>
+
+</div>
+</body>
+</html>

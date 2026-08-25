@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L52 — Make Your Claude Agent Discoverable &amp; Governed</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.55;
+      padding: 1.5rem 1rem 4rem;
+    }
+    .page { max-width: 880px; margin: 0 auto; }
+
+    .ref-header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .tagline { color: #555; margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 800;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid #1a1a1a;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: #2563eb; }
+    strong { font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+
+    p code, li code, td code, th code {
+      background: #f1f1f1;
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: #c7254e;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      margin: 0.6rem 0 1rem;
+      overflow-x: auto;
+    }
+    pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+    pre .c  { color: #6c7086; font-style: italic; }
+    pre .k  { color: #cba6f7; }
+    pre .s  { color: #a6e3a1; }
+    pre .fn { color: #89b4fa; }
+    pre .todo { color: #f38ba8; font-weight: 700; }
+
+    .callout { border-radius: 6px; padding: 0.7rem 0.9rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.9rem; }
+    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
+    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
+    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout-do   { background: #ecfdf5; border-color: #10b981; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: #f0f9ff;
+      border-left: 5px solid #0284c7;
+      border-radius: 6px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.92rem;
+      font-style: italic;
+      color: #1e3a5c;
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #0284c7;
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    .arch {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.76rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer  { color: #f9e2af; font-weight: 700; }
+    .arch .cm     { color: #6c7086; font-style: italic; }
+    .arch .arrow  { color: #89dceb; }
+    .arch .sys    { color: #a6e3a1; }
+    .arch .plane  { color: #f38ba8; font-weight: 700; }
+    .arch .mine   { color: #f9e2af; }
+
+    .decision { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+    .decision strong { color: #0f172a; }
+    .decision ul { margin-top: 0.3rem; }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #6b7280; }
+    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Lesson 52 · MuleSoft Agent Fabric · Claude-managed agents</p>
+    <h1>Make Your Claude Agent Discoverable &amp; Governed</h1>
+    <p class="tagline">In <a href="0051-claude-agent-on-agent-fabric.html">L51</a> your Claude agent <em>called</em> MuleSoft tools. Now flip it: let <em>other</em> agents call <strong>your</strong> Claude agent — discovered through the MuleSoft Agent Registry and gated by Omni Gateway. Same agent, opposite direction.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">One-line summary</div>
+    A Claude Managed Agent is invoked over Anthropic's REST API — it has <strong>no Agent Card</strong>, so nothing in MuleSoft can see it yet. Give it an <strong>A2A front door</strong> (a task-listener that calls the Claude session API), <strong>register that card</strong> in the Agent Registry so peers can discover it, and <strong>publish the endpoint behind Omni Gateway</strong> so every inbound call is authenticated, rate-limited, and audited. The catch: the gateway only governs traffic that actually flows through it.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — verified 2026-08-25</div>
+    Checked against live Anypoint Exchange and the Anthropic Claude API docs. <strong>No native Anthropic/Claude connector exists</strong> in Exchange — the A2A-wrapper path below is the real way, not a workaround. The <strong>A2A Connector for Mule 4 is live at v2.0.0</strong> (<code>com.mulesoft.connectors:mule4-a2a-connector</code>, published 2026-08-03) — that's the MuleSoft-native way to build the front door. Agent Fabric / Omni Gateway / Agent Scanners are post-knowledge-cutoff and fast-moving — names and roles verified, exact dialogs and GA dates shift. The durable shape — <em>Card → Registry → Gateway</em> — is what to remember.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The mirror of L51</h2>
+  <p>Your Claude agent has two protocol faces, and they point in opposite directions. L51 was the left column; this lesson is the right.</p>
+
+  <table>
+    <thead>
+      <tr><th></th><th>L51 — agent as <em>consumer</em></th><th>L52 — agent as <em>provider</em></th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Direction</td><td>Claude calls <strong>out</strong> to tools</td><td>Others call <strong>in</strong> to Claude</td></tr>
+      <tr><td>Protocol</td><td>MCP</td><td>A2A</td></tr>
+      <tr><td>MuleSoft piece</td><td>MCP Bridge exposes your API as a tool</td><td>Agent Registry + A2A front door expose your agent</td></tr>
+      <tr><td>Omni Gateway governs…</td><td>egress to tools</td><td>ingress from callers</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>Why a Claude agent needs a front door</h2>
+  <p>The Agent Registry (which lives in Anypoint Exchange) is <strong>A2A-native</strong>: it discovers agents by their <strong>Agent Card</strong> — the <code>/.well-known/agent-card.json</code> you built by hand in <a href="0047-a2a-agent-lifecycle.html">L47</a>. But a Claude Managed Agent is invoked through Anthropic's <code>sessions</code> REST API; it doesn't serve an A2A endpoint and it publishes no card. So out of the box, <em>nothing in MuleSoft can find it or route to it.</em></p>
+  <p>The fix is a thin <strong>A2A wrapper</strong>: a small service that <em>speaks A2A on the outside</em> and <em>calls the Claude session API on the inside</em>. That wrapper is what owns the Agent Card, gets registered, and sits behind the gateway.</p>
+
+  <!-- ───────────────────────────── -->
+  <h2>The one diagram to memorize</h2>
+  <div class="arch"><span class="cm"># Other agents discover + call your Claude agent — through MuleSoft</span>
+
+<span class="layer">CONSUMING AGENT / APP</span>          <span class="cm"># finds your agent's card in the Registry, then calls it</span>
+       <span class="arrow">│  A2A: delegate a task</span>
+       <span class="arrow">▼</span>
+┌──────────────────────────────────────────────────────────────┐
+│  <span class="plane">OMNI GATEWAY</span>   <span class="cm"># ingress governance: authenticate the CALLER,</span>       │
+│                <span class="cm"># authorize, rate-limit per consumer, audit every call</span>     │
+└──────────────────────────────────────────────────────────────┘
+       <span class="arrow">▼</span>
+<span class="mine">A2A WRAPPER</span>  <span class="cm"># speaks A2A out / calls Claude in — Agent Card lives HERE</span>
+   <span class="cm"># build with: MuleSoft A2A Connector v2.0.0, or a Python a2a-sdk service (L47)</span>
+       <span class="arrow">│  Anthropic REST: sessions API  (x-api-key over TLS)</span>
+       <span class="arrow">▼</span>
+<span class="sys">CLAUDE MANAGED AGENT</span>            <span class="cm"># the brain — runs the loop in Anthropic's sandbox</span>
+
+<span class="cm"># ── cross-cutting ──────────────────────────────────────────────</span>
+<span class="plane">AGENT REGISTRY (Anypoint Exchange)</span>   <span class="cm"># the wrapper's Agent Card is published here → discoverable</span>
+<span class="plane">AGENT VISUALIZER + MONITORING</span>       <span class="cm"># see who called your agent, when, under what policy</span>
+</div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Two hops, two auth layers — the part people get wrong</h2>
+  <p>There are <strong>two separate security boundaries</strong> in that diagram, and they protect different things. Confusing them is the classic mistake.</p>
+
+  <div class="arch"><span class="sys">Consumer</span> <span class="arrow">──[  ???  ]──►</span> <span class="mine">A2A wrapper</span> <span class="arrow">──[ x-api-key / TLS ]──►</span> <span class="sys">Anthropic agent</span>
+          <span class="arrow">▲</span>                          <span class="arrow">▲</span>
+   <span class="cm">YOUR responsibility</span>         <span class="cm">Anthropic's REST auth</span>
+   <span class="cm">(who is this caller?</span>        <span class="cm">(proves the wrapper == your account)</span>
+   <span class="cm"> allowed? rate?)</span>
+</div>
+
+  <ul>
+    <li><strong>Wrapper → Anthropic</strong> is handled <em>by Anthropic</em>: an <code>x-api-key</code> (or OAuth <code>Authorization: Bearer</code>) header over TLS, scoped to a workspace and a set of permissions. This authenticates <em>your account</em> to Anthropic — nothing more.</li>
+    <li><strong>Consumer → wrapper</strong> is <em>your</em> job. Anthropic's key has no idea <em>which</em> of your users or downstream agents is calling; it can't rate-limit per consumer or audit who did what. That gap is exactly what <strong>Omni Gateway</strong> fills.</li>
+  </ul>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">The catch that makes access control real</div>
+    Omni Gateway can only enforce policy on traffic that <strong>actually passes through it</strong>. Your single Anthropic API key lives <em>inside</em> the wrapper — so if a consumer can reach the wrapper directly, they ride your key with <em>zero</em> consumer-level control. Therefore: the Agent Card must advertise the <strong>gateway-fronted URL</strong>, and the raw wrapper must be locked down so <strong>only the gateway can reach it</strong>. Same "don't let clients bypass the proxy" discipline as classic API management — now for agent traffic.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Hands-on — scaffold the A2A wrapper</h2>
+  <p>You'll build the front door in Python, reusing the A2A primitives you already verified in <a href="0047-a2a-agent-lifecycle.html">L47</a>. The wrapper's job is tiny: accept an A2A task, hand its text to the Claude agent, return the result as a completed task. The Claude call is left as a <span class="todo">TODO</span> for you to wire — that's the learning.</p>
+
+  <div class="callout callout-do">
+    <div class="callout-label">Why we don't paste full a2a-sdk code here</div>
+    Your <code>a2a-sdk 1.1.2</code> API differs sharply from most online tutorials (proto-based types, route-builder funcs, mandatory Task-enqueue — see the <a href="0047-a2a-agent-lifecycle.html">L47</a> notes). <strong>Trust your running code, not web snippets.</strong> So copy the verified card + task-listener skeleton from L47's example, and drop in only the new piece below: the call into Claude.
+  </div>
+
+  <h3>Step 1 — the "call Claude" helper (the one new thing)</h3>
+  <pre><code><span class="c"># claude_backend.py — the INSIDE of the wrapper: A2A task text -> Claude answer</span>
+<span class="k">import</span> anthropic
+
+client = anthropic.Anthropic()   <span class="c"># reads ANTHROPIC_API_KEY from the environment</span>
+
+<span class="k">def</span> <span class="fn">run_claude_agent</span>(task_text: str) -&gt; str:
+    <span class="s">"""Send one task to a Claude Managed Agent and return its final text."""</span>
+
+    <span class="c"># TODO 1: create (or reuse) an Environment and an Agent once, not per call.</span>
+    <span class="c">#   env   = client.beta.environments.create(name="a2a-env", config={...})</span>
+    <span class="c">#   agent = client.beta.agents.create(name="Order Ops", model="claude-opus-5", ...)</span>
+
+    <span class="c"># TODO 2: start a session seeded with the incoming task as the first message,</span>
+    <span class="c">#   then read the event stream until the session goes idle and collect the</span>
+    <span class="c">#   agent's final text. (See the Managed Agents docs for sessions + events.)</span>
+    <span class="todo"># raise NotImplementedError("wire me to client.beta.sessions + event stream")</span>
+
+    <span class="k">return</span> <span class="s">"TODO: the Claude agent's final answer"</span></code></pre>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">New syntax — what's happening here (Java bridge)</div>
+    <ul>
+      <li><code>def run_claude_agent(task_text: str) -&gt; str:</code> — a function with <strong>type hints</strong>. <code>: str</code> annotates the parameter, <code>-&gt; str</code> the return type. Like a Java signature <code>String runClaudeAgent(String taskText)</code>, except Python hints are advisory (not enforced at runtime) — they document intent and power IDE checks.</li>
+      <li>The triple-quoted <code>"""..."""</code> right under <code>def</code> is a <strong>docstring</strong> — Python's built-in Javadoc. Tools and <code>help()</code> read it.</li>
+      <li><code>client.beta.agents</code> / <code>client.beta.sessions</code> — the Managed Agents surface. You create the agent <em>once</em> (a stored, versioned config) and open a <em>session</em> per task. Sessions run the loop in Anthropic's sandbox and emit an event stream you read to completion.</li>
+    </ul>
+  </div>
+
+  <h3>Step 2 — expose it over A2A (reuse L47's skeleton)</h3>
+  <pre><code><span class="c"># wrapper.py — the OUTSIDE: an A2A task-listener that delegates to Claude</span>
+<span class="k">from</span> claude_backend <span class="k">import</span> run_claude_agent
+
+<span class="c"># Copy the VERIFIED Agent Card + task handler from your L47 example, then:</span>
+<span class="c">#   - set the card's name/description to describe the Claude agent's skill</span>
+<span class="c">#   - in the task handler, call run_claude_agent(incoming_task_text)</span>
+<span class="c">#   - return the result as a COMPLETED task (submitted -> working -> completed)</span>
+
+<span class="k">def</span> <span class="fn">handle_task</span>(task_text: str) -&gt; str:
+    <span class="c"># the A2A lifecycle wrapping is L47's job; the body is just:</span>
+    <span class="k">return</span> run_claude_agent(task_text)</code></pre>
+
+  <div class="callout callout-do">
+    <div class="callout-label">Your turn — the win</div>
+    <ol>
+      <li>Copy your working L47 A2A server; point its task handler at <code>run_claude_agent</code>.</li>
+      <li>Fill in the two <span class="todo">TODO</span>s so the helper actually returns Claude's answer.</li>
+      <li>Run your L47 <em>client</em> against it (two terminals, as in L47).</li>
+      <li><strong>Success looks like:</strong> your A2A client discovers the card, sends a task, and gets back an answer <em>that only Claude could have produced</em> — you've turned a Claude Managed Agent into a discoverable A2A agent. Registering that card in the Agent Registry and fronting it with Omni Gateway is then a platform step, not more code.</li>
+    </ol>
+  </div>
+
+  <div class="callout callout-mule">
+    <div class="callout-label">The MuleSoft-native alternative (no Python)</div>
+    Everything above can be a <strong>Mule flow</strong> instead: the <strong>A2A Connector v2.0.0</strong> (<a href="https://anypoint.mulesoft.com/exchange/com.mulesoft.connectors/mule4-a2a-connector/">Exchange</a>) provides the <code>a2a:task-listener</code> + Agent Card (as you saw in <a href="0048-mcp-and-a2a-in-mulesoft.html">L48</a>); the flow body calls the Anthropic API via HTTP Request. Then it's deployed on Omni Gateway and published to the Registry through the platform — the governed, no-custom-server path. Same three steps: <em>card → registry → gateway.</em>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>So what does MuleSoft add here?</h2>
+  <table>
+    <thead>
+      <tr><th>Need</th><th>MuleSoft brings</th><th>Without it…</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Other teams can find your Claude agent</td><td><strong>Agent Registry</strong> — the card is catalogued and reusable org-wide</td><td>everyone re-integrates the same agent point-to-point</td></tr>
+      <tr><td>Only the right callers get in</td><td><strong>Omni Gateway</strong> — authenticate + authorize each consumer at ingress</td><td>your Anthropic key is effectively open to anyone who reaches the wrapper</td></tr>
+      <tr><td>Fair, safe usage</td><td>Per-consumer <strong>rate limits</strong> at the gateway</td><td>one caller can exhaust your Anthropic quota for everyone</td></tr>
+      <tr><td>Audit "who called my agent?"</td><td><strong>Visualizer + Monitoring</strong> trace every inbound call</td><td>no record of who invoked the agent or why</td></tr>
+      <tr><td>Swap Claude for another model later</td><td>Consumers depend on the <em>card</em>, not on Anthropic — change the wrapper's backend, card stays</td><td>every consumer is hardwired to Anthropic's API</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>The SE talk track</h2>
+  <blockquote class="talk">
+    "You've built a great agent on Claude — now other teams want to use it, and that's where it gets risky. Right now the only way in is your raw Anthropic key, which authenticates <em>you</em> to Anthropic but says nothing about <em>which</em> of your consumers is calling — no per-team limits, no audit, no way to cut one off. Put a thin A2A front door on it, register its card in our Agent Registry so it's discoverable and reusable across the org, and route every inbound call through Omni Gateway. Now each consumer is authenticated, rate-limited, and logged before a single token of your Anthropic quota is spent — and if you ever swap Claude for another model, consumers never notice, because they depend on the card, not on Anthropic. It's the same 'publish it once, govern it centrally' play you already run for APIs — the endpoint just happens to be an agent."
+  </blockquote>
+
+  <!-- ───────────────────────────── -->
+  <h2>How this builds on what you've done</h2>
+  <table>
+    <thead>
+      <tr><th>You already have / know</th><th>Its role here</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><a href="0047-a2a-agent-lifecycle.html">L47</a> — A2A Agent Card + task lifecycle</td><td>The verified skeleton for the wrapper's outside</td></tr>
+      <tr><td><a href="0048-mcp-and-a2a-in-mulesoft.html">L48</a> — a Mule flow as an A2A agent</td><td>The no-code, MuleSoft-native way to build the front door (A2A Connector)</td></tr>
+      <tr><td><a href="0051-claude-agent-on-agent-fabric.html">L51</a> — Claude agent as MCP consumer</td><td>The exact mirror — this lesson is the inbound direction</td></tr>
+      <tr><td><a href="../reference/mulesoft-agentic-reference-architecture.html">REF — Agentic reference architecture</a></td><td>Where Registry, Broker, and Omni Gateway sit in the full fabric</td></tr>
+      <tr><td><a href="../reference/claude-agent-on-mulesoft-solution.html">REF — Claude agent on MuleSoft: the finalised solution</a></td><td>The big picture — this lesson is the inbound (A2A provider) half of it</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-do">
+    <div class="callout-label">Ask your teacher</div>
+    Stuck wiring the Claude session event stream, or unsure whether to build the wrapper in Python or as a Mule flow for your customer? Ask: <em>"For [customer], should the A2A front door be a Python service or an A2A-Connector Mule flow — and what does the Omni Gateway policy set look like?"</em>
+  </div>
+
+  <div class="footer">
+    <a href="0051-claude-agent-on-agent-fabric.html">← L51</a>
+    <a href="../reference/claude-agent-on-mulesoft-solution.html">Finalised solution</a>
+    <a href="../reference/mulesoft-agentic-reference-architecture.html">Reference architecture</a>
+    <a href="https://anypoint.mulesoft.com/exchange/com.mulesoft.connectors/mule4-a2a-connector/">A2A Connector v2.0.0</a>
+    <a href="https://docs.mulesoft.com/agent-fabric/">Agent Fabric docs</a>
+    <p style="margin-top:0.7rem">Verified 2026-08-25 against live Exchange (no native Anthropic connector; A2A Connector v2.0.0 real) and the Anthropic Claude API docs (REST auth: <code>x-api-key</code>/OAuth over TLS). Agent Fabric component specifics are post-cutoff and move fast — verify before quoting. The card → registry → gateway shape is the durable part.</p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -83,8 +83,8 @@
     <h1>Python for AI/ML</h1>
     <p class="tagline">A self-paced curriculum of short, self-contained lessons. Each one teaches one tightly-scoped thing — code skeletons, hints, quizzes, and the why behind the choices.</p>
     <div class="meta-row">
-      <span>46 lessons</span>
-      <span>12 reference docs</span>
+      <span>52 lessons</span>
+      <span>13 reference docs</span>
       <span>Pedagogy: write-it-yourself, not read-along</span>
     </div>
   </header>
@@ -183,6 +183,14 @@
     <li><span class="num">L49</span><span class="title"><a href="lessons/0049-agent-broker.html">Build an Agent Broker</a><span class="sub">Hands-on: author the routing graph in Agent Script, then deploy &amp; govern it in Anypoint (CloudHub 2.0 + Omni Gateway) — public docs only</span></span></li>
   </ul>
 
+  <h2>MuleSoft Agent Fabric — Memory &amp; Claude Agents</h2>
+  <p class="group-blurb">Giving Mule agents memory, then connecting customer agents built on Claude to the enterprise — Claude as a governed tool-<em>consumer</em> (MCP) and as a discoverable <em>provider</em> (A2A), all under Agent Fabric.</p>
+  <ul class="lessons">
+    <li><span class="num">L50</span><span class="title"><a href="lessons/0050-agent-memory-in-anypoint.html">Give your Mule agent memory</a><span class="sub">Short-term with Object Store, semantic long-term recall with the Vectors connector — the Anypoint parallel to L28/L35</span></span></li>
+    <li><span class="num">L51</span><span class="title"><a href="lessons/0051-claude-agent-on-agent-fabric.html">Claude agent as MCP consumer</a><span class="sub">Wire a Claude-managed agent to backends through MuleSoft — one-line connect config + where MuleSoft governs the tool calls</span></span></li>
+    <li><span class="num">L52</span><span class="title"><a href="lessons/0052-make-your-claude-agent-discoverable.html">Make your Claude agent discoverable</a><span class="sub">Claude agent as A2A provider — Agent Card → Registry → Omni Gateway, the inbound direction</span></span></li>
+  </ul>
+
   <h2>Reference Docs</h2>
   <p class="group-blurb">Compressed cheat sheets — designed for re-reading later, not for first-pass learning.</p>
   <ul class="lessons">
@@ -193,6 +201,7 @@
     <li><span class="num">REF</span><span class="title"><a href="reference/llamaindex-production-notes.html">LlamaIndex production notes</a><span class="sub">LlamaIndex in real apps — same shape, different gotchas</span></span></li>
     <li><span class="num">REF</span><span class="title"><a href="reference/mcp-a2a-interop.html">MCP + A2A interop</a><span class="sub">Wrap-up of L45–47 — the composed architecture, primitives side-by-side, tool-vs-agent decision guide</span></span></li>
     <li><span class="num">REF</span><span class="title"><a href="reference/mulesoft-agentic-reference-architecture.html">MuleSoft agentic reference architecture</a><span class="sub">Agent Fabric, Omni Gateway, Agent Broker &amp; MCP Bridge in the layered agentic-enterprise stack + request trace</span></span></li>
+    <li><span class="num">REF</span><span class="title"><a href="reference/claude-agent-on-mulesoft-solution.html">Claude agent on MuleSoft: the finalised solution</a><span class="sub">Both-directions whiteboard picture (MCP out + A2A in), component map, credential story (Vaults + WIF), and the CloudHub 2.0 caveat</span></span></li>
     <li><span class="num">REF</span><span class="title"><a href="reference/agentic-whiteboarding-kit.html">Agentic whiteboarding kit</a><span class="sub">SE field kit — timed agenda, discovery questions, draw-it-live architecture, objection handling for customer sessions</span></span></li>
     <li><span class="num">REF</span><span class="title"><a href="reference/agentic-discovery-positioning-kit.html">Agentic discovery &amp; positioning kit</a><span class="sub">Two-canvas SE kit — capture as-is landscape, co-define to-be, gap table, technical-win checklist</span></span></li>
     <li><span class="num">REF</span><span class="title"><a href="reference/mcp-integration-positioning.html">MCP integration positioning</a><span class="sub">AgentCore Gateway vs Anypoint vs MuleSoft MCP — SE talk tracks + decision tree</span></span></li>
