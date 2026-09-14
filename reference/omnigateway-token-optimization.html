@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP Policy Stack — Multi-Server Visualisation (5 Policies)</title>
+<style>
+  :root {
+    color-scheme: light;
+    --navy:    #0D1117;
+    --navy-2:  #161B22;
+    --navy-3:  #21262D;
+    --border:  #30363D;
+    --muted:   #8B949E;
+    --text:    #E6EDF3;
+    --text-dim:#C9D1D9;
+    --blue:    #58A6FF;
+    --red:     #F85149;
+    --green:   #3FB950;
+    --yellow:  #E3B341;
+    --purple:  #BC8CFF;
+    --orange:  #FFA657;
+    --teal:    #39D0D8;
+  --pink:    #FF79C6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--navy); color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    padding: 28px 18px 72px; min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header { max-width: 1160px; margin: 0 auto 6px; }
+  .eyebrow { font-family: monospace; font-size: 11px; color: var(--blue); letter-spacing: .08em; margin-bottom: 8px; }
+  h1 { font-size: clamp(20px,3vw,30px); font-weight: 600; line-height: 1.2; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: var(--muted); max-width: 680px; line-height: 1.6; margin-bottom: 20px; }
+
+  /* ── Tabs ── */
+  .tabs { max-width: 1160px; margin: 0 auto 0; display: flex; gap: 2px; border-bottom: 1px solid var(--border); }
+  .tab {
+    font-family: monospace; font-size: 12px; padding: 9px 18px;
+    color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+    background: none; border-top: none; border-left: none; border-right: none;
+    transition: color .15s, border-color .15s;
+  }
+  .tab:hover { color: var(--text-dim); }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+  /* ── Tab panels ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Controls ── */
+  .controls {
+    max-width: 1160px; margin: 16px auto 14px;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  button {
+    font-family: monospace; font-size: 12px; font-weight: 500;
+    padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer;
+    transition: background .15s;
+  }
+  .play-btn { background: var(--blue); border-color: var(--blue); color: #000; }
+  .play-btn:hover { background: #79b8ff; }
+  .reset-btn { background: transparent; border-color: var(--border); color: var(--muted); }
+  .reset-btn:hover { border-color: var(--text-dim); color: var(--text-dim); }
+  .speed-label { font-family: monospace; font-size: 11px; color: var(--muted); }
+  select {
+    font-family: monospace; font-size: 12px; background: var(--navy-2);
+    border: 1px solid var(--border); color: var(--text-dim);
+    padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  }
+  .stage-lbl {
+    max-width: 1160px; margin: 0 auto 14px;
+    font-family: monospace; font-size: 12px; color: var(--yellow); min-height: 16px;
+  }
+
+  /* ── Two columns ── */
+  .compare {
+    max-width: 1160px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  @media(max-width:700px){ .compare { grid-template-columns: 1fr; } }
+
+  /* ── Panel ── */
+  .panel { background: var(--navy-2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .panel-hdr { padding: 11px 15px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .panel-title { font-family: monospace; font-size: 12px; font-weight: 600; }
+  .panel-sub { font-size: 11px; color: var(--muted); }
+
+  /* token meter */
+  .tok-wrap { padding: 9px 15px; border-bottom: 1px solid var(--border); background: var(--navy-3); }
+  .tok-row { display: flex; justify-content: space-between; font-family: monospace; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+  .tok-count { font-weight: 600; }
+  .bar-track { height: 5px; background: var(--navy); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; width: 0%; transition: width .5s ease; }
+
+  /* feed */
+  .feed { padding: 11px 14px; display: flex; flex-direction: column; gap: 6px; min-height: 460px; overflow-y: auto; max-height: 520px; }
+
+  /* messages */
+  .msg {
+    border-radius: 6px; font-size: 12px; line-height: 1.5;
+    opacity: 0; transform: translateY(5px);
+    transition: opacity .28s ease, transform .28s ease;
+  }
+  .msg.vis { opacity: 1; transform: translateY(0); }
+  .msg-inner { padding: 7px 11px; }
+  .msg-lbl { font-family: monospace; font-size: 10px; font-weight: 600; letter-spacing: .05em; margin-bottom: 2px; }
+  .msg-body { font-family: monospace; font-size: 11px; color: var(--text-dim); white-space: pre-wrap; word-break: break-word; }
+  .msg-tok { font-family: monospace; font-size: 10px; padding: 2px 11px 5px; }
+
+  .m-catalog  { background:#F8514912; border:1px solid #F8514930; }
+  .m-catalog  .msg-lbl, .m-catalog  .msg-tok { color:var(--red); }
+  .m-meta     { background:#3FB95012; border:1px solid #3FB95030; }
+  .m-meta     .msg-lbl, .m-meta     .msg-tok { color:var(--green); }
+  .m-user     { background:#58A6FF10; border:1px solid #58A6FF28; }
+  .m-user     .msg-lbl { color:var(--blue); }
+  .m-llm      { background:#BC8CFF10; border:1px solid #BC8CFF28; }
+  .m-llm      .msg-lbl { color:var(--purple); }
+  .m-search   { background:#E3B34110; border:1px solid #E3B34128; }
+  .m-search   .msg-lbl, .m-search   .msg-tok { color:var(--yellow); }
+  .m-invoke   { background:#3FB95010; border:1px solid #3FB95028; }
+  .m-invoke   .msg-lbl { color:var(--green); }
+  .m-result   { background:#8B949E10; border:1px solid #8B949E22; }
+  .m-result   .msg-lbl { color:var(--muted); }
+  .m-result   .msg-tok { color:var(--green); }
+  .m-mapping  { background:#FFA65710; border:1px solid #FFA65728; }
+  .m-mapping  .msg-lbl, .m-mapping  .msg-tok { color:var(--orange); }
+  .m-payload  { background:#39D0D810; border:1px solid #39D0D828; }
+  .m-payload  .msg-lbl, .m-payload  .msg-tok { color:var(--teal); }
+  .m-reqc     { background:#FF79C610; border:1px solid #FF79C628; }
+  .m-reqc     .msg-lbl, .m-reqc     .msg-tok { color:var(--pink); }
+  .m-hist     { background:#8B949E12; border:1px solid #8B949E22; font-size:11px; }
+  .m-hist     .msg-lbl { color:var(--muted); font-size:10px; }
+  .m-conflict { background:#F8514922; border:1px dashed #F85149; }
+  .m-conflict .msg-lbl { color:var(--red); }
+  .m-resolved { background:#3FB95018; border:1px dashed #3FB950; }
+  .m-resolved .msg-lbl { color:var(--green); }
+
+  /* context block */
+  .m-ctx { background:transparent; border:1px dashed var(--border); }
+  .ctx-lbl { font-family: monospace; font-size: 10px; color: var(--muted); margin-bottom: 5px; letter-spacing:.04em; }
+  .ctx-row { display:flex; gap:6px; align-items:flex-start; margin-bottom:3px; }
+  .badge {
+    font-family: monospace; font-size: 9px; font-weight: 600;
+    padding: 1px 5px; border-radius: 3px; white-space: nowrap; flex-shrink: 0; margin-top:1px;
+  }
+  .b-tools   { background:#F8514920; color:var(--red); }
+  .b-tools-s { background:#3FB95020; color:var(--green); }
+  .b-user    { background:#58A6FF20; color:var(--blue); }
+  .b-hist    { background:#8B949E20; color:var(--muted); }
+  .ctx-text  { font-family: monospace; font-size: 10px; color: var(--text-dim); }
+
+  /* turn divider */
+  .t-div { font-family: monospace; font-size: 10px; color: var(--border); text-align:center; padding:2px 0; opacity:0; transition:opacity .3s; }
+  .t-div.vis { opacity:1; }
+
+  /* server tags */
+  .server-tags { display:flex; gap:5px; flex-wrap:wrap; padding: 6px 14px 8px; border-bottom:1px solid var(--border); }
+  .stag { font-family:monospace; font-size:10px; padding:2px 8px; border-radius:3px; }
+  .stag-gh  { background:#238636; color:#fff; }
+  .stag-fs  { background:#1F6FEB; color:#fff; }
+  .stag-sl  { background:#4A154B; color:#fff; }
+  .stag-jira{ background:#0052CC; color:#fff; }
+
+  /* summary */
+  .summary {
+    max-width: 1160px; margin: 20px auto 0;
+    background: var(--navy-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 22px; display: grid; grid-template-columns: repeat(3,1fr); gap: 14px;
+    opacity:0; transition:opacity .5s;
+  }
+  .summary.vis { opacity:1; }
+  .s-lbl { font-family:monospace; font-size:10px; color:var(--muted); margin-bottom:5px; letter-spacing:.05em; }
+  .s-val { font-family:monospace; font-size:22px; font-weight:600; line-height:1; }
+  .s-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+  .c-red   { color:var(--red); }
+  .c-green { color:var(--green); }
+  .c-blue  { color:var(--blue); }
+
+  /* info note */
+  .note {
+    max-width: 1160px; margin: 0 auto 18px;
+    background:#E3B34108; border:1px solid #E3B34128; border-radius:8px;
+    padding:9px 14px; font-size:12px; color:var(--muted); line-height:1.6;
+  }
+  .note strong { color:var(--yellow); }
+
+  /* legend */
+  .legend { max-width:1160px; margin: 0 auto 18px; display:flex; flex-wrap:wrap; gap:12px; }
+  .leg { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
+  .leg-dot { width:9px; height:9px; border-radius:2px; flex-shrink:0; }
+
+  /* policy badge in panel header */
+  .policy-pill {
+    font-family: monospace; font-size: 10px; padding: 2px 7px; border-radius: 10px;
+    font-weight: 600; white-space: nowrap;
+  }
+  .pill-map  { background:#FFA65720; color:var(--orange); border:1px solid #FFA65740; }
+  .pill-disc { background:#3FB95020; color:var(--green);  border:1px solid #3FB95040; }
+  .pill-pay  { background:#39D0D820; color:var(--teal);   border:1px solid #39D0D840; }
+  .pill-reqc { background:#FF79C620; color:var(--pink);   border:1px solid #FF79C640; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">MuleSoft Omni Gateway · MCP Policy Stack</div>
+  <h1>Multi-Server MCP — Four Policies Working Together</h1>
+  <p class="subtitle">A realistic session connecting 4 MCP servers (130+ tools). See how Tool Mapping, Progressive Disclosure, Payload Optimization, and Request Compression each reduce LLM cost — and how they compound.</p>
+</header>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" data-tab="full">Full Policy Stack</button>
+  <button class="tab" data-tab="mapping">1 · Tool Mapping</button>
+  <button class="tab" data-tab="disclosure">2 · Progressive Disclosure</button>
+  <button class="tab" data-tab="payload">3 · Payload Optimization</button>
+  <button class="tab" data-tab="reqcomp">4 · Request Compression</button>
+</div>
+
+<!-- ══ TAB: FULL STACK ══════════════════════════════════════════════════════ -->
+<div class="tab-panel active" id="tab-full">
+
+<div class="note" style="margin-top:16px;">
+  <strong>Session setup:</strong> 4 MCP servers — GitHub (80 tools), Filesystem (14), Slack (20), Jira (15) = <strong>129 tools · ~25,800 tokens</strong> of catalog injected every turn without policies. Tool results are verbose JSON (~2,400 tok each) replayed in full history each turn. With all four policies active, per-turn cost drops dramatically and history re-billing is eliminated.
+</div>
+
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:var(--red)"></div> No policies</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--orange)"></div> Tool Mapping — namespace prefixes</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--green)"></div> Progressive Disclosure — 2 meta-tools</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--teal)"></div> Payload Optimization — compress responses</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--pink)"></div> Request Compression — compress replayed history</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--purple)"></div> LLM reasoning</div>
+</div>
+
+<div class="controls">
+  <button class="play-btn" id="playFull">▶ Play</button>
+  <button class="reset-btn" id="resetFull">↺ Reset</button>
+  <span class="speed-label">Speed</span>
+  <select id="speedFull"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2" selected>2×</option><option value="3">3×</option></select>
+</div>
+<div class="stage-lbl" id="stageFull">Press Play to start</div>
+
+<div class="compare">
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title c-red">✗ No Policies</div>
+      <div class="panel-sub">4 servers · 129 tools every turn</div>
+    </div>
+    <div class="server-tags">
+      <span class="stag stag-gh">GitHub 80</span>
+      <span class="stag stag-fs">Filesystem 14</span>
+      <span class="stag stag-sl">Slack 20</span>
+      <span class="stag stag-jira">Jira 15</span>
+    </div>
+    <div class="tok-wrap">
+      <div class="tok-row"><span>Cumulative LLM input tokens</span><span class="tok-count c-red" id="tFull0">0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bFull0" style="background:var(--red)"></div></div>
+    </div>
+    <div class="feed" id="fFull0"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title c-green">✓ All Four Policies</div>
+      <div class="panel-sub">Mapping + Disclosure + Payload + Request Compression</div>
+    </div>
+    <div class="panel-hdr" style="padding:6px 14px; border-top:none; gap:5px; flex-wrap:wrap;">
+      <span class="policy-pill pill-map">Tool Mapping</span>
+      <span class="policy-pill pill-disc">Progressive Disclosure</span>
+      <span class="policy-pill pill-pay">Payload Optimization</span>
+      <span class="policy-pill pill-reqc">Request Compression</span>
+    </div>
+    <div class="tok-wrap">
+      <div class="tok-row"><span>Cumulative LLM input tokens</span><span class="tok-count c-green" id="tFull1">0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bFull1" style="background:var(--green)"></div></div>
+    </div>
+    <div class="feed" id="fFull1"></div>
+  </div>
+</div>
+
+<div class="summary" id="sumFull">
+  <div><div class="s-lbl">WITHOUT policies — 3 turns</div><div class="s-val c-red" id="svF0">—</div><div class="s-sub">provider input tokens</div></div>
+  <div><div class="s-lbl">WITH all 4 policies — 3 turns</div><div class="s-val c-green" id="svF1">—</div><div class="s-sub">provider input tokens</div></div>
+  <div><div class="s-lbl">Reduction</div><div class="s-val c-blue" id="svFd">—</div><div class="s-sub">all four policies combined</div></div>
+</div>
+</div><!-- /tab-full -->
+
+<!-- ══ TAB: MAPPING ════════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-mapping">
+<div class="note" style="margin-top:16px;">
+  <strong>Problem:</strong> Multiple servers expose tools with the same name (e.g. both GitHub and Jira have <code>list_issues</code>). The LLM can't distinguish them and may call the wrong one. <strong>Tool Mapping</strong> adds server prefixes so every tool name is globally unique.
+</div>
+<div class="controls">
+  <button class="play-btn" id="playMap">▶ Play</button>
+  <button class="reset-btn" id="resetMap">↺ Reset</button>
+  <span class="speed-label">Speed</span>
+  <select id="speedMap"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2" selected>2×</option><option value="3">3×</option></select>
+</div>
+<div class="stage-lbl" id="stageMap">Press Play to start</div>
+<div class="compare">
+  <div class="panel">
+    <div class="panel-hdr"><div class="panel-title c-red">✗ Without Tool Mapping</div><div class="panel-sub">Name collisions</div></div>
+    <div class="tok-wrap">
+      <div class="tok-row"><span>Ambiguous tool calls</span><span class="tok-count c-red" id="tMap0">0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bMap0" style="background:var(--red)"></div></div>
+    </div>
+    <div class="feed" id="fMap0"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title c-orange">✓ With Tool Mapping</div>
+      <span class="policy-pill pill-map">Tool Mapping</span>
+    </div>
+    <div class="tok-wrap">
+      <div class="tok-row"><span>Correct tool calls</span><span class="tok-count" style="color:var(--orange)" id="tMap1">0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bMap1" style="background:var(--orange)"></div></div>
+    </div>
+    <div class="feed" id="fMap1"></div>
+  </div>
+</div>
+</div><!-- /tab-mapping -->
+
+<!-- ══ TAB: DISCLOSURE ══════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-disclosure">
+<div class="note" style="margin-top:16px;">
+  <strong>Problem:</strong> 129 mapped tools = ~25,800 tokens injected into every LLM turn. <strong>Progressive Disclosure</strong> hides the catalog behind <code>search_tools</code> and <code>invoke_tool</code>, loading only what's needed per task.
+</div>
+<div class="controls">
+  <button class="play-btn" id="playDisc">▶ Play</button>
+  <button class="reset-btn" id="resetDisc">↺ Reset</button>
+  <span class="speed-label">Speed</span>
+  <select id="speedDisc"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2" selected>2×</option><option value="3">3×</option></select>
+</div>
+<div class="stage-lbl" id="stageDisc">Press Play to start</div>
+<div class="compare">
+  <div class="panel">
+    <div class="panel-hdr"><div class="panel-title c-red">✗ Without Disclosure</div><div class="panel-sub">Full catalog every turn</div></div>
+    <div class="tok-wrap">
+      <div class="tok-row"><span>Cumulative tokens</span><span class="tok-count c-red" id="tDisc0">0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bDisc0" style="background:var(--red)"></div></div>
+    </div>
+    <div class="feed" id="fDisc0"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title c-green">✓ With Disclosure</div>
+      <span class="policy-pill pill-disc">Progressive Disclosure</span>
+    </div>
+    <div class="tok-wrap">
+      <div class="tok-row"><span>Cumulative tokens</span><span class="tok-count c-green" id="tDisc1">0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bDisc1" style="background:var(--green)"></div></div>
+    </div>
+    <div class="feed" id="fDisc1"></div>
+  </div>
+</div>
+<div class="summary" id="sumDisc">
+  <div><div class="s-lbl">WITHOUT — 3 turns</div><div class="s-val c-red" id="svD0">—</div><div class="s-sub">LLM input tokens</div></div>
+  <div><div class="s-lbl">WITH — 3 turns</div><div class="s-val c-green" id="svD1">—</div><div class="s-sub">LLM input tokens</div></div>
+  <div><div class="s-lbl">Reduction</div><div class="s-val c-blue" id="svDd">—</div><div class="s-sub">tool manifest savings</div></div>
+</div>
+</div><!-- /tab-disclosure -->
+
+<!-- ══ TAB: PAYLOAD ═════════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-payload">
+<div class="note" style="margin-top:16px;">
+  <strong>Problem:</strong> Tool responses are verbose — null fields, base64 blobs, HTML markup, repeated JSON keys. <strong>Payload Optimization</strong> strips noise, compresses repeated structures (TOON), and can distill responses to match the agent's intent via a cheap proxy model.
+</div>
+<div class="controls">
+  <button class="play-btn" id="playPay">▶ Play</button>
+  <button class="reset-btn" id="resetPay">↺ Reset</button>
+  <span class="speed-label">Speed</span>
+  <select id="speedPay"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2" selected>2×</option><option value="3">3×</option></select>
+</div>
+<div class="stage-lbl" id="stagePay">Press Play to start</div>
+<div class="compare">
+  <div class="panel">
+    <div class="panel-hdr"><div class="panel-title c-red">✗ Raw tool responses</div><div class="panel-sub">Verbose, unoptimised</div></div>
+    <div class="tok-wrap">
+      <div class="tok-row"><span>Response tokens fed to LLM</span><span class="tok-count c-red" id="tPay0">0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bPay0" style="background:var(--red)"></div></div>
+    </div>
+    <div class="feed" id="fPay0"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title c-teal" style="color:var(--teal)">✓ With Payload Optimization</div>
+      <span class="policy-pill pill-pay">Payload Optimization</span>
+    </div>
+    <div class="tok-wrap">
+      <div class="tok-row"><span>Response tokens fed to LLM</span><span class="tok-count" style="color:var(--teal)" id="tPay1">0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bPay1" style="background:var(--teal)"></div></div>
+    </div>
+    <div class="feed" id="fPay1"></div>
+  </div>
+</div>
+<div class="summary" id="sumPay">
+  <div><div class="s-lbl">RAW responses — 3 calls</div><div class="s-val c-red" id="svP0">—</div><div class="s-sub">response tokens</div></div>
+  <div><div class="s-lbl">OPTIMISED — 3 calls</div><div class="s-val" style="color:var(--teal)" id="svP1">—</div><div class="s-sub">response tokens</div></div>
+  <div><div class="s-lbl">Reduction</div><div class="s-val c-blue" id="svPd">—</div><div class="s-sub">payload savings</div></div>
+</div>
+</div><!-- /tab-payload -->
+
+<!-- ══ TAB: REQUEST COMPRESSION ════════════════════════════════════════════════ -->
+<div class="tab-panel" id="tab-reqcomp">
+<div class="note" style="margin-top:16px;">
+  <strong>What's unique about Request Compression:</strong> MCP Payload Optimization already handles tool result compression. What Request Compression uniquely covers is the <em>conversation history</em> — the system prompt, user messages, and assistant replies that the agent runtime re-sends on <em>every turn</em>. Each is billed again by the provider each time it's replayed. The policy applies <strong>Minify</strong> (collapse whitespace), <strong>Remove Nulls/Empty Values</strong>, and <strong>TOON</strong> to every string in the request body — including <code>instructions</code>, all message texts, and anything not already handled upstream.
+</div>
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:var(--red)"></div> Raw history re-sent (no policy)</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--pink)"></div> Compressed history (Request Compression)</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--blue)"></div> System prompt (re-billed every turn)</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--purple)"></div> Assistant response in history</div>
+</div>
+<div class="controls">
+  <button class="play-btn" id="playReqC">▶ Play</button>
+  <button class="reset-btn" id="resetReqC">↺ Reset</button>
+  <span class="speed-label">Speed</span>
+  <select id="speedReqC"><option value="1">1×</option><option value="1.5">1.5×</option><option value="2" selected>2×</option><option value="3">3×</option></select>
+</div>
+<div class="stage-lbl" id="stageReqC">Press Play to start</div>
+
+<div class="compare">
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title c-red">✗ No Request Compression</div>
+      <div class="panel-sub">System prompt + messages replayed raw every turn</div>
+    </div>
+    <div class="tok-wrap">
+      <div class="tok-row"><span>Cumulative provider input tokens</span><span class="tok-count c-red" id="tReqC0">0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bReqC0" style="background:var(--red)"></div></div>
+    </div>
+    <div class="feed" id="fReqC0"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title" style="color:var(--pink)">✓ With Request Compression</div>
+      <span class="policy-pill pill-reqc">Request Compression</span>
+    </div>
+    <div class="panel-hdr" style="padding:5px 14px 6px; border-top:none; font-size:11px; color:var(--muted);">
+      Compress Messages ✓ &nbsp;·&nbsp; Minify ✓ &nbsp;·&nbsp; Remove Empty Values ✓ &nbsp;·&nbsp; TOON ✓
+    </div>
+    <div class="tok-wrap">
+      <div class="tok-row"><span>Cumulative provider input tokens</span><span class="tok-count" style="color:var(--pink)" id="tReqC1">0</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bReqC1" style="background:var(--pink)"></div></div>
+    </div>
+    <div class="feed" id="fReqC1"></div>
+  </div>
+</div>
+
+<div class="summary" id="sumReqC">
+  <div><div class="s-lbl">WITHOUT — 4 turns (system + messages)</div><div class="s-val c-red" id="svRC0">—</div><div class="s-sub">provider input tokens</div></div>
+  <div><div class="s-lbl">WITH — 4 turns (compressed history)</div><div class="s-val" style="color:var(--pink)" id="svRC1">—</div><div class="s-sub">provider input tokens</div></div>
+  <div><div class="s-lbl">History re-billing saved</div><div class="s-val c-blue" id="svRCd">—</div><div class="s-sub">system prompt + messages</div></div>
+</div>
+</div><!-- /tab-reqcomp -->
+
+<script>
+// ─── Utilities ────────────────────────────────────────────────────────────────
+const fmt = n => n.toLocaleString();
+function animCount(el, from, to, ms) {
+  const t0 = performance.now();
+  (function tick(now) {
+    const p = Math.min((now-t0)/ms, 1), e = 1-Math.pow(1-p,3);
+    el.textContent = fmt(Math.round(from+(to-from)*e));
+    if (p<1) requestAnimationFrame(tick);
+  })(t0);
+}
+function addDiv(fid, text) {
+  const d = document.createElement('div'); d.className='t-div'; d.textContent='─── '+text+' ───';
+  document.getElementById(fid).appendChild(d);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('vis')));
+}
+function addMsg(fid, cls, lbl, body, tok, tokColor) {
+  const el = document.createElement('div'); el.className='msg '+cls;
+  const tokHtml = tok
+    ? `<div class="msg-tok" ${tokColor?`style="color:${tokColor}"`:''}>${tok>0?'+':''}${fmt(tok)} tokens</div>`
+    : '';
+  el.innerHTML = `<div class="msg-inner"><div class="msg-lbl">${lbl}</div><div class="msg-body">${body}</div></div>${tokHtml}`;
+  document.getElementById(fid).appendChild(el);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('vis')));
+  const f=document.getElementById(fid); setTimeout(()=>f.scrollTop=f.scrollHeight,100);
+}
+function addCtx(fid, slots, tokens, tokColor) {
+  const el = document.createElement('div'); el.className='msg m-ctx';
+  el.style.cssText='opacity:0;transform:translateY(5px)';
+  let rows = `<div class="ctx-lbl">LLM API call — context assembled:</div>`;
+  slots.forEach(s=>{ rows+=`<div class="ctx-row"><span class="badge ${s.b}">${s.b.replace('b-','').toUpperCase()}</span><span class="ctx-text"><span style="color:var(--muted)">${s.l}: </span>${s.t}</span></div>`; });
+  el.innerHTML = `<div class="msg-inner">${rows}</div><div class="msg-tok" style="color:${tokColor||'var(--yellow)'}">= ${fmt(tokens)} tokens sent to LLM</div>`;
+  document.getElementById(fid).appendChild(el);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    el.style.transition='opacity .3s, transform .3s'; el.style.opacity=1; el.style.transform='translateY(0)';
+  }));
+  const f=document.getElementById(fid); setTimeout(()=>f.scrollTop=f.scrollHeight,100);
+}
+
+// ─── Sim engine ───────────────────────────────────────────────────────────────
+function makeSim(steps, tokIds, barIds, stageId, summaryId, svIds, speedId) {
+  let tokens = tokIds.map(()=>0), idx=0, playing=false, timer=null;
+  const MAX = Math.max(...steps.filter(s=>s.ctx).map(s=>s.ctx.reduce((a,c)=>a+(c.tok||0),0))) * 4 + 10000;
+
+  function getDelay(){ return 820/parseFloat(document.getElementById(speedId).value); }
+  function credit(side, n){
+    if(!n) return;
+    const sides = side==='both'?[0,1]: side==='left'?[0]:[1];
+    sides.forEach(i=>{
+      const prev=tokens[i]; tokens[i]+=n;
+      animCount(document.getElementById(tokIds[i]), prev, tokens[i], Math.min(getDelay()*.7,380));
+      document.getElementById(barIds[i]).style.width = Math.min(100, tokens[i]/MAX*100).toFixed(1)+'%';
+    });
+  }
+
+  function applyStep(s) {
+    if(s.stage) document.getElementById(stageId).textContent = s.stage;
+    if(s.div) { addDiv('f'+tokIds[0].slice(1), s.div); addDiv('f'+tokIds[1].slice(1), s.div); return; }
+
+    // context block
+    if(s.ctx) {
+      s.ctx.forEach((c,i)=>{
+        const fid = 'f'+tokIds[i].slice(1);
+        if(c.slots) addCtx(fid, c.slots, c.tok, c.color);
+        else if(c.msg) addMsg(fid, c.cls||'m-result', c.lbl, c.body, c.tok, c.color);
+        credit(i===0?'left':'right', c.tok);
+      });
+      return;
+    }
+
+    // paired messages
+    if(s.pair) {
+      s.pair.forEach((p,i)=>{
+        const fid = 'f'+tokIds[i].slice(1);
+        if(p) { addMsg(fid, p.cls, p.lbl, p.body, p.tok, p.color); credit(i===0?'left':'right', p.tok); }
+      });
+      return;
+    }
+
+    // single side
+    if(s.side !== undefined) {
+      const fid = 'f'+tokIds[s.side].slice(1);
+      addMsg(fid, s.cls, s.lbl, s.body, s.tok, s.color);
+      credit(s.side===0?'left':'right', s.tok);
+    }
+  }
+
+  function runNext() {
+    if(idx>=steps.length){
+      playing=false;
+      const playBtn=document.querySelector(`[data-sim="${speedId}"]`);
+      if(playBtn) playBtn.textContent='▶ Play';
+      document.getElementById(stageId).textContent='Simulation complete ↓';
+      if(summaryId){
+        document.getElementById(summaryId).classList.add('vis');
+        document.getElementById(svIds[0]).textContent=fmt(tokens[0]);
+        document.getElementById(svIds[1]).textContent=fmt(tokens[1]);
+        const pct=Math.round((1-tokens[1]/tokens[0])*100);
+        document.getElementById(svIds[2]).textContent=pct+'%';
+      }
+      return;
+    }
+    applyStep(steps[idx++]);
+    timer=setTimeout(runNext, getDelay());
+  }
+
+  return {
+    play(btn) {
+      if(idx>=steps.length){ this.reset(btn); return; }
+      if(playing){ clearTimeout(timer); playing=false; btn.textContent='▶ Play'; }
+      else { playing=true; btn.textContent='⏸ Pause'; runNext(); }
+    },
+    reset(btn) {
+      clearTimeout(timer); playing=false; idx=0; tokens=[0,0];
+      tokIds.forEach(id=>document.getElementById(id).textContent='0');
+      barIds.forEach(id=>document.getElementById(id).style.width='0%');
+      tokIds.forEach(id=>{ document.getElementById('f'+id.slice(1)).innerHTML=''; });
+      document.getElementById(stageId).textContent='Press Play to start';
+      if(summaryId) document.getElementById(summaryId).classList.remove('vis');
+      if(btn) btn.textContent='▶ Play';
+    }
+  };
+}
+
+// ─── Token constants ──────────────────────────────────────────────────────────
+const CAT_ALL = 25800; // 129 tools × ~200 tok
+const META     = 200;
+const USER     = 35;
+const HIST     = 220;
+const SEARCH_Q = 55;
+const SEARCH_R = 380;
+const RESULT_RAW = 2400; // verbose raw response
+const RESULT_OPT = 120;  // after payload optimisation
+
+// ─── TAB 1: FULL STACK ────────────────────────────────────────────────────────
+// Full stack token accounting (3 turns):
+// WITHOUT any policies:
+//   T1: CAT_ALL(25800) + USER(35) = 25835
+//       tool result raw: RESULT_RAW(2400) ← stored in history
+//   T2: CAT_ALL + hist[U(35)+A(60)+TR_RAW(2400)] + USER = 25800+2495+35 = 28330
+//       tool result raw: RESULT_RAW(2400) stored
+//   T3: CAT_ALL + hist×2 + USER = 25800+4990+35 = 30825
+//   Total: 25835+28330+30825 = 84,990
+//
+// WITH all 4 policies:
+//   T1: META(200) + USER(35) = 235
+//       + search_tools round trip: SEARCH_Q+SEARCH_R = 435
+//       tool result PAYLOAD_OPT(120) stored compressed in history (180 tok after req-compress)
+//   T2: META(200) + hist_compressed[U(35)+A(60)+TR_COMP(180)] + USER = 200+275+35 = 510
+//       + search_tools: 435
+//   T3: META(200) + hist_compressed×2(550) + USER = 200+550+35 = 785
+//       + search_tools: 435
+//   Total: (235+435) + (510+435) + (785+435) = 670+945+1220 = 2,835
+//
+// Reduction: (84990-2835)/84990 = ~97%
+
+const TR_COMP_HIST = 180; // compressed tool result replayed in history (req compression)
+
+const fullSteps = [
+  { stage:'Session start — 4 MCP servers connect · tools/list fetched ONCE · Tool Mapping prefixes applied' },
+  { pair:[
+    { cls:'m-conflict', lbl:'Without Tool Mapping — name collisions!',
+      body:'Both GitHub and Jira expose: list_issues\nBoth GitHub and Filesystem expose: read_file\n→ LLM cannot distinguish servers' },
+    { cls:'m-resolved', lbl:'Tool Mapping active — all 129 tools prefixed',
+      body:'github_list_issues, jira_list_issues\ngithub_create_issue, jira_create_issue\nfs_read_file, slack_post_message… ✓' }
+  ]},
+  { pair:[
+    { cls:'m-catalog', lbl:'Catalog cached WITHOUT Progressive Disclosure',
+      body:'129 mapped tools · ~25,800 tokens\n→ injected into EVERY LLM API call' },
+    { cls:'m-meta', lbl:'Progressive Disclosure active — 2 meta-tools only',
+      body:'search_tools(query, limit?) · ~100 tok\ninvoke_tool(name, arguments) · ~100 tok\n→ ~200 tokens per turn instead of 25,800' }
+  ]},
+  { div:'TURN 1 — User: "List open GitHub issues in docs-gateway"' },
+  { stage:'Turn 1 — LLM API call assembled. No history yet.' },
+  { ctx:[
+    { slots:[
+        {b:'b-tools',l:'tools injected',t:'25,800 tok — all 129 tools · every turn'},
+        {b:'b-user',l:'user',t:'"List open GitHub issues in docs-gateway"'}
+      ], tok:CAT_ALL+USER, color:'var(--red)' },
+    { slots:[
+        {b:'b-tools-s',l:'tools injected',t:'200 tok — 2 meta-tools (Progressive Disclosure)'},
+        {b:'b-user',l:'user',t:'"List open GitHub issues in docs-gateway"'}
+      ], tok:META+USER, color:'var(--green)' }
+  ]},
+  { pair:[
+    { cls:'m-llm', lbl:'LLM → github_list_issues (direct, name unambiguous via Mapping)',
+      body:'→ tools/call: github_list_issues\n  { owner:"mulesoft", repo:"docs-gateway", state:"open" }' },
+    { cls:'m-search', lbl:'LLM → search_tools (Progressive Disclosure)',
+      body:'→ search_tools { query:"list github issues" }', tok:SEARCH_Q }
+  ]},
+  { pair:[
+    null,
+    { cls:'m-search', lbl:'search_tools result — schema injected on-demand',
+      body:'github_list_issues — List issues in a GitHub\nrepository. Params: owner, repo, state', tok:SEARCH_R }
+  ]},
+  { pair:[
+    null,
+    { cls:'m-invoke', lbl:'LLM → invoke_tool',
+      body:'→ invoke_tool { name:"github_list_issues",\n  arguments:{ owner:"mulesoft",\n    repo:"docs-gateway", state:"open" } }' }
+  ]},
+  { stage:'Tool result → Payload Optimization compresses it → stored in history for next turn' },
+  { pair:[
+    { cls:'m-result', lbl:'Raw result (no Payload Optimization)',
+      body:'{"issues":[{"id":1234,"number":412,\n"title":"Fix broken anchor links",\n"state":"open","body":null,"milestone":null,\n"assignee":null,"labels":[],"locked":false,\n"comments":0,"created_at":"2026-08-01T…"},…]\n"total_count":7}\n→ stored verbatim in history: ~2,400 tok', tok:RESULT_RAW, color:'var(--red)' },
+    { cls:'m-payload', lbl:'Payload Optimized result (TOON + nulls removed)',
+      body:'#[number,title,state,comments]\n412,"Fix broken anchor links",open,0\n408,"Nav reorder request",open,2\n401,"Update API ref page",open,0\n… (7 rows)\n→ stored compressed in history: ~120 tok', tok:RESULT_OPT, color:'var(--teal)' }
+  ]},
+  { div:'TURN 2 — User: "Check Jira for blockers on PROJ-88"' },
+  { stage:'Turn 2 — History replayed. Request Compression rewrites T1 tool result in body.' },
+  { ctx:[
+    { slots:[
+        {b:'b-tools',l:'tools injected',t:'25,800 tok — repeated again'},
+        {b:'b-hist',l:'history T1',t:`raw: U(35)+A(60)+TR_raw(2,400) = 2,495 tok rebilled`},
+        {b:'b-user',l:'user',t:'"Check Jira for blockers on PROJ-88"'}
+      ], tok:CAT_ALL + (35+60+RESULT_RAW) + USER, color:'var(--red)' },
+    { slots:[
+        {b:'b-tools-s',l:'tools',t:'200 tok (meta-tools)'},
+        {b:'b-hist',l:'history T1',t:`Request Compression: TR_comp(180)+U(35)+A(60) = 275 tok`},
+        {b:'b-user',l:'user',t:'"Check Jira for blockers on PROJ-88"'}
+      ], tok:META + (35+60+TR_COMP_HIST) + USER, color:'var(--green)' }
+  ]},
+  { pair:[
+    { cls:'m-hist', lbl:'History replayed RAW — system prompt + messages + tool result',
+      body:'system prompt: 95 tok (indented JSON)\nT1 user msg: 35 tok\nT1 assistant msg: 60 tok\nT1 tool result: 2,400 tok (verbose JSON)\n→ all re-billed verbatim to provider' },
+    { cls:'m-reqc', lbl:'History replayed COMPRESSED — all strings minified by Request Compression',
+      body:'system prompt: 58 tok (minified JSON)\nT1 user msg: 33 tok\nT1 assistant msg: 55 tok\nT1 tool result: 180 tok (TOON + nulls removed)\n→ same data, ~24% less tokens billed' }
+  ]},
+  { pair:[
+    { cls:'m-llm', lbl:'LLM → jira_get_issue',
+      body:'→ tools/call: jira_get_issue { issueKey:"PROJ-88" }' },
+    { cls:'m-search', lbl:'LLM → search_tools (different server, no problem)',
+      body:'→ search_tools { query:"jira issue blockers" }', tok:SEARCH_Q }
+  ]},
+  { pair:[
+    null,
+    { cls:'m-search', lbl:'search_tools result',
+      body:'jira_get_issue — Get a Jira issue with blockers.\nParams: issueKey, expand?', tok:SEARCH_R }
+  ]},
+  { pair:[
+    null,
+    { cls:'m-invoke', lbl:'LLM → invoke_tool',
+      body:'→ invoke_tool { name:"jira_get_issue",\n  arguments:{ issueKey:"PROJ-88" } }' }
+  ]},
+  { pair:[
+    { cls:'m-result', lbl:'Raw Jira result',
+      body:'{"id":"10088","key":"PROJ-88","fields":\n{"summary":"API timeout","status":{"name":\n"In Progress"},"priority":{"name":"High"},\n"assignee":{"displayName":"Alice"},\n"blockedBy":["PROJ-61","PROJ-72"],\n"description":null,"customfield_10000":null,\n"votes":{"votes":0},…}}\n→ ~2,400 tok stored in history', tok:RESULT_RAW, color:'var(--red)' },
+    { cls:'m-payload', lbl:'Payload Optimized Jira result',
+      body:'PROJ-88: "API timeout" — In Progress · High\nBlockers: PROJ-61, PROJ-72 · Assignee: Alice\n→ ~65 tok stored in history', tok:65, color:'var(--teal)' }
+  ]},
+  { div:'TURN 3 — User: "Post the Slack summary to #engineering"' },
+  { stage:'Turn 3 — Two prior tool results in history. Both recompressed by Request Compression.' },
+  { ctx:[
+    { slots:[
+        {b:'b-tools',l:'tools',t:'25,800 tok — third repeat'},
+        {b:'b-hist',l:'history T1+T2',t:`raw: system(95)+2×(user+asst+tool_result) = 4,990+95 tok rebilled`},
+        {b:'b-user',l:'user',t:'"Post Slack summary to #engineering"'}
+      ], tok:CAT_ALL + 2*(35+60+RESULT_RAW) + USER, color:'var(--red)' },
+    { slots:[
+        {b:'b-tools-s',l:'tools',t:'200 tok (meta-tools)'},
+        {b:'b-hist',l:'history T1+T2',t:`compressed: system(58)+2×(user+asst+tool_result) = 550+58 tok`},
+        {b:'b-user',l:'user',t:'"Post Slack summary to #engineering"'}
+      ], tok:META + 2*(35+60+TR_COMP_HIST) + USER, color:'var(--green)' }
+  ]},
+  { pair:[
+    { cls:'m-hist', lbl:'Full history replayed RAW — system + messages + tool results',
+      body:'system prompt (indented JSON): 95 tok\nT1 user + asst + tool result: 2,495 tok\nT2 user + asst + tool result: 2,495 tok\n→ ~5,085 tokens of history rebilled' },
+    { cls:'m-reqc', lbl:'Full history replayed COMPRESSED — Request Compression covers all strings',
+      body:'system prompt (minified JSON): 58 tok\nT1 user + asst + tool result: 268 tok\nT2 user + asst + tool result: 268 tok\n→ ~594 tokens (system + messages + tools\n  all compressed, not just tool results)' }
+  ]},
+  { pair:[
+    { cls:'m-llm', lbl:'LLM → slack_post_message',
+      body:'→ tools/call: slack_post_message\n  { channel:"#engineering", text:"…" }' },
+    { cls:'m-search', lbl:'LLM → search_tools',
+      body:'→ search_tools { query:"slack post message" }', tok:SEARCH_Q }
+  ]},
+  { pair:[
+    null,
+    { cls:'m-search', lbl:'search_tools result',
+      body:'slack_post_message — Post a message to a\nSlack channel. Params: channel, text', tok:SEARCH_R }
+  ]},
+  { pair:[
+    null,
+    { cls:'m-invoke', lbl:'LLM → invoke_tool',
+      body:'→ invoke_tool { name:"slack_post_message",\n  arguments:{ channel:"#engineering",\n    text:"7 open issues · PROJ-88 blocked" } }' }
+  ]},
+  { pair:[
+    { cls:'m-result', lbl:'Raw Slack result',
+      body:'{"ok":true,"channel":"C08ABCDEF",\n"ts":"1725609612.000100",\n"message":{"type":"message","text":"…",\n"user":"U0123456","team":"T0ABCDEF",\n"bot_id":"B09XYZ","blocks":[],"attachments":[]}}\n→ ~820 tok', tok:820, color:'var(--red)' },
+    { cls:'m-payload', lbl:'Payload Optimized Slack result',
+      body:'Posted to #engineering ✓\nts: 1725609612.000100\n→ ~18 tok', tok:18, color:'var(--teal)' }
+  ]},
+];
+
+// ─── TAB 2: MAPPING ───────────────────────────────────────────────────────────
+const mapSteps = [
+  { stage:'Session start — 4 servers expose tools, some names collide' },
+  { pair:[
+    { cls:'m-conflict', lbl:'Collision detected — same names from different servers!',
+      body:'GitHub MCP:     list_issues, create_issue\nJira MCP:       list_issues, create_issue\nFilesystem MCP: read_file, write_file\nSlack MCP:      read_file (read channel)\n\nLLM receives duplicates — which server does\n"list_issues" refer to? Undefined behaviour.' },
+    { cls:'m-resolved', lbl:'Tool Mapping active — regex prefix applied',
+      body:'Source: (.+)  →  Mapped: github_$1 (GitHub)\nSource: (.+)  →  Mapped: jira_$1   (Jira)\nSource: (.+)  →  Mapped: fs_$1     (Filesystem)\nSource: (.+)  →  Mapped: slack_$1  (Slack)\n\nAll 129 tools now have unique names.' }
+  ]},
+  { div:'Turn 1 — User: "List all open issues"' },
+  { stage:'Without mapping — LLM is ambiguous' },
+  { pair:[
+    { cls:'m-llm', lbl:'LLM (confused)', body:'→ tools/call: list_issues\n  { state:"open" }\n\n⚠ Ambiguous — two servers answer.\nWhich result is correct? LLM may retry,\nask for clarification, or silently use\nthe wrong result. Extra tokens wasted.' },
+    { cls:'m-llm', lbl:'LLM (clear)', body:'→ tools/call: github_list_issues\n  { state:"open" }\n\n✓ Unambiguous — exactly one handler.\nCorrect result on first call.\nNo retry cost.' }
+  ]},
+  { pair:[
+    { cls:'m-conflict', lbl:'Ambiguous response', body:'Two conflicting tool handlers respond.\nClient returns one arbitrarily.\nAgent may loop to self-correct.' },
+    { cls:'m-resolved', lbl:'Correct response', body:'GitHub MCP handles github_list_issues.\nJira MCP handles jira_list_issues.\nEach server receives only its own calls.' }
+  ]},
+  { div:'Turn 2 — User: "Create a Jira ticket for this bug"' },
+  { pair:[
+    { cls:'m-llm', lbl:'LLM (confused again)', body:'→ tools/call: create_issue\n  { title:"API timeout bug" }\n\n⚠ GitHub or Jira? LLM guesses GitHub.\nWrong server — task fails.\nNeeds retry + extra turn.' },
+    { cls:'m-llm', lbl:'LLM (clear)', body:'→ tools/call: jira_create_issue\n  { summary:"API timeout bug",\n    project:"PROJ", issueType:"Bug" }\n\n✓ Correct server, first try.' }
+  ]},
+  { pair:[
+    { cls:'m-conflict', lbl:'Wrong server called', body:'GitHub received create_issue.\nJira ticket never created.\nExtra LLM turn needed to recover.\n+~16,000 tokens wasted retrying.', tok:16000, color:'var(--red)' },
+    { cls:'m-resolved', lbl:'Correct server called', body:'Jira ticket PROJ-412 created.\nNo retry needed.', tok:0 }
+  ]},
+];
+
+// ─── TAB 3: DISCLOSURE ────────────────────────────────────────────────────────
+const discSteps = [
+  { stage:'Session start — tools/list fetched once per server, catalog assembled' },
+  { pair:[
+    { cls:'m-catalog', lbl:'Full catalog cached (without policy)',
+      body:'129 mapped tools cached:\ngithub_get_me, github_list_issues,\ngithub_create_pull_request, jira_get_issue,\njira_create_issue, fs_read_text_file,\nslack_post_message… [+122 more]\n→ will be injected into EVERY LLM turn', tok:0 },
+    { cls:'m-meta', lbl:'Progressive Disclosure active',
+      body:'Client receives only 2 meta-tools:\n• search_tools(query, limit?, cursor?)\n• invoke_tool(name, arguments)\n\nAll 129 tool schemas hidden until searched.', tok:0 }
+  ]},
+  { div:'TURN 1' },
+  { ctx:[
+    { slots:[{b:'b-tools',l:'tools',t:'129 tools · 25,800 tokens  ← every turn'},{b:'b-user',l:'user',t:'"Summarise open GitHub issues"'}], tok:CAT_ALL+USER, color:'var(--red)' },
+    { slots:[{b:'b-tools-s',l:'tools',t:'2 meta-tools · 200 tokens'},{b:'b-user',l:'user',t:'"Summarise open GitHub issues"'}], tok:META+USER, color:'var(--green)' }
+  ]},
+  { pair:[
+    { cls:'m-llm', lbl:'LLM', body:'→ github_list_issues { state:"open" }' },
+    { cls:'m-search', lbl:'LLM → search_tools', body:'→ search_tools { query:"github list issues" }', tok:SEARCH_Q+SEARCH_R }
+  ]},
+  { pair:[
+    { cls:'m-result', lbl:'Result', body:'7 issues returned', tok:RESULT_OPT },
+    { cls:'m-result', lbl:'Result', body:'7 issues returned', tok:RESULT_OPT }
+  ]},
+  { div:'TURN 2' },
+  { ctx:[
+    { slots:[{b:'b-tools',l:'tools',t:'25,800 tokens repeated'},{b:'b-hist',l:'history',t:'~220 tok'},{b:'b-user',l:'user',t:'"Check blockers in Jira"'}], tok:CAT_ALL+HIST+USER, color:'var(--red)' },
+    { slots:[{b:'b-tools-s',l:'tools',t:'200 tokens'},{b:'b-hist',l:'history',t:'~220 tok'},{b:'b-user',l:'user',t:'"Check blockers in Jira"'}], tok:META+HIST+USER, color:'var(--green)' }
+  ]},
+  { pair:[
+    { cls:'m-llm', lbl:'LLM', body:'→ jira_get_issue { issueKey:"PROJ-88" }' },
+    { cls:'m-search', lbl:'LLM → search_tools', body:'→ search_tools { query:"jira issue" }', tok:SEARCH_Q+SEARCH_R }
+  ]},
+  { pair:[
+    { cls:'m-result', lbl:'Result', body:'PROJ-88 returned', tok:RESULT_OPT },
+    { cls:'m-result', lbl:'Result', body:'PROJ-88 returned', tok:RESULT_OPT }
+  ]},
+  { div:'TURN 3' },
+  { ctx:[
+    { slots:[{b:'b-tools',l:'tools',t:'25,800 tokens repeated again'},{b:'b-hist',l:'history',t:'~440 tok'},{b:'b-user',l:'user',t:'"Post to Slack #engineering"'}], tok:CAT_ALL+HIST*2+USER, color:'var(--red)' },
+    { slots:[{b:'b-tools-s',l:'tools',t:'200 tokens'},{b:'b-hist',l:'history',t:'~440 tok'},{b:'b-user',l:'user',t:'"Post to Slack #engineering"'}], tok:META+HIST*2+USER, color:'var(--green)' }
+  ]},
+  { pair:[
+    { cls:'m-llm', lbl:'LLM', body:'→ slack_post_message { channel:"#engineering" }' },
+    { cls:'m-search', lbl:'LLM → search_tools', body:'→ search_tools { query:"slack post" }', tok:SEARCH_Q+SEARCH_R }
+  ]},
+  { pair:[
+    { cls:'m-result', lbl:'Result', body:'Message posted', tok:RESULT_OPT },
+    { cls:'m-result', lbl:'Result', body:'Message posted', tok:RESULT_OPT }
+  ]},
+];
+
+// ─── TAB 4: PAYLOAD ───────────────────────────────────────────────────────────
+const paySteps = [
+  { stage:'Tool call 1 — list_issues (large JSON array with null fields)' },
+  { pair:[
+    { cls:'m-result', lbl:'Raw response — list_issues',
+      body:'[{"id":1234,"number":412,"title":"Fix anchors",\n"state":"open","body":null,"milestone":null,\n"assignee":null,"labels":[],"locked":false,\n"comments":0,"created_at":"2026-08-01T…",\n"updated_at":"2026-09-01T…","closed_at":null,\n"author_association":"NONE","draft":false},\n{"id":1230,"number":408,"title":"Nav reorder",…},\n… (7 issues, every field repeated per row)]',
+      tok:2400, color:'var(--red)' },
+    { cls:'m-payload', lbl:'After: Remove Nulls + TOON compression',
+      body:'Remove nulls → strip milestone, assignee,\nbody, closed_at from each object.\n\nTOON: schema declared once, values only:\n#[number,title,state,comments]\n412,"Fix anchors",open,0\n408,"Nav reorder",open,2\n401,"Update API ref",open,0\n… (7 rows)',
+      tok:180, color:'var(--teal)' }
+  ]},
+  { stage:'Tool call 2 — get_file_contents (binary file + HTML description)' },
+  { pair:[
+    { cls:'m-result', lbl:'Raw response — get_file_contents',
+      body:'{"name":"architecture.png","type":"file",\n"encoding":"base64",\n"content":"iVBORw0KGgoAAAANSUhEUgAA\nABcAAAAOCAYAAADHETkA…[4,821 bytes base64]…\nAElFTkSuQmCC\\n",\n"html_url":"<a href=…>View on GitHub</a>",\n"description":"<p>System <strong>architecture\n</strong> diagram showing…</p>"}',
+      tok:3800, color:'var(--red)' },
+    { cls:'m-payload', lbl:'After: Strip Base64 + HTML→Markdown',
+      body:'Strip Base64:\n  content: <stripped: 4821 bytes>\n\nHTML → Markdown:\n  description: System **architecture**\n  diagram showing…',
+      tok:95, color:'var(--teal)' }
+  ]},
+  { stage:'Tool call 3 — search results (large response, only filename matters)' },
+  { pair:[
+    { cls:'m-result', lbl:'Raw response — search_code',
+      body:'{"total_count":12,"items":[\n{"name":"auth.ts","path":"src/auth.ts",\n"html_url":"https://github.com/…",\n"git_url":"https://api.github.com/…",\n"download_url":"https://raw.github…",\n"repository":{"id":999,"name":"docs-gateway",\n"full_name":"mulesoft/docs-gateway",\n"private":false,"html_url":"…",\n"description":"…","fork":false,…}},\n… (12 items, full repo object per result)]',
+      tok:4200, color:'var(--red)' },
+    { cls:'m-payload', lbl:'After: Smart Trimming (agent intent: "find files with useAuth import")',
+      body:'Intent: "find files with useAuth import"\n\nProxy distills 4,200 tok → relevant only:\n\nFiles importing useAuth:\n• src/pages/Dashboard.tsx\n• src/pages/Profile.tsx\n• src/components/AuthGuard.tsx',
+      tok:45, color:'var(--teal)' }
+  ]},
+];
+
+// ─── TAB 5: REQUEST COMPRESSION ──────────────────────────────────────────────
+// Token model:
+//   Each turn sends: current user msg (35) + current tools (META, already small via Progressive Disclosure) +
+//   full history of prior (user msgs + assistant msgs + tool results)
+//   Without policy: raw tool results replayed verbatim
+//   With policy: tool results in history minified + nulls removed + TOON compressed
+//
+// We simulate 4 turns. Tool result sizes grow as session accumulates calls.
+// History cost = sum of all prior turns' messages + tool results
+// Raw tool result in history: ~2400 tok each (verbose JSON)
+// Compressed tool result in history: ~180 tok each (minified+TOON)
+// User/assistant messages: ~35 / ~60 tok each (not compressed by default in "Compress Messages" off)
+
+const TR_RAW  = 2400;  // raw tool result in history (tokens)
+const TR_COMP = 180;   // compressed tool result in history
+const USER_T  = 35;    // user message
+const ASST_T  = 60;    // assistant message
+const TOOL_CALL_T = 15; // tool call invocation tokens
+
+// Turn 1: user sends 1 message, LLM calls 1 tool, result returned
+// Turn 2: history = T1 user+asst+tool_result. New user+tool
+// Turn 3: history = T1+T2 user+asst+tool_results. New user+tool
+// Turn 4: history = T1+T2+T3 ... etc.
+
+// Raw history token costs per turn (what is sent to provider):
+// Turn 1: USER(35) + [no history]  → sent to LLM = 35 + META(200) = 235, then result comes back
+// Turn 2: USER(35) + hist[U1(35)+A1(60)+TR1(2400)] = 35 + 2495 = 2530
+// Turn 3: USER(35) + hist[U1+A1+TR1 + U2+A2+TR2] = 35 + 2*(35+60+2400) = 35+4990 = 5025
+// Turn 4: USER(35) + hist * 3 = 35 + 3*(35+60+2400) = 35 + 7485 = 7520
+// Total without: 235 + 2530 + 5025 + 7520 = 15,310
+
+// Compressed history per turn:
+// Turn 1: same (no history yet) = 235
+// Turn 2: 35 + [35+60+TR_COMP(180)] = 35 + 275 = 310
+// Turn 3: 35 + 2*(35+60+180) = 35 + 550 = 585
+// Turn 4: 35 + 3*(35+60+180) = 35 + 825 = 860
+// Total with: 235 + 310 + 585 + 860 = 1,990
+
+// Request Compression tab: focus on system prompt + user/assistant messages
+// Tool results are assumed already handled by Payload Optimization
+// Token sizes:
+const SYS_RAW  = 95;   // system prompt raw (indented JSON policy block)
+const SYS_COMP = 58;   // after minify + remove empty values
+const USR1_RAW = 35;   // short user message
+const USR1_COMP= 33;   // barely smaller, pass-through likely
+const USR2_RAW = 110;  // user message with pasted stack trace
+const USR2_COMP= 80;   // after collapse blank lines
+const USR3_RAW = 38;
+const USR3_COMP= 36;
+const USR4_RAW = 42;
+const USR4_COMP= 40;
+const ASST1_RAW = 120; // assistant response with markdown table
+const ASST1_COMP= 95;  // after minify (collapse blank lines between table rows)
+const ASST2_RAW = 85;
+const ASST2_COMP= 72;
+const ASST3_RAW = 60;
+const ASST3_COMP= 55;
+
+const reqcSteps = [
+  { stage:'Every LLM API call includes a system prompt — re-billed on every single turn' },
+  { pair:[
+    { cls:'m-user', lbl:'System prompt — raw (sent verbatim every turn)',
+      body:'{\n  "role": "assistant",\n  "constraints": {\n    "tone":     "professional",\n    "language": "English",\n    "format":   "markdown",\n    "tools":    ["github","jira","filesystem","slack"]\n  },\n  "rules": [\n    "Always confirm repo names before acting",\n    "Never delete files without approval",\n    "Summarise results before presenting"\n  ]\n}\n→ ~95 tokens, re-billed every turn', tok:SYS_RAW, color:'var(--red)' },
+    { cls:'m-reqc', lbl:'System prompt — after Minify + Remove Empty Values',
+      body:'{"role":"assistant","constraints":{"tone":"professional","language":"English","format":"markdown","tools":["github","jira","filesystem","slack"]},"rules":["Always confirm repo names before acting","Never delete files without approval","Summarise results before presenting"]}\n→ ~58 tokens — same data, all insignificant\n  whitespace stripped, lossless', tok:SYS_COMP, color:'var(--pink)' }
+  ]},
+  { div:'TURN 1 — User pastes a stack trace' },
+  { stage:'Turn 1 — User message with multi-line stack trace: blank lines add tokens' },
+  { pair:[
+    { cls:'m-user', lbl:'User message — raw (blank lines preserved)',
+      body:'"Hey, I\'m seeing this error in production:\n\njava.lang.NullPointerException: Cannot invoke\n    getUser() on null object\n\n    at AuthService.validateToken(line 142)\n    at ApiController.handleRequest(line 87)\n    at ApiController$$FastClassBySpring…\n    at MethodProxy.invoke(line 218)\n\nCan you create a Jira ticket for this?"\n→ ~110 tokens', tok:USR2_RAW, color:'var(--red)' },
+    { cls:'m-reqc', lbl:'User message — after Minify (blank lines collapsed)',
+      body:'"Hey, I\'m seeing this error in production:\njava.lang.NullPointerException: Cannot invoke\n    getUser() on null object\n    at AuthService.validateToken(line 142)\n    at ApiController.handleRequest(line 87)\n    at ApiController$$FastClassBySpring…\n    at MethodProxy.invoke(line 218)\nCan you create a Jira ticket for this?"\n→ ~80 tokens (blank lines removed, same meaning)', tok:USR2_COMP, color:'var(--pink)' }
+  ]},
+  { pair:[
+    { cls:'m-llm', lbl:'LLM responds — assistant message stored in history',
+      body:'"I\'ll create a Jira ticket for the\nNullPointerException.\n\n**Ticket details:**\n\n- **Summary:** NullPointerException in AuthService\n- **Type:** Bug\n- **Priority:** High\n- **Stack trace:** AuthService.java:142\n\nCreating now…"\n→ ~120 tokens stored in history', tok:ASST1_RAW, color:'var(--red)' },
+    { cls:'m-reqc', lbl:'Assistant message — after Minify (blank lines between sections collapsed)',
+      body:'"I\'ll create a Jira ticket for the NullPointerException.\n**Ticket details:**\n- **Summary:** NullPointerException in AuthService\n- **Type:** Bug\n- **Priority:** High\n- **Stack trace:** AuthService.java:142\nCreating now…"\n→ ~95 tokens', tok:ASST1_COMP, color:'var(--pink)' }
+  ]},
+  { div:'TURN 2 — History replayed. System prompt + T1 user + T1 assistant all re-billed.' },
+  { stage:'Turn 2 — System prompt + Turn 1 messages all replayed in request body' },
+  { ctx:[
+    { slots:[
+        {b:'b-user', l:'system (replayed)', t:`${SYS_RAW} tok raw — indented JSON`},
+        {b:'b-hist', l:'T1 user+asst (replayed)', t:`${USR2_RAW}+${ASST1_RAW} = ${USR2_RAW+ASST1_RAW} tok raw`},
+        {b:'b-user', l:'new user msg', t:'"Which file is throwing the error?"'}
+      ], tok:SYS_RAW + USR2_RAW + ASST1_RAW + USR3_RAW, color:'var(--red)' },
+    { slots:[
+        {b:'b-tools-s', l:'system (compressed)', t:`${SYS_COMP} tok — minified JSON`},
+        {b:'b-hist', l:'T1 user+asst (compressed)', t:`${USR2_COMP}+${ASST1_COMP} = ${USR2_COMP+ASST1_COMP} tok`},
+        {b:'b-user', l:'new user msg', t:'"Which file is throwing the error?"'}
+      ], tok:SYS_COMP + USR2_COMP + ASST1_COMP + USR3_COMP, color:'var(--pink)' }
+  ]},
+  { pair:[
+    { cls:'m-hist', lbl:'System prompt replayed RAW — indented JSON re-billed',
+      body:'{\n  "role": "assistant",\n  "constraints": {\n    "tone":     "professional",\n    …\n  }\n}\n→ 95 tokens billed again this turn\n  and every future turn' },
+    { cls:'m-reqc', lbl:'System prompt replayed COMPRESSED — minified',
+      body:'{"role":"assistant","constraints":{…},"rules":[…]}\n→ 58 tokens this turn\n  Saves 37 tok × every remaining turn' }
+  ]},
+  { pair:[
+    { cls:'m-hist', lbl:'T1 user message replayed RAW — blank lines preserved',
+      body:'"Hey, I\'m seeing this error in production:\n\njava.lang.NullPointerException…\n\n    at AuthService.validateToken…"\n→ 110 tokens re-billed' },
+    { cls:'m-reqc', lbl:'T1 user message replayed COMPRESSED — blank lines stripped',
+      body:'"Hey, I\'m seeing this error in production:\njava.lang.NullPointerException…\n    at AuthService.validateToken…"\n→ 80 tokens' }
+  ]},
+  { pair:[
+    { cls:'m-hist', lbl:'T1 assistant message replayed RAW — blank lines between sections',
+      body:'"I\'ll create a Jira ticket…\n\n**Ticket details:**\n\n- **Summary:** …\n- **Type:** Bug\n\nCreating now…"\n→ 120 tokens re-billed' },
+    { cls:'m-reqc', lbl:'T1 assistant message replayed COMPRESSED — sections joined',
+      body:'"I\'ll create a Jira ticket…\n**Ticket details:**\n- **Summary:** …\n- **Type:** Bug\nCreating now…"\n→ 95 tokens' }
+  ]},
+  { div:'TURN 3 — System prompt + T1 + T2 all replayed again' },
+  { stage:'Turn 3 — Savings compound: every prior message compressed again' },
+  { ctx:[
+    { slots:[
+        {b:'b-user', l:'system', t:`${SYS_RAW} tok raw`},
+        {b:'b-hist', l:'T1+T2 history', t:`${USR2_RAW+ASST1_RAW+USR3_RAW+ASST2_RAW} tok raw (4 messages)`},
+        {b:'b-user', l:'new user msg', t:'"Post the bug summary to #engineering"'}
+      ], tok:SYS_RAW + USR2_RAW+ASST1_RAW+USR3_RAW+ASST2_RAW + USR4_RAW, color:'var(--red)' },
+    { slots:[
+        {b:'b-tools-s', l:'system', t:`${SYS_COMP} tok compressed`},
+        {b:'b-hist', l:'T1+T2 history', t:`${USR2_COMP+ASST1_COMP+USR3_COMP+ASST2_COMP} tok compressed (4 messages)`},
+        {b:'b-user', l:'new user msg', t:'"Post the bug summary to #engineering"'}
+      ], tok:SYS_COMP + USR2_COMP+ASST1_COMP+USR3_COMP+ASST2_COMP + USR4_COMP, color:'var(--pink)' }
+  ]},
+  { pair:[
+    { cls:'m-hist', lbl:'Full history replayed RAW',
+      body:'system(95) + T1-user(110) + T1-asst(120)\n+ T2-user(38) + T2-asst(85)\n= 448 tokens of history\nre-billed this turn and all future turns' },
+    { cls:'m-reqc', lbl:'Full history replayed COMPRESSED — all strings minified',
+      body:'system(58) + T1-user(80) + T1-asst(95)\n+ T2-user(36) + T2-asst(72)\n= 341 tokens of history\n~24% saving on history alone' }
+  ]},
+  { div:'TURN 4 — Three turns of history. Savings multiply by sessions × turns.' },
+  { stage:'Turn 4 — The compounding effect: each saved turn multiplied across the session' },
+  { ctx:[
+    { slots:[
+        {b:'b-user', l:'system', t:`${SYS_RAW} tok raw`},
+        {b:'b-hist', l:'T1+T2+T3 history', t:`${USR2_RAW+ASST1_RAW+USR3_RAW+ASST2_RAW+USR4_RAW+ASST3_RAW} tok raw (6 messages)`},
+        {b:'b-user', l:'new user msg', t:'"Assign PROJ-412 to Bob"'}
+      ], tok:SYS_RAW + USR2_RAW+ASST1_RAW+USR3_RAW+ASST2_RAW+USR4_RAW+ASST3_RAW + 28, color:'var(--red)' },
+    { slots:[
+        {b:'b-tools-s', l:'system', t:`${SYS_COMP} tok compressed`},
+        {b:'b-hist', l:'T1+T2+T3 history', t:`${USR2_COMP+ASST1_COMP+USR3_COMP+ASST2_COMP+USR4_COMP+ASST3_COMP} tok compressed (6 messages)`},
+        {b:'b-user', l:'new user msg', t:'"Assign PROJ-412 to Bob"'}
+      ], tok:SYS_COMP + USR2_COMP+ASST1_COMP+USR3_COMP+ASST2_COMP+USR4_COMP+ASST3_COMP + 28, color:'var(--pink)' }
+  ]},
+  { pair:[
+    { cls:'m-hist', lbl:'System prompt: re-billed 4 times total (raw)',
+      body:'95 tok × 4 turns = 380 tokens billed\nfor the same unchanged system prompt.\nLong sessions make this the biggest cost.' },
+    { cls:'m-reqc', lbl:'System prompt: re-billed 4 times (compressed)',
+      body:'58 tok × 4 turns = 232 tokens billed.\nSaved: 148 tokens on system prompt alone.\n~39% reduction, multiplied by session volume.' }
+  ]},
+];
+
+// ─── Wire up sims ─────────────────────────────────────────────────────────────
+const sims = {
+  full: makeSim(fullSteps, ['tFull0','tFull1'], ['bFull0','bFull1'], 'stageFull', 'sumFull', ['svF0','svF1','svFd'], 'speedFull'),
+  map:  makeSim(mapSteps,  ['tMap0','tMap1'],   ['bMap0','bMap1'],   'stageMap',  null,      [], 'speedMap'),
+  disc: makeSim(discSteps, ['tDisc0','tDisc1'], ['bDisc0','bDisc1'], 'stageDisc', 'sumDisc', ['svD0','svD1','svDd'], 'speedDisc'),
+  pay:  makeSim(paySteps,  ['tPay0','tPay1'],   ['bPay0','bPay1'],   'stagePay',  'sumPay',  ['svP0','svP1','svPd'], 'speedPay'),
+};
+
+document.getElementById('playFull').addEventListener('click',  e => sims.full.play(e.target));
+document.getElementById('resetFull').addEventListener('click', e => sims.full.reset(e.target));
+document.getElementById('playMap').addEventListener('click',   e => sims.map.play(e.target));
+document.getElementById('resetMap').addEventListener('click',  e => sims.map.reset(e.target));
+document.getElementById('playDisc').addEventListener('click',  e => sims.disc.play(e.target));
+document.getElementById('resetDisc').addEventListener('click', e => sims.disc.reset(e.target));
+document.getElementById('playPay').addEventListener('click',   e => sims.pay.play(e.target));
+document.getElementById('resetPay').addEventListener('click',  e => sims.pay.reset(e.target));
+
+const sims_reqc = makeSim(reqcSteps, ['tReqC0','tReqC1'], ['bReqC0','bReqC1'], 'stageReqC', 'sumReqC', ['svRC0','svRC1','svRCd'], 'speedReqC');
+document.getElementById('playReqC').addEventListener('click',  e => sims_reqc.play(e.target));
+document.getElementById('resetReqC').addEventListener('click', e => sims_reqc.reset(e.target));
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const panel = document.getElementById('tab-'+t.dataset.tab);
+    if (panel) panel.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
