@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>A2A Policy Lifecycle — MuleSoft Omni Gateway</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #F4F7FB;
+    color: #0B1F3A;
+    padding: 34px 26px 46px;
+  }
+  .wrap { max-width: 1560px; margin: 0 auto; }
+
+  .hero { text-align: center; margin-bottom: 26px; }
+  .hero h1 { font-size: 28px; margin: 0 0 6px; font-weight: 800; letter-spacing: -0.3px; }
+  .hero p { margin: 0; font-size: 14.5px; color: #4A5F85; }
+
+  /* Actor row */
+  .actor-row {
+    display: grid;
+    grid-template-columns: 190px 1fr 190px;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .actor {
+    background: #FFFFFF;
+    border: 1.5px solid #D8E2F0;
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .actor .icon { font-size: 30px; display:block; margin-bottom:4px; }
+  .actor b { display:block; font-size: 14px; color:#0B1F3A; }
+  .actor span { font-size: 11px; color:#6B7FA3; }
+  .actor.client { border-color:#93C5FD; }
+  .actor.target { border-color:#6EE7B7; }
+
+  .gw-title {
+    text-align:center;
+    font-weight:800;
+    font-size: 15px;
+    color:#0B1F3A;
+  }
+  .gw-sub { text-align:center; font-size: 11px; color:#7C8FB0; margin-top:2px;}
+
+  /* Pipeline panel */
+  .pipeline-panel {
+    background: linear-gradient(180deg, #EEF3FB 0%, #E4ECF9 100%);
+    border: 1.5px solid #D2DFF2;
+    border-radius: 16px;
+    padding: 22px 22px 18px;
+    margin-top: 6px;
+    position: relative;
+  }
+
+  .phase-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #7C8FB0;
+    margin: 0 0 10px 2px;
+  }
+
+  .lane {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .lane .cap {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #0B1F3A;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+  .lane-arrow {
+    flex: none;
+    font-size: 16px;
+    color: #A9BBDA;
+  }
+
+  .step-card {
+    flex: 1;
+    min-width: 0;
+    background: #FFFFFF;
+    border-radius: 10px;
+    padding: 9px 12px;
+    border-left: 5px solid transparent;
+    box-shadow: 0 1px 3px rgba(11,31,58,0.06);
+  }
+  .step-card .num {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #fff;
+    margin-right: 7px;
+  }
+  .step-card .name { font-weight: 800; font-size: 12.5px; color:#0B1F3A; }
+  .step-card .desc { font-size: 10.8px; color:#5A6D8F; margin-top: 3px; line-height:1.35; }
+  .step-card .pol { font-size: 9.8px; color:#8A99B3; margin-top: 3px; font-style: italic; }
+
+  .col-purple { border-left-color:#7C3AED; } .num-purple { background:#7C3AED; }
+  .col-brown  { border-left-color:#B45309; } .num-brown  { background:#B45309; }
+  .col-red    { border-left-color:#DC2626; } .num-red    { background:#DC2626; }
+  .col-teal   { border-left-color:#0D9488; } .num-teal   { background:#0D9488; }
+  .col-slate  { border-left-color:#475569; } .num-slate  { background:#475569; }
+
+  .exec-card {
+    flex: none;
+    width: 168px;
+    background: #0B1F3A;
+    color: #fff;
+    border-radius: 10px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .exec-card .icon { font-size: 22px; display:block; margin-bottom: 4px; }
+  .exec-card b { font-size: 12px; display:block; }
+  .exec-card span { font-size: 9.5px; color:#AFC3E8; }
+
+  /* cross-cutting band */
+  .crosscut {
+    margin-top: 14px;
+    background: #0B1F3A;
+    border-radius: 10px;
+    padding: 10px 16px;
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    justify-content:center;
+    text-align:center;
+  }
+  .crosscut .dot { width:10px; height:10px; border-radius:50%; background:#94A3B8; flex:none;}
+  .crosscut b { color:#fff; font-size: 12px; }
+  .crosscut span { color:#B9C6DE; font-size: 11px; }
+
+  /* legend */
+  .legend {
+    margin-top: 22px;
+    background: #FFFFFF;
+    border: 1.5px solid #E3E9F2;
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+  .legend-item { display:flex; align-items:center; gap:7px; color:#33456B; font-weight:600;}
+  .legend-dot { width:10px; height:10px; border-radius:50%; flex:none; }
+
+  .footnote { text-align:center; color:#8A99B3; font-size: 11px; margin-top: 12px; }
+
+  @media (max-width: 1200px) {
+    .lane { flex-direction: column; align-items: stretch; }
+    .lane-arrow { display:none; }
+    .lane .cap { align-self:center; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>How A2A Policies Govern a Single Agent-to-Agent Exchange</h1>
+    <p>Step-by-step: what happens to one task request as it travels Client Agent → Omni Gateway → Target Agent, and back</p>
+  </div>
+
+  <div class="actor-row">
+    <div class="actor client"><span class="icon">🤖</span><b>Client Agent</b><span>Initiates the task</span></div>
+    <div>
+      <div class="gw-title">MuleSoft Omni Gateway — A2A Policy Chain</div>
+      <div class="gw-sub">Every A2A request and response is intercepted here before reaching either agent</div>
+    </div>
+    <div class="actor target"><span class="icon">🎯</span><b>Target Agent</b><span>Executes the task</span></div>
+  </div>
+
+  <div class="pipeline-panel">
+
+    <div class="phase-label">① Discovery — before any task is sent</div>
+    <div class="lane">
+      <div class="cap">0</div>
+      <div class="step-card col-purple">
+        <span class="name"><span class="num num-purple">0</span>Agent Card Rewrite</span>
+        <div class="desc">Client fetches the target agent's Agent Card. The gateway rewrites every interface URL in it to its own public address — so the client always calls back through the gateway, never the agent's internal endpoint.</div>
+        <div class="pol">A2A Agent Card · A2A v1 Agent Card</div>
+      </div>
+    </div>
+
+    <div class="phase-label" style="margin-top:14px;">② Request ingress — task sent by the Client Agent</div>
+
+    <div class="lane">
+      <div class="cap">1</div>
+      <div class="step-card col-purple">
+        <span class="name"><span class="num num-purple">1</span>Protocol Bridge &amp; Schema Validation</span>
+        <div class="desc">If the client speaks A2A v1 and the backend speaks v0.3 (or vice versa), the transcoder translates the JSON-RPC message bidirectionally. The request is then checked against the A2A specification — malformed messages are rejected here.</div>
+        <div class="pol">A2A v1 to v0.3 Transcoder · A2A / A2A v1 Schema Validation</div>
+      </div>
+      <div class="lane-arrow">→</div>
+      <div class="step-card col-brown">
+        <span class="name"><span class="num num-brown">2</span>Token Rate Limit Check</span>
+        <div class="desc">Before any processing continues, the gateway checks whether this caller has budget remaining under its token-based usage cap for upstream resources.</div>
+        <div class="pol">A2A Token Based Rate Limit · A2A v1 Token Based Rate Limit</div>
+      </div>
+      <div class="lane-arrow">→</div>
+      <div class="step-card col-red">
+        <span class="name"><span class="num num-red">3</span>PII Detection</span>
+        <div class="desc">The request content is scanned for personally identifiable information. If PII is found, the request is blocked before it ever reaches the target agent.</div>
+        <div class="pol">A2A PII Detector · A2A v1 PII Detector (all transports)</div>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="cap">4</div>
+      <div class="step-card col-red">
+        <span class="name"><span class="num num-red">4</span>Content Guardrails</span>
+        <div class="desc">The message is evaluated against Azure AI Content Safety or Amazon Bedrock Guardrails — checking for harmful content, jailbreak attempts, hallucination risk, and copyrighted material.</div>
+        <div class="pol">A2A v1 Azure Content Guardrails · A2A v1 Bedrock Guardrails</div>
+      </div>
+      <div class="lane-arrow">→</div>
+      <div class="step-card col-teal">
+        <span class="name"><span class="num num-teal">5</span>Prompt Decoration</span>
+        <div class="desc">Approved requests are enriched with additional context — organization-wide instructions, compliance language, or routing metadata — injected transparently before the prompt reaches the agent.</div>
+        <div class="pol">A2A Prompt Decorator · A2A v1 Prompt Decorator</div>
+      </div>
+      <div class="lane-arrow">→</div>
+      <div class="exec-card">
+        <span class="icon">⚙️</span>
+        <b>Target Agent Executes</b>
+        <span>Runs the task — may call tools, MCP servers, or an LLM</span>
+      </div>
+    </div>
+
+    <div class="phase-label" style="margin-top:14px;">③ Response egress — result returned by the Target Agent</div>
+    <div class="lane">
+      <div class="cap">6</div>
+      <div class="step-card col-red">
+        <span class="name"><span class="num num-red">6</span>Guardrails Re-Check</span>
+        <div class="desc">Bedrock Guardrails evaluates the completed response the same way it evaluated the request — content safety and contextual grounding checked on the way out, not just the way in.</div>
+        <div class="pol">A2A v1 Bedrock Guardrails (response path)</div>
+      </div>
+      <div class="lane-arrow">→</div>
+      <div class="step-card col-teal">
+        <span class="name"><span class="num num-teal">7</span>Quality Evaluation</span>
+        <div class="desc">Once the task response is complete, an LLM scores it for quality and completeness — an audit signal for monitoring whether agents in the fleet are actually doing their job well, not just responding.</div>
+        <div class="pol">A2A v1 Quality Evaluation</div>
+      </div>
+      <div class="lane-arrow">→</div>
+      <div class="exec-card" style="background:#1E3A8A;">
+        <span class="icon">↩️</span>
+        <b>Response Delivered</b>
+        <span>Back to the Client Agent</span>
+      </div>
+    </div>
+
+    <div class="crosscut">
+      <span class="dot"></span>
+      <b>Continuous, throughout the exchange:</b>
+      <span>Agent Connection Telemetry &amp; SSE Logging — every event in the request, response, and any streamed updates is logged for observability and audit</span>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#7C3AED"></span>Routing &amp; Protocol</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#B45309"></span>Cost &amp; Rate Control</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#DC2626"></span>Content Safety &amp; PII</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#0D9488"></span>Context &amp; Quality</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#475569"></span>Observability</div>
+  </div>
+
+  <div class="footnote">Steps 0–5 run on every inbound task before the target agent ever sees it; steps 6–7 run on the way back. Telemetry and logging run continuously across the whole exchange, not at a single point.</div>
+
+</div>
+</body>
+</html>
