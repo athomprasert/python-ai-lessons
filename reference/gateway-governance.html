@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MuleSoft Omni Gateway — Universal Governance Diagram</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: #F4F7FB;
+    color: #0B1F3A;
+    padding: 36px 28px 48px;
+  }
+  .wrap { max-width: 1560px; margin: 0 auto; }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .hero h1 {
+    font-size: 30px;
+    margin: 0 0 6px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: #0B1F3A;
+  }
+  .hero p {
+    margin: 0;
+    font-size: 15px;
+    color: #4A5F85;
+  }
+
+  /* Source row */
+  .row-sources, .row-dest {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 4px;
+  }
+  .source-card, .dest-card {
+    background: #FFFFFF;
+    border: 1.5px solid #D8E2F0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: center;
+    font-size: 13px;
+    color: #33456B;
+  }
+  .source-card .icon, .dest-card .icon { font-size: 20px; display:block; margin-bottom:4px; }
+  .source-card b, .dest-card b { display:block; font-size: 13.5px; color:#0B1F3A; margin-bottom:2px;}
+
+  .arrow-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin: 6px 0;
+  }
+  .arrow-cell { text-align:center; color:#9AAEC9; font-size: 20px; line-height:1; }
+
+  /* Gateway band */
+  .gateway-band {
+    background: linear-gradient(135deg, #0B1F3A 0%, #133A7C 55%, #0B62D6 100%);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin: 6px 0 6px;
+    box-shadow: 0 6px 22px rgba(11,31,58,0.18);
+  }
+  .gateway-band .title-line {
+    text-align:center;
+    color:#FFFFFF;
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    margin-bottom: 2px;
+  }
+  .gateway-band .sub-line {
+    text-align:center;
+    color:#BBD3FA;
+    font-size: 12.5px;
+    margin-bottom: 14px;
+  }
+  .gateway-chains {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+  .chain-chip {
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+    color: #EAF1FF;
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+
+  /* Column policy area */
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-top: 6px;
+  }
+  .col {
+    background: #FFFFFF;
+    border-radius: 12px;
+    border: 1.5px solid #E3E9F2;
+    padding: 14px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .col-head {
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 14px;
+    text-align: center;
+    letter-spacing: 0.2px;
+  }
+  .col.agents .col-head { background: #7C3AED; }
+  .col.llm .col-head { background: #2563EB; }
+  .col.mcp .col-head { background: #0D9488; }
+  .col.api .col-head { background: #D97706; }
+
+  .cat-block { margin-top: 2px; }
+  .cat-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cat-dot { width: 8px; height: 8px; border-radius: 50%; display:inline-block; flex: none; }
+  .chip {
+    display: block;
+    background: #F5F8FC;
+    border: 1px solid #E1E8F2;
+    border-left: 3px solid transparent;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 11.5px;
+    color: #22314D;
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  /* category colors (consistent across all 4 columns) */
+  .c-auth   { color:#1D4ED8; } .c-auth-dot { background:#1D4ED8; } .chip.c-auth { border-left-color:#1D4ED8; }
+  .c-safety { color:#DC2626; } .c-safety-dot { background:#DC2626; } .chip.c-safety { border-left-color:#DC2626; }
+  .c-cost   { color:#B45309; } .c-cost-dot { background:#B45309; } .chip.c-cost { border-left-color:#B45309; }
+  .c-proto  { color:#7C3AED; } .c-proto-dot { background:#7C3AED; } .chip.c-proto { border-left-color:#7C3AED; }
+  .c-qos    { color:#0D9488; } .c-qos-dot { background:#0D9488; } .chip.c-qos { border-left-color:#0D9488; }
+  .c-obs    { color:#475569; } .c-obs-dot { background:#475569; } .chip.c-obs { border-left-color:#475569; }
+
+  .more-note {
+    font-size: 10.5px;
+    color: #8A99B3;
+    font-style: italic;
+    margin-top: 2px;
+    text-align: center;
+  }
+
+  /* Legend */
+  .legend {
+    margin-top: 26px;
+    background: #FFFFFF;
+    border: 1.5px solid #E3E9F2;
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: center;
+    gap: 26px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+  }
+  .legend-item { display:flex; align-items:center; gap:7px; color:#33456B; font-weight:600;}
+  .legend-dot { width:10px; height:10px; border-radius:50%; flex:none; }
+
+  .footnote {
+    text-align:center;
+    color:#8A99B3;
+    font-size: 11.5px;
+    margin-top: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>MuleSoft Omni Gateway — One Gateway, Four Governed Surfaces</h1>
+    <p>How a single policy enforcement layer governs Agents (A2A), LLM Models, MCP Servers, and traditional APIs — with the same six governance categories applied to each</p>
+  </div>
+
+  <!-- Sources -->
+  <div class="row-sources">
+    <div class="source-card"><span class="icon">🤖</span><b>Calling Agents</b>Agent Fabric · orchestrators · A2A clients</div>
+    <div class="source-card"><span class="icon">🧠</span><b>Agent / App Requests</b>Prompts &amp; completions bound for a model</div>
+    <div class="source-card"><span class="icon">🔧</span><b>Agent Tool Calls</b>tools/list · tools/call over MCP</div>
+    <div class="source-card"><span class="icon">🌐</span><b>API Clients</b>Web, mobile, partner &amp; internal apps</div>
+  </div>
+  <div class="arrow-row">
+    <div class="arrow-cell">↓</div><div class="arrow-cell">↓</div><div class="arrow-cell">↓</div><div class="arrow-cell">↓</div>
+  </div>
+
+  <!-- Gateway band -->
+  <div class="gateway-band">
+    <div class="title-line">MuleSoft Omni Gateway</div>
+    <div class="sub-line">Every request — agent, model, tool, or API — passes through the same policy enforcement layer before it reaches its destination</div>
+    <div class="gateway-chains">
+      <div class="chain-chip">A2A Policy Chain</div>
+      <div class="chain-chip">Model Proxy Chain</div>
+      <div class="chain-chip">MCP Proxy Chain</div>
+      <div class="chain-chip">API Proxy Chain</div>
+    </div>
+  </div>
+
+  <div class="arrow-row">
+    <div class="arrow-cell">↓</div><div class="arrow-cell">↓</div><div class="arrow-cell">↓</div><div class="arrow-cell">↓</div>
+  </div>
+
+  <!-- Policy columns -->
+  <div class="columns">
+
+    <!-- AGENTS -->
+    <div class="col agents">
+      <div class="col-head">Agents · A2A</div>
+
+      <div class="cat-block">
+        <div class="cat-label c-auth"><span class="cat-dot c-auth-dot"></span>Identity &amp; Routing</div>
+        <div class="chip c-auth">A2A Agent Card</div>
+        <div class="chip c-auth">A2A v1 Agent Card</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-proto"><span class="cat-dot c-proto-dot"></span>Protocol Validation</div>
+        <div class="chip c-proto">A2A Schema Validation</div>
+        <div class="chip c-proto">A2A v1 to v0.3 Transcoder</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-safety"><span class="cat-dot c-safety-dot"></span>Content Safety</div>
+        <div class="chip c-safety">A2A PII Detector</div>
+        <div class="chip c-safety">A2A v1 Azure / Bedrock Guardrails</div>
+        <div class="chip c-safety">A2A Prompt Decorator</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-cost"><span class="cat-dot c-cost-dot"></span>Cost &amp; Quality</div>
+        <div class="chip c-cost">A2A Token Based Rate Limit</div>
+        <div class="chip c-cost">A2A v1 Quality Evaluation</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-obs"><span class="cat-dot c-obs-dot"></span>Observability</div>
+        <div class="chip c-obs">Agent Connection Telemetry</div>
+        <div class="chip c-obs">SSE Logging</div>
+      </div>
+    </div>
+
+    <!-- LLM MODELS -->
+    <div class="col llm">
+      <div class="col-head">LLM Models</div>
+
+      <div class="cat-block">
+        <div class="cat-label c-safety"><span class="cat-dot c-safety-dot"></span>Content Safety &amp; PII</div>
+        <div class="chip c-safety">Azure Content Safety</div>
+        <div class="chip c-safety">Amazon Bedrock Guardrails</div>
+        <div class="chip c-safety">LLM PII Detection</div>
+        <div class="chip c-safety">Regex Prompt Guard</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-cost"><span class="cat-dot c-cost-dot"></span>Cost Control</div>
+        <div class="chip c-cost">LLM Token Based Rate Limit</div>
+        <div class="chip c-cost">Model Proxy Request Compression</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="more-note">Governs every completion call to<br>OpenAI, Anthropic, Bedrock, Azure OpenAI &amp; more — one policy set, any provider</div>
+      </div>
+    </div>
+
+    <!-- MCP SERVERS -->
+    <div class="col mcp">
+      <div class="col-head">MCP Servers</div>
+
+      <div class="cat-block">
+        <div class="cat-label c-auth"><span class="cat-dot c-auth-dot"></span>Access Control</div>
+        <div class="chip c-auth">MCP Global Access</div>
+        <div class="chip c-auth">MCP Attribute-Based Access Control</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-safety"><span class="cat-dot c-safety-dot"></span>Content Safety</div>
+        <div class="chip c-safety">MCP PII Detector</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-proto"><span class="cat-dot c-proto-dot"></span>Protocol &amp; Naming</div>
+        <div class="chip c-proto">MCP Schema Validation</div>
+        <div class="chip c-proto">MCP Support</div>
+        <div class="chip c-proto">MCP Tool Mapping</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-qos"><span class="cat-dot c-qos-dot"></span>Efficiency</div>
+        <div class="chip c-qos">MCP Tools Progressive Disclosure</div>
+        <div class="chip c-qos">MCP Payload Optimization</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-obs"><span class="cat-dot c-obs-dot"></span>Observability</div>
+        <div class="chip c-obs">Agent Connection Telemetry</div>
+        <div class="chip c-obs">SSE Logging</div>
+      </div>
+    </div>
+
+    <!-- APIs -->
+    <div class="col api">
+      <div class="col-head">APIs</div>
+
+      <div class="cat-block">
+        <div class="cat-label c-auth"><span class="cat-dot c-auth-dot"></span>Authentication</div>
+        <div class="chip c-auth">JWT Validation</div>
+        <div class="chip c-auth">OAuth 2.0 Token Introspection</div>
+        <div class="chip c-auth">OpenID Connect Access Token Enforcement</div>
+        <div class="chip c-auth">Client ID Enforcement</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-safety"><span class="cat-dot c-safety-dot"></span>Threat Protection</div>
+        <div class="chip c-safety">JSON / XML Threat Protection</div>
+        <div class="chip c-safety">Injection Protection</div>
+        <div class="chip c-safety">IP Allowlist / Blocklist</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-proto"><span class="cat-dot c-proto-dot"></span>Protocol Validation</div>
+        <div class="chip c-proto">Schema Validation</div>
+        <div class="chip c-proto">SOAP / GraphQL Schema Validation</div>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label c-qos"><span class="cat-dot c-qos-dot"></span>Quality of Service</div>
+        <div class="chip c-qos">Rate Limiting (+ SLA-based)</div>
+        <div class="chip c-qos">Spike Control</div>
+        <div class="chip c-qos">Traffic Management</div>
+      </div>
+
+      <div class="more-note">+ CORS, DataWeave transforms, GraphQL controls,<br>caching, tracing &amp; more standard policies</div>
+    </div>
+
+  </div>
+
+  <div class="arrow-row">
+    <div class="arrow-cell">↓</div><div class="arrow-cell">↓</div><div class="arrow-cell">↓</div><div class="arrow-cell">↓</div>
+  </div>
+
+  <!-- Destinations -->
+  <div class="row-dest">
+    <div class="dest-card"><span class="icon">🤝</span><b>Peer Agents</b>Other A2A-exposed agents in the fabric</div>
+    <div class="dest-card"><span class="icon">☁️</span><b>LLM Providers</b>OpenAI · Anthropic · Bedrock · Azure OpenAI</div>
+    <div class="dest-card"><span class="icon">🗄️</span><b>MCP Servers</b>GitHub · Jira · Slack · Filesystem · custom</div>
+    <div class="dest-card"><span class="icon">🏢</span><b>Backend APIs</b>Microservices, SOAP, GraphQL, legacy systems</div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#1D4ED8"></span>Authentication &amp; Access Control</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#DC2626"></span>Content Safety &amp; PII</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#B45309"></span>Cost &amp; Rate Control</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#7C3AED"></span>Protocol &amp; Schema Validation</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#0D9488"></span>Quality of Service / Efficiency</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#475569"></span>Observability</div>
+  </div>
+
+  <div class="footnote">Same six governance categories, applied consistently across every surface the gateway fronts — the specific policy differs by protocol, the governance model does not.</div>
+
+</div>
+</body>
+</html>
