@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reference — Lyzr &amp; Opencontroller vs MuleSoft Agent Fabric</title>
+  <style>
+    /* ─── Design tokens (shared with the SE one-pager theme) ─── */
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --accent: #0071e3;
+      --border: #d2d2d7;
+      --hairline: #e8e8ed;
+      --shadow: 0 4px 24px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --code-bg: #1e1e2e;      /* code block stays dark in both modes */
+      --code-fg: #cdd6f4;
+      --inline-code-bg: #f0f0f3;
+      --inline-code-fg: #c7254e;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --surface: #1c1c1e;
+        --text: #f5f5f7;
+        --muted: #98989d;
+        --accent: #0a84ff;
+        --border: #38383a;
+        --hairline: #2c2c2e;
+        --shadow: 0 4px 24px rgba(0,0,0,.4);
+        --inline-code-bg: #2c2c2e;
+        --inline-code-fg: #ff8bbd;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+        "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding: 3rem 1rem 4rem;
+      -webkit-font-smoothing: antialiased;
+    }
+    .page {
+      max-width: 880px;
+      margin: 0 auto;
+      background: var(--surface);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 3.5rem 3.5rem 3rem;
+    }
+    @media (max-width: 640px) {
+      .page { padding: 2rem 1.3rem; border-radius: 14px; }
+      body { padding: 1.5rem 0.8rem 4rem; }
+    }
+
+    .ref-header { border-bottom: 2px solid var(--hairline); padding-bottom: 0.8rem; margin-bottom: 1.4rem; }
+    .ref-meta { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.2rem; }
+    h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.03em; }
+    .tagline { color: var(--muted); margin-top: 0.2rem; font-size: 0.92rem; }
+
+    h2 {
+      font-weight: 600;
+      margin: 1.6rem 0 0.5rem;
+      padding-left: 0.6rem;
+      border-left: 4px solid var(--accent);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1rem 0 0.3rem; }
+    p { margin-bottom: 0.6rem; font-size: 0.92rem; }
+    ul, ol { padding-left: 1.3rem; margin-bottom: 0.6rem; font-size: 0.92rem; }
+    li { margin-bottom: 0.2rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.85rem; }
+    th { background: color-mix(in srgb, var(--muted) 10%, var(--surface)); color: var(--text); text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.78rem; border-bottom: 1px solid var(--border); }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid var(--hairline); vertical-align: top; }
+    tbody tr:nth-child(even) { background: color-mix(in srgb, var(--muted) 6%, transparent); }
+
+    p code, li code, td code, th code {
+      background: var(--inline-code-bg);
+      border-radius: 6px;
+      padding: 0.05em 0.35em;
+      font-size: 0.85em;
+      color: var(--inline-code-fg);
+      font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, "JetBrains Mono", Consolas, monospace;
+    }
+
+    .callout { border-radius: 12px; padding: 0.7rem 0.9rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.9rem; }
+    .callout-tldr { background: color-mix(in srgb, #ff9f0a 14%, var(--surface)); border-color: #ca8a04; }
+    .callout-warn { background: color-mix(in srgb, #ff9f0a 14%, var(--surface)); border-color: #f59e0b; }
+    .callout-mule { background: color-mix(in srgb, #0071e3 10%, var(--surface)); border-color: #a855f7; }
+    .callout-sf   { background: color-mix(in srgb, #0071e3 10%, var(--surface)); border-color: #0891b2; }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+
+    blockquote.talk {
+      background: color-mix(in srgb, #0071e3 8%, var(--surface));
+      border-left: 5px solid #0284c7;
+      border-radius: 12px;
+      padding: 0.85rem 1.1rem;
+      margin: 0.7rem 0 1rem;
+      font-size: 0.92rem;
+      font-style: italic;
+      color: var(--text);
+    }
+    blockquote.talk::before {
+      content: "SE talk track";
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+      font-style: normal;
+    }
+
+    .arch {
+      background: var(--code-bg);
+      color: var(--code-fg);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, "JetBrains Mono", Consolas, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      margin: 0.6rem 0 1rem;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch .layer  { color: #f9e2af; font-weight: 700; }
+    .arch .cm     { color: #9399b2; font-style: italic; }
+    .arch .arrow  { color: #89dceb; }
+    .arch .sys    { color: #a6e3a1; }
+
+    .decision { background: color-mix(in srgb, var(--muted) 6%, var(--surface)); border: 1.5px solid var(--border); border-radius: 12px; padding: 0.8rem 1rem; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+    .decision strong { color: var(--text); }
+    .decision ul { margin-top: 0.3rem; }
+
+    .verify { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #b45309; background: color-mix(in srgb, #ff9f0a 18%, var(--surface)); border-radius: 5px; padding: 0.05em 0.4em; }
+    @media (prefers-color-scheme: dark) { .verify { color: #fbbf24; } }
+
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--hairline); font-size: 0.8rem; color: var(--muted); }
+    .footer a { color: var(--accent); font-weight: 600; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header class="ref-header">
+    <p class="ref-meta">Reference · Competitive positioning · Salesforce SE</p>
+    <h1>Lyzr &amp; Opencontroller vs MuleSoft Agent Fabric</h1>
+    <p class="tagline">A pre-customer-call reference for the deal where the customer is evaluating Lyzr — now not just an agent <em>builder</em> but, since Sept 2026, a control-plane competitor to MuleSoft Agent Fabric. The honest comparison, the one counter that matters, and where Lyzr genuinely wins.</p>
+  </header>
+
+  <div class="callout callout-tldr">
+    <div class="callout-label">One-line summary</div>
+    <strong>Lyzr</strong> is an enterprise AI-agent <em>build</em> platform (Agent Studio / Architect / "Agentic OS" / Sovereign AI). As of <strong>21 Sep 2026</strong> it also ships <strong>Opencontroller</strong> — a standalone agent <em>control plane</em> that attacks Agent Fabric head-on ("control plane for agent sprawl… your IP stays yours"). The strongest, most defensible counter is <strong>not</strong> "they can't do open protocols" (false — they do A2A + MCP natively). It's that Opencontroller's headline <strong>in-path runtime enforcement is marketed but not publicly documented</strong>, whereas MuleSoft <strong>Omni Gateway</strong> enforces on live traffic today, GA and documented. Make them prove the runtime claim in a POC.
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-label">Source honesty — read before the customer call</div>
+    Lyzr and Opencontroller are <strong>post-knowledge-cutoff and fast-moving</strong>. Every competitor claim below was verified live against lyzr.ai and docs.lyzr.ai on <strong>11 Oct 2026</strong> — but product pages, protocol support, and docs change weekly. Re-verify before quoting specifics, and treat anything tagged <span class="verify">Verify</span> as not-yet-confirmed. Do not recite this page as current fact in front of a customer without a fresh check.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>What Lyzr actually is (two products now)</h2>
+  <p>Treat Lyzr as <em>two</em> things in a deal — because they're sold as two things:</p>
+  <ul>
+    <li><strong>The build platform</strong> — Agent Studio, Architect, an ADK, "Agentic OS", "Sovereign AI", plus branded features (HybridFlow™ anti-hallucination, Cognis memory). This is where you build and run agents. <span class="verify">Verify</span> the current feature/branding list — it churns.</li>
+    <li><strong>Opencontroller</strong> (launched 21 Sep 2026) — a standalone <strong>control plane</strong>: Find / Ship / Monitor / Improve agents across your estate "regardless of cloud or framework." Lyzr's own comparison names <em>Salesforce Agent Fabric</em> as the thing it's beating. So in a live deal, Lyzr is no longer "just a builder" sitting below Agent Fabric — it's pitched as a <em>replacement</em> for it.</li>
+  </ul>
+
+  <div class="arch"><span class="cm"># Where the two Lyzr products sit — and where MuleSoft contests each</span>
+
+<span class="layer">Opencontroller            </span>  <span class="cm"># Control plane  → contests MuleSoft Agent Fabric + Omni Gateway</span>
+   <span class="arrow">↓ governs</span>
+<span class="layer">Lyzr build platform       </span>  <span class="cm"># Agent Studio / Architect / ADK  → contests the agent-build layer</span>
+   <span class="arrow">↓ A2A / MCP (native, both directions)</span>
+<span class="sys">External agents · tools · APIs · systems of record</span>
+</div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Don't lead with the wrong attack</h2>
+  <div class="callout callout-warn">
+    <div class="callout-label">Trap — this claim is false, don't make it</div>
+    <strong>"Lyzr can't speak the open agent protocols."</strong> Verified false (11 Oct 2026): Lyzr supports <strong>A2A and MCP natively, in both directions</strong> — it can expose its agents to external A2A clients <em>and</em> import external A2A agents (LangGraph, CrewAI, Semantic Kernel) into its own registry via a Manager Agent, and connect tools over MCP. Lead with this attack and a technical buyer will correct you on the spot and you lose credibility for the rest of the call.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>The one counter that matters</h2>
+  <div class="callout callout-mule">
+    <div class="callout-label">Marketed vs documented — the defensible wedge</div>
+    Opencontroller <em>markets</em> runtime, in-path enforcement — "refuses the call in the request path," spend caps, stop/isolate rogue agents, runs in your own cluster/VPC. But the enterprise docs portal (<code>opencontroller.lyzr.ai</code>) <strong>302-redirects to <code>opencontroller.lyzr.com</code>, which does not resolve</strong> (dead domain, verified 11 Oct 2026). What <em>is</em> documented is pre-production governance (OTel traces, CI eval-gating, GitOps promote/rollback) — valuable, but that's <strong>governance <em>before</em> deploy, not enforcement <em>on live traffic</em></strong>. The two are not the same control.
+    <ul style="margin:0.4rem 0 0">
+      <li><strong>Your move:</strong> don't call it vaporware — ask for it. "Show me Opencontroller refusing a non-compliant agent call in the request path, in our cluster, with the policy that did it." If it's real, they'll demo it; if it's roadmap, the gap surfaces itself.</li>
+    </ul>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Capability comparison</h2>
+  <p>Honest, dimension by dimension. "✅ documented+GA" vs "marketing-only" is the distinction that wins — not feature counts.</p>
+
+  <table>
+    <thead>
+      <tr><th>Dimension</th><th>Lyzr + Opencontroller</th><th>MuleSoft Agent Fabric + Omni Gateway</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Primary identity</td><td>Agent <em>build</em> platform that added a control plane</td><td>Integration + governance platform that added agent fabric</td></tr>
+      <tr><td>Open protocols</td><td>A2A + MCP native, both directions, import external agents ✅</td><td>MCP (Bridge + Connector) + A2A Connector; MCP/A2A policies at the gateway ✅</td></tr>
+      <tr><td>In-path runtime enforcement</td><td>Marketed ("refuses in request path"), <strong>not publicly documented</strong> (dead docs portal) <span class="verify">Verify in POC</span></td><td>Omni Gateway (Envoy-based) enforces auth / rate-limit / SLA on <strong>live traffic</strong>, documented + GA</td></tr>
+      <tr><td>Runs in customer's own cluster</td><td>Claimed (own VPC/cluster) <span class="verify">Verify</span></td><td>Omni Gateway Self-Managed / Local Mode on customer K8s / Docker / OpenShift / Linux edge ✅</td></tr>
+      <tr><td>Pre-production governance</td><td>Documented via open-source control plane: OTel traces, CI eval-gating, GitOps promote/rollback ✅</td><td>Anypoint API Governance rulesets at design time + Exchange ✅</td></tr>
+      <tr><td>Agent discovery / registry</td><td>Agent Registry (own + imported agents)</td><td>Agent Registry + Exchange as the asset catalog</td></tr>
+      <tr><td>Governs agents from other frameworks</td><td>Yes — a stated design goal (any cloud / any framework)</td><td>Yes — gateway governs any upstream agent/LLM/MCP traffic regardless of who built the agent</td></tr>
+      <tr><td>Integration estate beneath the agents</td><td>Build tooling + connectors on the Lyzr platform <span class="verify">Verify depth</span></td><td>350+ connectors, DataWeave, API-led reuse — the existing Anypoint estate</td></tr>
+      <tr><td>Data gravity</td><td>Neutral / BYO</td><td>Salesforce + Einstein Trust Layer + Data Cloud for Salesforce-heavy accounts</td></tr>
+      <tr><td>Time-to-first-agent (greenfield)</td><td><strong>Fast</strong> — opinionated, build + govern in one tool</td><td>Slower if starting from zero; faster if Anypoint is already in place</td></tr>
+      <tr><td>Deploy + govern in one product</td><td><strong>Yes</strong> — "Vercel for agents": ships your container <em>and</em> governs it</td><td>Build/deploy and governance are distinct products in the platform</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <h2>Where Lyzr genuinely wins — concede these</h2>
+  <p>A comparison that scores MuleSoft first on every row isn't credible. Lyzr has real strengths:</p>
+  <ul>
+    <li><strong>Build + govern in one tool.</strong> "Vercel for agents" — it ships your agent container <em>and</em> puts a control plane over it. One vendor, one workflow. For a greenfield team with no integration estate, that's genuinely less to assemble.</li>
+    <li><strong>Time-to-first-agent on greenfield.</strong> Opinionated, fast, built-in Responsible-AI framing. If the customer has nothing today and wants an agent next week, Lyzr is a short path.</li>
+    <li><strong>Open-protocol posture is real.</strong> Native A2A/MCP, both directions, external-agent import. Don't concede this grudgingly — concede it cleanly, then move the conversation to runtime enforcement and the integration estate.</li>
+  </ul>
+
+  <!-- ───────────────────────────── -->
+  <h2>MuleSoft rebuttal — the durable frame</h2>
+  <div class="callout callout-mule">
+    <div class="callout-label">The reframe</div>
+    Opencontroller's three headline rows — "runs in your own cloud," "enforces in-path," "governs agents from any framework" — are things <strong>Omni Gateway does today, documented and GA</strong>. So the contest isn't capability-vs-nothing; it's <strong>documented + proven vs marketed-only</strong>, plus two things Lyzr can't easily match:
+    <ul style="margin:0.4rem 0 0">
+      <li><strong>The estate underneath.</strong> Agents are only as useful as the systems they can safely reach. MuleSoft brings 350+ governed connectors, DataWeave, and API-led reuse that an agent-build platform doesn't replicate.</li>
+      <li><strong>Salesforce data gravity.</strong> For Salesforce accounts, Einstein Trust Layer + Data Cloud + native identity is a moat a neutral agent platform has no answer to.</li>
+    </ul>
+  </div>
+
+  <blockquote class="talk">
+    "Lyzr is a credible agent-build platform, and if you're greenfield it'll get you an agent fast — I won't pretend otherwise. The question for a control plane isn't 'can it build agents,' it's 'can it refuse a non-compliant agent call on live traffic, in your own cluster, with an auditable policy.' MuleSoft's Omni Gateway does that today — it's GA and documented, running Envoy at your edge. Opencontroller markets the same thing, but the runtime-enforcement docs aren't public yet. So let's not take either of our word for it — let's put both in a POC and watch them refuse the same bad call. And remember the control plane is the easy half: the hard half is the 350 governed connections to SAP, mainframe, and Salesforce underneath, which is where MuleSoft already lives."
+  </blockquote>
+
+  <!-- ───────────────────────────── -->
+  <h2>Objection handling</h2>
+  <table>
+    <thead><tr><th>Customer says</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>"Lyzr does build <em>and</em> governance in one tool — why buy two things from you?"</td>
+        <td>Fair — for a greenfield team that's genuinely simpler. But the control plane is the easy half; the hard half is governed access to your SAP, mainframe, and Salesforce systems. That estate is where MuleSoft already lives, and an agent-build platform has to recreate it. One tool that governs agents but can't reach your systems safely isn't fewer tools — it's a gap you'll fill later.</td>
+      </tr>
+      <tr>
+        <td>"Opencontroller enforces policy in the request path, in our own cloud."</td>
+        <td>If it does, that's great — let's see it. Point it at a non-compliant agent call in your cluster and watch it refuse, with the policy that did it. Omni Gateway does exactly that today, GA and documented. Opencontroller markets it, but the runtime-enforcement docs aren't public yet. A POC settles it in an afternoon.</td>
+      </tr>
+      <tr>
+        <td>"Lyzr speaks A2A and MCP natively — your open-protocol story isn't unique."</td>
+        <td>Agreed — they do, and so do we (MCP Bridge + Connector, A2A Connector, plus MCP/A2A policies at the gateway). Protocol support is table stakes now. The differentiator isn't <em>whether</em> you speak the protocols, it's whether you can <em>govern</em> the traffic on them at runtime and connect them to a real integration estate.</td>
+      </tr>
+      <tr>
+        <td>"Lyzr is faster to a first agent."</td>
+        <td>On greenfield, often true. But first-agent speed and enterprise-scale governance are different races. The question is agent #50 across five frameworks and three clouds — who enforces one policy over all of them, on live traffic, with your systems of record safely behind it. That's the Agent Fabric + Omni Gateway story.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────── -->
+  <div class="callout callout-sf">
+    <div class="callout-label">The strategic frame</div>
+    Don't position this as "MuleSoft can do agent governance too." Position it as: <em>governing agents is the visible half; safely connecting them to your systems of record is the half that actually takes years to build</em> — and that's the half MuleSoft already owns. Concede Lyzr's greenfield speed, insist on a POC for the runtime-enforcement claim, and keep returning the conversation to the estate under the agents.
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <h2>Related references in this workspace</h2>
+  <ul>
+    <li><a href="mulesoft-agent-stack-positioning.html">REF — MuleSoft agent stack positioning</a> — Omni Gateway, Agent Fabric, Anypoint</li>
+    <li><a href="mulesoft-agentic-reference-architecture.html">REF — Agentic reference architecture</a> — the layered component model</li>
+    <li><a href="gateway-governance.html">REF — Omni Gateway universal governance</a> — the live-traffic enforcement diagram</li>
+    <li><a href="rogue-agent-containment.html">REF — Detect &amp; contain rogue agents</a> — the model-proxy containment story</li>
+    <li><a href="agentforce-positioning.html">REF — Agentforce vs frameworks &amp; cloud platforms</a> — sibling positioning doc</li>
+  </ul>
+
+  <div class="footer">
+    <a href="../lessons/index.html">← All lessons</a>
+    <a href="mulesoft-agent-stack-positioning.html">Agent stack</a>
+    <a href="../MISSION.md">Mission</a>
+    <p style="margin-top:0.7rem">Competitive positioning, not product spec. Lyzr/Opencontroller claims verified live 11 Oct 2026 — both post-cutoff and fast-moving; re-verify before quoting. The framings are the durable part; the figures are not.</p>
+  </div>
+
+</div>
+</body>
+</html>
