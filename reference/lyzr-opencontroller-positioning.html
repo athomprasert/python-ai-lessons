@@ -234,6 +234,7 @@
     <li><strong>Build + govern in one tool.</strong> "Vercel for agents" — it ships your agent container <em>and</em> puts a control plane over it. One vendor, one workflow. For a greenfield team with no integration estate, that's genuinely less to assemble.</li>
     <li><strong>Time-to-first-agent on greenfield.</strong> Opinionated, fast, built-in Responsible-AI framing. If the customer has nothing today and wants an agent next week, Lyzr is a short path.</li>
     <li><strong>Open-protocol posture is real.</strong> Native A2A/MCP, both directions, external-agent import. Don't concede this grudgingly — concede it cleanly, then move the conversation to runtime enforcement and the integration estate.</li>
+    <li><strong>Opinionated, built-in Responsible AI.</strong> HybridFlow™ anti-hallucination, bias detection, an Explainability Layer, PII redaction, and AI Decision Logs ship in the box. In a code-first or assemble-it-yourself stack you wire this together; Lyzr hands it to you. For a buyer who wants Responsible-AI controls day one and isn't tied to Salesforce data, that's genuine value.</li>
   </ul>
 
   <!-- ───────────────────────────── -->
@@ -250,6 +251,18 @@
   <blockquote class="talk">
     "Lyzr is a credible agent-build platform, and if you're greenfield it'll get you an agent fast — I won't pretend otherwise. The question for a control plane isn't 'can it build agents,' it's 'can it refuse a non-compliant agent call on live traffic, in your own cluster, with an auditable policy.' MuleSoft's Omni Gateway does that today — it's GA and documented, running Envoy at your edge. Opencontroller markets the same thing, but the runtime-enforcement docs aren't public yet. So let's not take either of our word for it — let's put both in a POC and watch them refuse the same bad call. And remember the control plane is the easy half: the hard half is the 350 governed connections to SAP, mainframe, and Salesforce underneath, which is where MuleSoft already lives."
   </blockquote>
+
+  <!-- ───────────────────────────── -->
+  <h2>Discovery questions that surface the wedge</h2>
+  <p>Ask these early — each one steers toward where MuleSoft is strongest and where Opencontroller has to prove a marketed claim.</p>
+  <div class="decision">
+    <ul style="margin:0">
+      <li><strong>Deploy vs. govern.</strong> "Do you want one tool to <em>deploy</em> agents, or a neutral layer to <em>govern</em> agents you deploy however you like?" <span class="cm" style="color:var(--muted)">— separates Opencontroller's build+govern bundle from a neutral control plane.</span></li>
+      <li><strong>Who enforces, and is it documented?</strong> "Who enforces auth, rate-limits, and spend caps <em>across</em> agents from different teams and vendors — and can you see that enforcement documented, or only on a slide?" <span class="cm" style="color:var(--muted)">— forces the in-path proof point.</span></li>
+      <li><strong>Second governance stack.</strong> "Do you already run Anypoint? Who would operate a second governance stack alongside it?" <span class="cm" style="color:var(--muted)">— the TCO / operations question.</span></li>
+      <li><strong>Salesforce data gravity.</strong> "How much of your agent value depends on Salesforce data and Agentforce?" <span class="cm" style="color:var(--muted)">— surfaces the moat Lyzr can't match.</span></li>
+    </ul>
+  </div>
 
   <!-- ───────────────────────────── -->
   <h2>Objection handling</h2>
