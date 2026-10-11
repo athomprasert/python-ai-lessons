@@ -5,119 +5,165 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lesson 39 — AutoGen model switch: Azure OpenAI vs OpenAI vs Anthropic on Foundry</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 17px; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f9f8f6;
-      color: #1a1a1a;
-      line-height: 1.7;
-      padding: 2rem 1rem 6rem;
+    /* ─── Design tokens (shared with the SE one-pager theme) ─── */
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --accent: #0071e3;
+      --border: #d2d2d7;
+      --hairline: #e8e8ed;
+      --shadow: 0 4px 24px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --code-bg: #1e1e2e;      /* code block stays dark in both modes */
+      --code-fg: #cdd6f4;
+      --inline-code-bg: #f0f0f3;
+      --inline-code-fg: #c7254e;
     }
-    .page { max-width: 860px; margin: 0 auto; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --surface: #1c1c1e;
+        --text: #f5f5f7;
+        --muted: #98989d;
+        --accent: #0a84ff;
+        --border: #38383a;
+        --hairline: #2c2c2e;
+        --shadow: 0 4px 24px rgba(0,0,0,.4);
+        --inline-code-bg: #2c2c2e;
+        --inline-code-fg: #ff8bbd;
+      }
+    }
 
-    .lesson-header { border-bottom: 3px solid #1a1a1a; padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
-    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
-    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; }
-    .tagline { color: #555; margin-top: 0.5rem; font-size: 1.05rem; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+        "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 3rem 1rem 6rem;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .page {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--surface);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 3.5rem 3.5rem 3rem;
+    }
+    @media (max-width: 640px) {
+      .page { padding: 2rem 1.3rem; border-radius: 14px; }
+      body { padding: 1.5rem 0.8rem 4rem; }
+    }
+
+    .lesson-header { border-bottom: 1px solid var(--hairline); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+    .lesson-meta { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+    h1 { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+    .tagline { color: var(--muted); margin-top: 0.5rem; font-size: 1.05rem; }
 
     .progress { display: inline-flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
     .pill { border-radius: 99px; padding: 0.2rem 0.8rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; }
-    .pill-done { background: #d1fae5; color: #065f46; }
-    .pill-now  { background: #1a1a1a; color: #fff; }
-    .pill-next { background: #e5e7eb; color: #6b7280; }
+    .pill-done { background: color-mix(in srgb, #34c759 18%, var(--surface)); color: #248a3d; }
+    .pill-now  { background: var(--accent); color: #fff; }
+    .pill-next { background: color-mix(in srgb, var(--muted) 16%, var(--surface)); color: var(--muted); }
 
-    h2 { font-size: 1.35rem; font-weight: 700; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid #1a1a1a; }
-    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.6rem 0 0.4rem; }
+    h2 { font-size: 1.35rem; font-weight: 600; margin: 2.8rem 0 0.8rem; padding-left: 0.75rem; border-left: 4px solid var(--accent); letter-spacing: -0.02em; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.6rem 0 0.4rem; }
     p { margin-bottom: 1rem; }
     ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
     li { margin-bottom: 0.3rem; }
-    a { color: #2563eb; }
+    li::marker { color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
     strong { font-weight: 700; }
 
     pre {
-      background: #1e1e2e;
-      color: #cdd6f4;
-      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code-fg);
+      border-radius: 12px;
       padding: 1.1rem 1.3rem;
       overflow-x: auto;
       font-size: 0.84rem;
       line-height: 1.55;
       margin: 0.6rem 0 1.2rem;
     }
-    code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace; }
+    code { font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, "JetBrains Mono", "Fira Code", Consolas, monospace; }
     p code, li code, td code, th code {
-      background: #eee;
-      border-radius: 4px;
+      background: var(--inline-code-bg);
+      border-radius: 6px;
       padding: 0.1em 0.4em;
       font-size: 0.85em;
-      color: #c7254e;
+      color: var(--inline-code-fg);
     }
 
     .kw  { color: #cba6f7; }
     .fn  { color: #89dceb; }
     .str { color: #a6e3a1; }
     .num { color: #fab387; }
-    .cm  { color: #6c7086; font-style: italic; }
+    .cm  { color: #9399b2; font-style: italic; }
     .op  { color: #89b4fa; }
     .attr { color: #f38ba8; }
 
-    .callout { border-radius: 8px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
-    .callout-why  { background: #eff6ff; border-color: #3b82f6; }
-    .callout-tip  { background: #f0fdf4; border-color: #22c55e; }
-    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
-    .callout-mule { background: #faf5ff; border-color: #a855f7; }
-    .callout-syntax { background: #fef2f2; border-color: #ef4444; }
-    .callout-check { background: #ecfeff; border-color: #06b6d4; }
+    .callout { border-radius: 12px; padding: 1rem 1.2rem; margin: 1.2rem 0; border-left: 4px solid; }
+    .callout-why  { background: color-mix(in srgb, #0071e3 10%, var(--surface)); border-color: #0071e3; }
+    .callout-tip  { background: color-mix(in srgb, #34c759 12%, var(--surface)); border-color: #34c759; }
+    .callout-warn { background: color-mix(in srgb, #ff9f0a 14%, var(--surface)); border-color: #ff9f0a; }
+    .callout-mule { background: color-mix(in srgb, #0071e3 10%, var(--surface)); border-color: #0071e3; }
+    .callout-syntax { background: color-mix(in srgb, #ff3b30 10%, var(--surface)); border-color: #ff3b30; }
+    .callout-check { background: color-mix(in srgb, #06b6d4 12%, var(--surface)); border-color: #06b6d4; }
     .callout-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
 
-    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: #fff; border-radius: 8px; overflow: hidden; }
-    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
-    td { padding: 0.55rem 0.8rem; border-top: 1px solid #eee; vertical-align: top; }
-    tbody tr:nth-child(even) { background: #f9f8f6; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.92rem; background: var(--surface); border-radius: 12px; overflow: hidden; }
+    th { background: color-mix(in srgb, var(--muted) 10%, var(--surface)); color: var(--text); text-align: left; padding: 0.6rem 0.8rem; font-weight: 700; font-size: 0.85rem; }
+    td { padding: 0.55rem 0.8rem; border-top: 1px solid var(--hairline); vertical-align: top; }
+    tbody tr:nth-child(even) { background: color-mix(in srgb, var(--muted) 6%, transparent); }
 
     .todo {
-      background: #1e1e2e;
-      border: 2px dashed #f59e0b;
-      color: #cdd6f4;
-      border-radius: 8px;
+      background: var(--code-bg);
+      border: 2px dashed #ff9f0a;
+      color: var(--code-fg);
+      border-radius: 12px;
       padding: 1.1rem 1.3rem;
       overflow-x: auto;
       font-size: 0.84rem;
       line-height: 1.55;
       margin: 0.6rem 0 1.2rem;
-      font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+      font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, "JetBrains Mono", "Fira Code", Consolas, monospace;
       white-space: pre;
     }
     .todo-label {
       display: inline-block;
-      background: #f59e0b;
+      background: #ff9f0a;
       color: #1a1a1a;
       padding: 0.1rem 0.6rem;
-      border-radius: 4px;
+      border-radius: 6px;
       font-size: 0.7rem;
       font-weight: 800;
       letter-spacing: 0.08em;
       margin-bottom: 0.6rem;
     }
 
-    .quiz { background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 1.4rem 1.6rem; margin: 2rem 0; }
+    .quiz { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 1.4rem 1.6rem; margin: 2rem 0; }
     .quiz h3 { margin-top: 0; font-size: 1rem; }
     .quiz-question { margin-bottom: 1.4rem; }
     .quiz-question:last-child { margin-bottom: 0; }
     .options { list-style: none; padding: 0; }
-    .options li { padding: 0.5rem 0.8rem; border-radius: 6px; cursor: pointer; border: 1.5px solid #e5e7eb; margin-bottom: 0.4rem; transition: background 0.15s; user-select: none; }
-    .options li:hover { background: #f3f4f6; }
-    .options li.correct { background: #d1fae5; border-color: #22c55e; }
-    .options li.wrong   { background: #fee2e2; border-color: #ef4444; }
+    .options li { padding: 0.5rem 0.8rem; border-radius: 8px; cursor: pointer; border: 1.5px solid var(--hairline); margin-bottom: 0.4rem; transition: background 0.15s, border-color 0.15s; user-select: none; }
+    .options li:hover { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+    .options li.correct { background: color-mix(in srgb, #34c759 20%, var(--surface)); border-color: #34c759; }
+    .options li.wrong   { background: color-mix(in srgb, #ff3b30 18%, var(--surface)); border-color: #ff3b30; }
     .feedback { font-size: 0.9rem; min-height: 1.4rem; margin-top: 0.4rem; font-weight: 600; }
-    .feedback.ok  { color: #15803d; }
-    .feedback.err { color: #b91c1c; }
+    .feedback.ok  { color: #248a3d; }
+    .feedback.err { color: #d70015; }
 
-    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #888; }
+    .footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--hairline); font-size: 0.85rem; color: var(--muted); }
     .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
-    .nav-links a { color: #2563eb; font-weight: 600; }
+    .nav-links a { color: var(--accent); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -406,11 +452,11 @@ client = AzureAIChatCompletionClient(
 
   <div class="footer">
     <div class="nav-links">
-      <a href="0038-autogen-basics.html">← L38 — AutoGen basics</a>
-      <a href="0033-strands-model-switch.html">L33 — Strands equivalent</a>
-      <a href="0005-sdk-vs-adk.html">L05 — SDK layers</a>
+      <a href="index.html">← All lessons</a>
+      <a href="0038-autogen-basics.html">← Lesson 38 — AutoGen Basics</a>
+      <a href="0040-azure-ai-foundry-agents.html">Lesson 40 — Azure AI Foundry Agents →</a>
     </div>
-    <p style="margin-top:1rem">Next (L40) — Azure AI Foundry Agents Service: the managed platform side. AutoGen the framework, Foundry the runtime.</p>
+    <p style="margin-top:0.8rem">Python for AI/ML · <a href="../RESOURCES.md">Resources</a></p>
   </div>
 </div>
 

@@ -5,68 +5,110 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>L49 — Build an Agent Broker (MuleSoft Agent Fabric)</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #fff; color: #1a1a1a; line-height: 1.6; padding: 1.5rem 1rem 4rem;
+    /* ─── Design tokens (shared one-pager theme) ─── */
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --accent: #0071e3;
+      --border: #d2d2d7;
+      --hairline: #e8e8ed;
+      --shadow: 0 4px 24px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --code-bg: #1e1e2e;      /* code block stays dark in both modes */
+      --code-fg: #cdd6f4;
+      --inline-code-bg: #f0f0f3;
+      --inline-code-fg: #c7254e;
     }
-    .page { max-width: 840px; margin: 0 auto; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --surface: #1c1c1e;
+        --text: #f5f5f7;
+        --muted: #98989d;
+        --accent: #0a84ff;
+        --border: #38383a;
+        --hairline: #2c2c2e;
+        --shadow: 0 4px 24px rgba(0,0,0,.4);
+        --inline-code-bg: #2c2c2e;
+        --inline-code-fg: #ff8bbd;
+      }
+    }
 
-    header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
-    .eyebrow { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
-    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
-    .tagline { color: #555; margin-top: 0.35rem; font-size: 0.95rem; }
+    /* ─── Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+        "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.6; padding: 3rem 1rem 6rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Card ─── */
+    .page {
+      max-width: 820px; margin: 0 auto; background: var(--surface);
+      border-radius: 18px; box-shadow: var(--shadow); padding: 3.5rem 3.5rem 3rem;
+    }
+    @media (max-width: 640px) {
+      .page { padding: 2rem 1.3rem; border-radius: 14px; }
+      body { padding: 1.5rem 0.8rem 4rem; }
+    }
+
+    header { border-bottom: 1px solid var(--hairline); padding-bottom: 1.2rem; margin-bottom: 1.5rem; }
+    .eyebrow { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+    h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
+    .tagline { color: var(--muted); margin-top: 0.5rem; font-size: 0.98rem; }
 
     h2 {
-      font-weight: 800; margin: 1.7rem 0 0.5rem; padding-left: 0.7rem;
-      border-left: 4px solid #1a1a1a; letter-spacing: 0.03em;
-      text-transform: uppercase; font-size: 0.85rem;
+      font-weight: 600; margin: 2.2rem 0 0.6rem; padding-left: 0.8rem;
+      border-left: 4px solid var(--accent); letter-spacing: -0.01em; font-size: 1.2rem;
     }
-    h3 { font-size: 1.02rem; font-weight: 700; margin: 1rem 0 0.3rem; }
-    p { margin-bottom: 0.7rem; font-size: 0.94rem; }
-    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.1rem 0 0.3rem; }
+    p { margin-bottom: 0.7rem; font-size: 0.96rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.96rem; }
     li { margin-bottom: 0.25rem; }
-    a { color: #2563eb; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
     strong { font-weight: 700; }
 
-    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.87rem; }
-    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.8rem; }
-    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
-    tbody tr:nth-child(even) { background: #fafafa; }
+    table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.88rem; }
+    th { background: color-mix(in srgb, var(--muted) 10%, var(--surface)); color: var(--text); text-align: left; padding: 0.45rem 0.65rem; font-weight: 700; font-size: 0.82rem; border-bottom: 1px solid var(--border); }
+    td { padding: 0.45rem 0.65rem; border-top: 1px solid var(--hairline); vertical-align: top; }
+    tbody tr:nth-child(even) { background: color-mix(in srgb, var(--muted) 6%, transparent); }
 
     p code, li code, td code {
-      background: #f1f1f1; border-radius: 3px; padding: 0.05em 0.35em;
-      font-size: 0.88em; color: #c7254e; font-family: "JetBrains Mono", "Fira Code", monospace;
+      background: var(--inline-code-bg); border-radius: 6px; padding: 0.1em 0.4em;
+      font-size: 0.88em; color: var(--inline-code-fg); font-family: "JetBrains Mono", "Fira Code", monospace;
     }
 
     pre.code {
-      background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 0.9rem 1.1rem;
+      background: var(--code-bg); color: var(--code-fg); border-radius: 12px; padding: 0.9rem 1.1rem;
       overflow-x: auto; margin: 0.5rem 0 1rem; font-size: 0.82rem; line-height: 1.5;
       font-family: "JetBrains Mono", "Fira Code", monospace;
     }
-    pre.code .cm { color: #6c7086; font-style: italic; }
+    pre.code .cm { color: #9399b2; font-style: italic; }
     pre.code .kw { color: #cba6f7; }
     pre.code .str { color: #a6e3a1; }
     pre.code .attr { color: #89dceb; }
     pre.code .todo { color: #f9e2af; font-weight: 700; }
 
     .arch {
-      background: #1e1e2e; color: #cdd6f4; border-radius: 6px; padding: 0.9rem 1rem;
+      background: var(--code-bg); color: var(--code-fg); border-radius: 12px; padding: 0.9rem 1rem;
       font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 0.8rem;
       line-height: 1.55; margin: 0.5rem 0 1rem; white-space: pre; overflow-x: auto;
     }
     .arch .layer { color: #f9e2af; font-weight: 700; }
-    .arch .cm { color: #6c7086; font-style: italic; }
+    .arch .cm { color: #9399b2; font-style: italic; }
     .arch .arrow { color: #89dceb; }
     .arch .plane { color: #f38ba8; font-weight: 700; }
 
-    .callout { border-radius: 6px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.92rem; }
-    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
-    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
-    .callout-new  { background: #ecfdf5; border-color: #10b981; }
-    .callout-mule { background: #faf5ff; border-color: #a855f7; }
-    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
+    .callout { border-radius: 12px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.94rem; }
+    .callout-tldr { background: color-mix(in srgb, #ff9f0a 12%, var(--surface)); border-color: #ff9f0a; }
+    .callout-warn { background: color-mix(in srgb, #ff9f0a 12%, var(--surface)); border-color: #ff9f0a; }
+    .callout-new  { background: color-mix(in srgb, #34c759 14%, var(--surface)); border-color: #34c759; }
+    .callout-mule { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border-color: var(--accent); }
+    .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.75; }
 
     .steps { counter-reset: step; list-style: none; padding-left: 0; }
     .steps > li {
@@ -74,29 +116,32 @@
     }
     .steps > li::before {
       content: counter(step); position: absolute; left: 0; top: 0;
-      width: 1.7rem; height: 1.7rem; background: #1a1a1a; color: #fff; border-radius: 50%;
+      width: 1.7rem; height: 1.7rem; background: var(--accent); color: #fff; border-radius: 50%;
       display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;
     }
 
     blockquote.talk {
-      background: #f0f9ff; border-left: 5px solid #0284c7; border-radius: 6px;
-      padding: 0.85rem 1.1rem; margin: 0.7rem 0 1rem; font-size: 0.93rem;
-      font-style: italic; color: #1e3a5c;
+      background: color-mix(in srgb, var(--accent) 8%, var(--surface)); border-left: 5px solid var(--accent); border-radius: 12px;
+      padding: 0.85rem 1.1rem; margin: 0.7rem 0 1rem; font-size: 0.94rem;
+      font-style: italic; color: var(--text);
     }
     blockquote.talk::before {
       content: "SE talk track"; display: block; font-size: 0.65rem; font-weight: 800;
-      letter-spacing: 0.1em; color: #0284c7; margin-bottom: 0.4rem; font-style: normal;
+      letter-spacing: 0.1em; color: var(--accent); margin-bottom: 0.4rem; font-style: normal;
     }
 
-    .quiz { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
-    .quiz h3 { margin-top: 0; color: #14532d; }
+    .quiz { background: color-mix(in srgb, #34c759 10%, var(--surface)); border: 1px solid color-mix(in srgb, #34c759 35%, var(--surface)); border-radius: 12px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
+    .quiz h3 { margin-top: 0; color: var(--text); }
     .quiz ol { margin-left: 1.3rem; }
     .quiz details { margin-top: 0.4rem; }
-    .quiz summary { cursor: pointer; color: #16a34a; font-weight: 600; font-size: 0.88rem; }
-    .quiz .ans { background: #fff; border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; }
+    .quiz summary { cursor: pointer; color: #34c759; font-weight: 600; font-size: 0.88rem; }
+    .quiz .ans { background: var(--surface); border-radius: 8px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; }
 
-    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.83rem; color: #6b7280; }
-    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+    .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--hairline); font-size: 0.85rem; color: var(--muted); }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+    .nav-links { display: flex; flex-wrap: wrap; gap: 1.2rem; }
+    .nav-links a { font-weight: 600; }
   </style>
 </head>
 <body>
@@ -296,9 +341,12 @@ context:
   </ul>
 
   <div class="footer">
-    <a href="0048-mcp-and-a2a-in-mulesoft.html">← L48 MCP &amp; A2A in MuleSoft</a>
-    <a href="../reference/mulesoft-agentic-reference-architecture.html">Agentic reference architecture</a>
-    <p style="margin-top:0.7rem">Grounded in public MuleSoft &amp; Agentforce docs. Some broker-syntax reference pages were unreachable at authoring time — TODO scaffolds link the real references rather than guess. If a field name here doesn't match current docs, trust the docs.</p>
+    <div class="nav-links">
+      <a href="index.html">← All lessons</a>
+      <a href="0048-mcp-and-a2a-in-mulesoft.html">← Lesson 48 — MCP &amp; A2A in MuleSoft</a>
+      <a href="0050-agent-memory-in-anypoint.html">Lesson 50 — Agent Memory in Anypoint →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · <a href="../RESOURCES.md">Resources</a></p>
   </div>
 
 </div>

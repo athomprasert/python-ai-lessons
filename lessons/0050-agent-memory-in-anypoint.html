@@ -5,56 +5,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>L50 — Agent memory in Anypoint Studio: short-term (Object Store) + semantic (Vectors)</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #fff;
-      color: #1a1a1a;
-      line-height: 1.6;
-      padding: 1.5rem 1rem 4rem;
+    /* ─── Design tokens (shared with the SE one-pager theme) ─── */
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --accent: #0071e3;
+      --border: #d2d2d7;
+      --hairline: #e8e8ed;
+      --shadow: 0 4px 24px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --code-bg: #1e1e2e;      /* code block stays dark in both modes */
+      --code-fg: #cdd6f4;
+      --inline-code-bg: #f0f0f3;
+      --inline-code-fg: #c7254e;
     }
-    .page { max-width: 840px; margin: 0 auto; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --surface: #1c1c1e;
+        --text: #f5f5f7;
+        --muted: #98989d;
+        --accent: #0a84ff;
+        --border: #38383a;
+        --hairline: #2c2c2e;
+        --shadow: 0 4px 24px rgba(0,0,0,.4);
+        --inline-code-bg: #2c2c2e;
+        --inline-code-fg: #ff8bbd;
+      }
+    }
 
-    header { border-bottom: 2px solid #1a1a1a; padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
-    .eyebrow { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 0.3rem; }
-    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
-    .tagline { color: #555; margin-top: 0.35rem; font-size: 0.95rem; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+        "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 3rem 1rem 6rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Layout: the page is now a rounded card floating on --bg ─── */
+    .page {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--surface);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 3.5rem 3.5rem 3rem;
+    }
+    @media (max-width: 640px) {
+      .page { padding: 2rem 1.3rem; border-radius: 14px; }
+      body { padding: 1.5rem 0.8rem 4rem; }
+    }
+
+    header { border-bottom: 1px solid var(--hairline); padding-bottom: 0.9rem; margin-bottom: 1.5rem; }
+    .eyebrow { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem; }
+    h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; }
+    .tagline { color: var(--muted); margin-top: 0.35rem; font-size: 0.95rem; }
 
     h2 {
-      font-weight: 800;
+      font-weight: 600;
       margin: 1.7rem 0 0.5rem;
       padding-left: 0.7rem;
-      border-left: 4px solid #1a1a1a;
+      border-left: 4px solid var(--accent);
       letter-spacing: 0.03em;
       text-transform: uppercase;
       font-size: 0.85rem;
     }
-    h3 { font-size: 1.02rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+    h3 { font-size: 1.02rem; font-weight: 600; margin: 1rem 0 0.3rem; }
     p { margin-bottom: 0.7rem; font-size: 0.94rem; }
     ul, ol { padding-left: 1.4rem; margin-bottom: 0.7rem; font-size: 0.94rem; }
     li { margin-bottom: 0.25rem; }
-    a { color: #2563eb; }
-    strong { font-weight: 700; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    strong { font-weight: 600; }
 
     table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.87rem; }
-    th { background: #1a1a1a; color: #fff; text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.8rem; }
-    td { padding: 0.4rem 0.6rem; border-top: 1px solid #eee; vertical-align: top; }
-    tbody tr:nth-child(even) { background: #fafafa; }
+    th { background: color-mix(in srgb, var(--muted) 10%, var(--surface)); color: var(--text); text-align: left; padding: 0.4rem 0.6rem; font-weight: 700; font-size: 0.8rem; }
+    td { padding: 0.4rem 0.6rem; border-top: 1px solid var(--hairline); vertical-align: top; }
+    tbody tr:nth-child(even) { background: color-mix(in srgb, var(--muted) 6%, transparent); }
 
     p code, li code, td code {
-      background: #f1f1f1;
+      background: var(--inline-code-bg);
       border-radius: 3px;
       padding: 0.05em 0.35em;
       font-size: 0.88em;
-      color: #c7254e;
+      color: var(--inline-code-fg);
       font-family: "JetBrains Mono", "Fira Code", monospace;
     }
 
     pre.code {
-      background: #1e1e2e;
-      color: #cdd6f4;
-      border-radius: 6px;
+      background: var(--code-bg);
+      color: var(--code-fg);
+      border-radius: 12px;
       padding: 0.9rem 1rem;
       font-family: "JetBrains Mono", "Fira Code", monospace;
       font-size: 0.82rem;
@@ -62,16 +108,16 @@
       overflow-x: auto;
       margin: 0.6rem 0 1rem;
     }
-    pre.code .cm { color: #6c7086; font-style: italic; }
+    pre.code .cm { color: #9399b2; font-style: italic; }
     pre.code .kw { color: #cba6f7; }
     pre.code .str { color: #a6e3a1; }
     pre.code .tag { color: #89dceb; }
     pre.code .attr { color: #f9e2af; }
 
     .arch {
-      background: #1e1e2e;
-      color: #cdd6f4;
-      border-radius: 6px;
+      background: var(--code-bg);
+      color: var(--code-fg);
+      border-radius: 12px;
       padding: 0.9rem 1rem;
       font-family: "JetBrains Mono", "Fira Code", monospace;
       font-size: 0.8rem;
@@ -81,25 +127,25 @@
       overflow-x: auto;
     }
     .arch .layer { color: #f9e2af; font-weight: 700; }
-    .arch .cm { color: #6c7086; font-style: italic; }
+    .arch .cm { color: #9399b2; font-style: italic; }
     .arch .arrow { color: #89dceb; }
 
-    .callout { border-radius: 6px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.92rem; }
-    .callout-tldr { background: #fef9c3; border-color: #ca8a04; }
-    .callout-warn { background: #fffbeb; border-color: #f59e0b; }
-    .callout-new  { background: #ecfdf5; border-color: #10b981; }
-    .callout-mule { background: #faf5ff; border-color: #a855f7; }
+    .callout { border-radius: 12px; padding: 0.75rem 0.95rem; margin: 0.7rem 0; border-left: 4px solid; font-size: 0.92rem; }
+    .callout-tldr { background: color-mix(in srgb, #ca8a04 12%, var(--surface)); border-color: #ca8a04; }
+    .callout-warn { background: color-mix(in srgb, #ff9f0a 14%, var(--surface)); border-color: #f59e0b; }
+    .callout-new  { background: color-mix(in srgb, #34c759 12%, var(--surface)); border-color: #10b981; }
+    .callout-mule { background: color-mix(in srgb, #a855f7 12%, var(--surface)); border-color: #a855f7; }
     .callout-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; opacity: 0.7; }
 
     blockquote.talk {
-      background: #f0f9ff;
+      background: color-mix(in srgb, #0284c7 10%, var(--surface));
       border-left: 5px solid #0284c7;
-      border-radius: 6px;
+      border-radius: 12px;
       padding: 0.85rem 1.1rem;
       margin: 0.7rem 0 1rem;
       font-size: 0.93rem;
       font-style: italic;
-      color: #1e3a5c;
+      color: var(--text);
     }
     blockquote.talk::before {
       content: "SE talk track";
@@ -117,7 +163,7 @@
       margin: 0.8rem 0 1.2rem;
       border: 3px dashed #dc2626;
       border-radius: 8px;
-      background: #fef2f2;
+      background: color-mix(in srgb, #ff3b30 8%, var(--surface));
       padding: 0.6rem;
     }
     .screenshot .ss-label {
@@ -132,36 +178,38 @@
       max-width: 100%;
       display: block;
       border-radius: 4px;
-      background: #fff;
+      background: var(--surface);
     }
     .screenshot .capture {
-      background: #fff;
+      background: var(--surface);
       border-left: 3px solid #dc2626;
       padding: 0.5rem 0.7rem;
       margin-top: 0.5rem;
       font-size: 0.85rem;
-      color: #7f1d1d;
+      color: var(--text);
     }
-    .screenshot .capture strong { color: #7f1d1d; }
+    .screenshot .capture strong { color: var(--text); }
 
     .steps {
-      background: #f8fafc;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 6px;
+      background: color-mix(in srgb, var(--muted) 6%, var(--surface));
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
       padding: 0.8rem 1rem;
       margin: 0.5rem 0 1rem;
     }
     .steps ol { margin: 0.3rem 0 0 1.3rem; }
 
-    .quiz { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
-    .quiz h3 { margin-top: 0; color: #14532d; }
+    .quiz { background: color-mix(in srgb, #34c759 10%, var(--surface)); border: 1.5px solid color-mix(in srgb, #34c759 40%, var(--surface)); border-radius: 12px; padding: 0.8rem 1rem; margin: 0.5rem 0 1rem; }
+    .quiz h3 { margin-top: 0; color: var(--text); }
     .quiz ol { margin-left: 1.3rem; }
     .quiz details { margin-top: 0.4rem; }
-    .quiz summary { cursor: pointer; color: #16a34a; font-weight: 600; font-size: 0.88rem; }
-    .quiz .ans { background: #fff; border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; }
+    .quiz summary { cursor: pointer; color: #34c759; font-weight: 600; font-size: 0.88rem; }
+    .quiz .ans { background: var(--surface); border-radius: 4px; padding: 0.4rem 0.6rem; margin-top: 0.3rem; font-size: 0.9rem; color: var(--text); }
 
-    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.83rem; color: #6b7280; }
-    .footer a { color: #2563eb; font-weight: 600; margin-right: 1rem; }
+    .footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--hairline); font-size: 0.83rem; color: var(--muted); }
+    .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav-links a { color: var(--accent); font-weight: 600; }
+    .footer a { color: var(--accent); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -453,10 +501,12 @@ docker run -d --name pgvector -p 5432:5432 \
   </ul>
 
   <div class="footer">
-    <a href="0049-agent-broker.html">← L49 Agent Broker</a>
-    <a href="0044-anypoint-mac-agent.html">L44 MAC agent (base project)</a>
-    <a href="../reference/mcp-integration-positioning.html">MCP integration positioning</a>
-    <p style="margin-top:0.7rem">Ask me anything unclear — that's how you learn. If a Vectors connector operation name has drifted from what's shown here, tell me and we'll update the lesson.</p>
+    <div class="nav-links">
+      <a href="index.html">← All lessons</a>
+      <a href="0049-agent-broker.html">← Lesson 49 — Build an Agent Broker</a>
+      <a href="0051-claude-agent-on-agent-fabric.html">Lesson 51 — Claude Agent on Agent Fabric →</a>
+    </div>
+    <p style="margin-top:0.8rem">Python for AI/ML · <a href="../RESOURCES.md">Resources</a></p>
   </div>
 
 </div>
